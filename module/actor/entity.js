@@ -645,7 +645,7 @@ export class WwnActor extends Actor {
   }
 
   computeEncumbrance() {
-    if (this.type === "monster") return;
+    if (this.type != "character") return;
     const data = this.system;
 
     // Compute encumbrance
@@ -810,11 +810,12 @@ export class WwnActor extends Actor {
 
   // Enable spell sheet and relevant sections
   enableSpellcasting() {
+    if (this.type === "faction") return;
     const arts = this.items.filter(i => i.type === "art");
     const spells = this.items.filter(i => i.type === "spell");
-    arts.length > 0 || spells.length > 0
-      ? this.system.spells.enabled = true
-      : this.system.spells.enabled = false;
+    if (arts.length > 0 || spells.length > 0) {
+      this.system.spells.enabled = true;
+    }
     arts.length > 0
       ? this.system.spells.artsEnabled = true
       : this.system.spells.artsEnabled = false;
@@ -981,6 +982,7 @@ export class WwnActor extends Actor {
   }
 
   computeSaves() {
+    if (this.type === "faction") return;
     const data = this.system;
     const saves = data.saves;
     Object.keys(saves).forEach((s) => {
@@ -1085,7 +1087,6 @@ export class WwnActor extends Actor {
   // Creates a list of skills based on the following list. Was used to generate
   // the initial skills list to populate a compendium
   async createSkillsManually(data, options, user) {
-    const actorData = this.system;
     const skillList = [
       "administer",
       "connect",
