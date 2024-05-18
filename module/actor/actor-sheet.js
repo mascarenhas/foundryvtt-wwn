@@ -1,4 +1,8 @@
 import { WwnActor } from "./entity.js";
+import {
+  onManageActiveEffect,
+  prepareActiveEffectCategories,
+} from "../effects.mjs";
 import { WwnEntityTweaks } from "../dialog/entity-tweaks.js";
 
 export class WwnActorSheet extends ActorSheet {
@@ -14,6 +18,11 @@ export class WwnActorSheet extends ActorSheet {
 
     data.config = CONFIG.WWN;
     data.isNew = this.actor.isNew();
+
+    if (this.actor.type != "faction") {
+      // Prepare active effects
+      data.effects = prepareActiveEffectCategories(this.actor.effects);
+    }
 
     return data;
   }
@@ -54,7 +63,7 @@ export class WwnActorSheet extends ActorSheet {
   async _resetSpells(event) {
     this.actor.update({
       "system.spells.perDay.value": 0
-      }
+    }
     );
   }
 
@@ -90,7 +99,12 @@ export class WwnActorSheet extends ActorSheet {
 
   activateListeners(html) {
     super.activateListeners(html);
-    
+
+    // Active Effect management
+    html
+      .find(".effect-control")
+      .click((ev) => onManageActiveEffect(ev, this.actor));
+
     // Item summaries
     html
       .find(".item .item-name h4")
@@ -111,7 +125,7 @@ export class WwnActorSheet extends ActorSheet {
     html.find(".skill-roll").click(async (ev) => {
       const itemId = $(ev.currentTarget).parents(".item");
       const item = this.document.items.get(itemId.data("itemId"));
-      if (item.type == "skill"){
+      if (item.type == "skill") {
         item.rollSkill({ skipDialog: ev.ctrlKey });
       }
     });
@@ -122,7 +136,7 @@ export class WwnActorSheet extends ActorSheet {
       let primarySkills = toAdd
         .filter((i) => i.system.secondary == false)
         .map((item) => item.toObject());
-      await Item.createDocuments(primarySkills, {parent: this.actor});
+      await Item.createDocuments(primarySkills, { parent: this.actor });
     });
     html.find(".item .item-rollable .item-image").click(async (ev) => {
       const itemId = $(ev.currentTarget).parents(".item");
@@ -138,7 +152,7 @@ export class WwnActorSheet extends ActorSheet {
         item.spendSpell({ skipDialog: ev.ctrlKey });
       } else if (item.type == "art") {
         item.spendArt({ skipDialogue: ev.ctrlKey, itemId: itemId });
-      }  else if (item.type == "skill"){
+      } else if (item.type == "skill") {
         item.rollSkill({ skipDialog: ev.ctrlKey });
       } else {
         item.roll({ skipDialog: ev.ctrlKey });
@@ -165,15 +179,18 @@ export class WwnActorSheet extends ActorSheet {
       const header = event.currentTarget;
       const itemType = header.dataset.type;
       const candidateItems = {};
+      const gameGen = game?.release?.generation;
 
       for (const e of game.packs) {
-        if (
-          e.metadata.private == false &&  e.metadata.type === "Item") {
-          const items = (await e.getDocuments()).filter((i) => i.type == itemType);
-          if (items.length) {
-            for (const ci of items.map((item) => item.toObject())) {
-              candidateItems[ci.name] = ci;
-            }
+        if (gameGen <= 10 && e.metadata.private == true) {
+          continue;
+        } else if (gameGen > 10 && e.metadata.ownership.PLAYER == "NONE") {
+          continue;
+        }
+        const items = (await e.getDocuments()).filter((i) => i.type == itemType);
+        if (items.length) {
+          for (const ci of items.map((item) => item.toObject())) {
+            candidateItems[ci.name] = ci;
           }
         }
       }
@@ -208,7 +225,7 @@ export class WwnActorSheet extends ActorSheet {
                   const itemNameToAdd = ((
                     html.find("#itemList")[0])).value;
                   const toAdd = await candidateItems[itemNameToAdd];
-                  await this.actor.createEmbeddedDocuments("Item", [{...toAdd}], {});
+                  await this.actor.createEmbeddedDocuments("Item", [{ ...toAdd }], {});
                 },
               },
               close: {
@@ -225,23 +242,24 @@ export class WwnActorSheet extends ActorSheet {
         );
         const s = popUpDialog.render(true);
         if (s instanceof Promise) await s;
-  
+
       } else {
         ui.notifications?.info("Could not find any items in the compendium");
       }
     });
 
-    html.find(".item-create").click((event) => {
+    html.find(".item-create").click(async (event) => {
       event.preventDefault();
       const header = event.currentTarget;
       const type = header.dataset.type;
 
       // item creation helper func
-      let createItem = function (type, name = `New ${type.capitalize()}`) {
+      let createItem = function (type, name = `New ${type.capitalize()}`, data = {}) {
+        
         const itemData = {
           name: name ? name : `New ${type.capitalize()}`,
           type: type,
-          data: foundry.utils.deepClone(header.dataset),
+          data,
         };
         delete itemData.data["type"];
         return itemData;
@@ -256,8 +274,109 @@ export class WwnActorSheet extends ActorSheet {
         });
         return;
       }
-      const itemData = createItem(type);
-      this.actor.createEmbeddedDocuments("Item", [itemData]);
+
+      let dialogData = {
+        name: `New ${type.capitalize()}`,
+        type: type,
+        armor: false,
+        weapon: false,
+        consumable: false,
+        treasure: false,
+        item: false,
+      }; 
+      let extraFields = "";
+      if (type == "armor") {
+        dialogData.armor = true;
+        dialogData.item = true;
+      } else if (type == "weapon") {
+        dialogData.weapon = true;
+        dialogData.item = true;
+      } else if (type == "item") {
+        dialogData.item = true;
+        if ("consumable" in header.dataset) {
+          dialogData.consumable = true;
+        } else if ("treasure" in header.dataset) {
+          dialogData.treasure = true;
+        }
+      }
+      const dialogTemplate  = "systems/wwn/templates/items/dialogs/new-item.html";
+      const dialogContent =  await renderTemplate(dialogTemplate, dialogData);
+      const popUpDialog = new Dialog(
+        {
+          title: `Add ${type}`,
+          content: dialogContent,
+          buttons: {
+            addItem: {
+              label: `Add ${type}`,
+              callback: async (html) => {
+                const itemNameToAdd = html.find("#name")?.val();
+                const enc = html.find("#encumbrance")?.val();
+                const price = html.find("#price")?.val();
+                const qty = html.find("#quantity")?.val();
+                const location = html.find("#location")?.val();
+                //let data = foundry.utils.deepClone(header.dataset);
+                let data = {
+                  weight: Number(enc),
+                  price: Number(price),
+                  quantity: Number(qty),
+                };
+                if (location) {
+                  if (location == "stowed") {
+                    data.stowed = true;
+                  } else if (location == "equipped") {
+                    data.equipped = true;
+                  }
+                }
+                if (type == "weapon") {
+                  const dmg = html.find("#damage")?.val();
+                  const shockDmg = html.find("#shock-dgm")?.val();
+                  const shockAc = html.find("#shock-ac")?.val();
+                  const weaponType = html.find("#weaponType")?.val();
+                  data.damage = dmg;
+                  data.shock = {};
+                  data.shock.damage = shockDmg;
+                  data.shock.ac = shockAc;
+                  if (weaponType == "melee" || weaponType == "both") {
+                    data.melee = true;
+                  } else if ( weaponType == "ranged" || weaponType == "both") {
+                    data.missile = true;
+                  }
+                } else if (type == "armor") {
+                  const aac = Number(html.find("#aac")?.val());
+                  const armorType = html.find("#armorType")?.val();
+                  data.aac = { value: aac, mod: 0 };
+                  data.type = armorType
+                } else if (type == "item") {
+                  if (dialogData.consumable) {
+                    data.charges = {};
+                    const uses = html.find("#charges-val")?.val();
+                    const usesMax = html.find("#charges-max")?.val();
+                    data.charges.value = Number(uses);
+                    data.charges.max = Number(usesMax);
+                  } else if (dialogData.treasure) {
+                    data.treasure = true;
+                  }
+                }
+                const itemData = createItem(type, itemNameToAdd, data);
+                this.actor.createEmbeddedDocuments("Item", [itemData]);
+              },
+            },
+            close: {
+              label: "Cancel",
+            },
+          },
+          default: "addItem",
+        },
+        {
+          failCallback: () => {
+            return;
+          },
+        }
+      );
+      const s = popUpDialog.render(true);
+
+
+
     });
 
     html
@@ -274,7 +393,7 @@ export class WwnActorSheet extends ActorSheet {
       .find(".artTime input")
       .click((ev) => ev.target.select())
       .change(this._onArtTimeChange.bind(this));
-    
+
     html.find(".check-field .check.hd-roll").click((ev) => {
       let actorObject = this.actor;
       actorObject.rollHitDice({ event: event });
@@ -303,7 +422,7 @@ export class WwnActorSheet extends ActorSheet {
     });
 
     /** Attempt to copy input focus */
-    if ( this.isEditable ) {
+    if (this.isEditable) {
       const inputs = html.find("input");
       inputs.focus(ev => ev.currentTarget.select());
     }
@@ -328,8 +447,7 @@ export class WwnActorSheet extends ActorSheet {
       let container = editor.closest(".resizable-editor");
       if (container) {
         let heightDelta = this.position.height - this.options.height;
-        editor.style.height = `${
-          heightDelta + parseInt(container.dataset.editorSize)
+        editor.style.height = `${heightDelta + parseInt(container.dataset.editorSize)
           }px`;
       }
     });

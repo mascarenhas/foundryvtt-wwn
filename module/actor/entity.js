@@ -9,22 +9,48 @@ export class WwnActor extends Actor {
   prepareData() {
     super.prepareData();
 
-    // Compute modifiers from actor scores
-    this.computeModifiers();
-    this.computeAC();
-    this.computeEncumbrance();
-    this._calculateMovement();
-    this.computeResources();
-    this.computeTreasure();
-    this.enableSpellcasting();
-    this.computeEffort();
-    this.computeSaves();
-    this.computeTotalSP();
-    this.populateCombatSkills();
-    this.populateArts();
-    this.setXP();
-    this.computePrepared();
-    this.computeInit();
+    if (this.type === "faction") {
+      const data = this.system;
+      const assets = (
+        this.items.filter((i) => i.type == "asset")
+      );
+      const cunningAssets = assets.filter(
+        (i) => i.system["assetType"] === "cunning"
+      );
+      const forceAssets = assets.filter(
+        (i) => i.system["assetType"] === "force"
+      );
+      const wealthAssets = assets.filter(
+        (i) => i.system["assetType"] === "wealth"
+      );
+  
+      data.cunningAssets = cunningAssets;
+      data.forceAssets = forceAssets;
+      data.wealthAssets = wealthAssets;
+  
+      data.health.max =
+        4 +
+        this.getHealth(data.wealthRating) +
+        this.getHealth(data.forceRating) +
+        this.getHealth(data.cunningRating);
+    } else {
+      // Compute modifiers from actor scores
+      this.computeModifiers();
+      this.computeAC();
+      this.computeEncumbrance();
+      this._calculateMovement();
+      this.computeResources();
+      this.computeTreasure();
+      this.enableSpellcasting();
+      this.computeEffort();
+      this.computeSaves();
+      this.computeTotalSP();
+      this.populateCombatSkills();
+      this.populateArts();
+      this.setXP();
+      this.computePrepared();
+      this.computeInit();
+    }
   }
 
   async createEmbeddedDocuments(embeddedName, data = [], context = {}) {
@@ -35,6 +61,15 @@ export class WwnActor extends Actor {
       }
     });
     super.createEmbeddedDocuments(embeddedName, data, context);
+  }
+
+  async _onCreate() {
+    if (this.type === "faction") {
+      await this.update({
+        "token.actorLink": true,
+        "img" : "systems/wwn/assets/default/faction.png"
+      });
+    }
   }
 
   /* -------------------------------------------- */
@@ -900,7 +935,7 @@ export class WwnActor extends Actor {
         return;
       }
       if (a.system.type != "shield") {
-        baseAac = a.system.aac.value + a.system.aac.mod;
+        baseAac = Number(a.system.aac.value) + a.system.aac.mod;
         // Check if armor is medium or heavy and apply appropriate Sneak/Exert penalty
         if (a.system.type === "medium" && a.system.weight > sneakPenalty) {
           sneakPenalty = a.system.weight;
@@ -913,7 +948,7 @@ export class WwnActor extends Actor {
         }
       } else if (a.system.type == "shield") {
         AacShieldMod = 1 + a.system.aac.mod;
-        AacShieldNaked = a.system.aac.value + a.system.aac.mod;
+        AacShieldNaked = Number(a.system.aac.value) + a.system.aac.mod;
       }
     });
     if (AacShieldMod > 0) {
@@ -1138,7 +1173,31 @@ export class WwnActor extends Actor {
       await this.createEmbeddedDocuments("Item", skills);
     }
   }
+
+  // ----------------------------
+  // FACTION METHODS
+  // ----------------------------
+  getHealth(level) {
+    if (level in HEALTH__XP_TABLE) {
+      return HEALTH__XP_TABLE[level];
+    } else {
+      return 0;
+    }
+  }
+
 }
+
+export const HEALTH__XP_TABLE = {
+  1: 1,
+  2: 2,
+  3: 4,
+  4: 6,
+  5: 9,
+  6: 12,
+  7: 16,
+  8: 20,
+};
+
 
 function toCamelCase(text) {
   const split = text.split(" ").map((t) => t.titleCase());
