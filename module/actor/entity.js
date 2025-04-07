@@ -24,12 +24,17 @@ export class WwnActor extends Actor {
         (i) => i.system["assetType"] === "wealth"
       );
 
-      data.cunningAssets = cunningAssets;
-      data.forceAssets = forceAssets;
-      data.wealthAssets = wealthAssets;
+      function sortAssets(a, b) {
+        if (a.system.baseOfInfluence && !b.system.baseOfInfluence) return -1;
+        if (!a.system.baseOfInfluence && b.system.baseOfInfluence) return 1;
+        return a.name > b.name ? 1 : -1;
+      }
+
+      data.cunningAssets = cunningAssets.sort(sortAssets);
+      data.forceAssets = forceAssets.sort(sortAssets);
+      data.wealthAssets = wealthAssets.sort(sortAssets);
 
       data.health.max =
-        4 +
         this.getHealth(data.wealthRating) +
         this.getHealth(data.forceRating) +
         this.getHealth(data.cunningRating);
@@ -62,7 +67,7 @@ export class WwnActor extends Actor {
         item.img = WwnItem.defaultIcons[item.type];
       }
     });
-    super.createEmbeddedDocuments(embeddedName, data, context);
+    return super.createEmbeddedDocuments(embeddedName, data, context);
   }
 
   async _onCreate() {
@@ -522,13 +527,13 @@ export class WwnActor extends Actor {
       if (data.warrior) {
         const levelRoundedUp = Math.ceil(this.system.details.level / 2);
         attData.item.system.shockTotal =
-          statValue + weaponShock + levelRoundedUp;
+          statValue + weaponShock + levelRoundedUp + Number(this.system.damageBonus);
       } else {
-        attData.item.system.shockTotal = statValue + weaponShock;
+        attData.item.system.shockTotal = statValue + weaponShock + Number(this.system.damageBonus);
       }
       if (attData.item.system.skillDamage) {
         attData.item.system.shockTotal =
-          attData.item.system.shockTotal + skillValue;
+          attData.item.system.shockTotal + skillValue + Number(this.system.damageBonus);
       }
     } else {
       attData.item.system.shockTotal =
@@ -579,10 +584,10 @@ export class WwnActor extends Actor {
         dmgParts.push(skillValue);
         dmgLabels.push(`+${skillValue} (${skillAttack})`);
       }
-    } else {
-      dmgParts.push(this.system.damageBonus);
-      dmgLabels.push(`+${this.system.damageBonus.toString()} (damage bonus)`);
     }
+
+    dmgParts.push(this.system.damageBonus);
+    dmgLabels.push(`+${this.system.damageBonus.toString()} (damage bonus)`);
 
     const rollTitle = `1d20 ${rollLabels.join(" ")}`;
     const dmgTitle = `${dmgParts[0]} ${dmgLabels.join(" ")}`;
@@ -799,14 +804,29 @@ export class WwnActor extends Actor {
 
   computeInit() {
     let initValue = 0;
-    if (game.settings.get("wwn", "initiative") != "group") {
-      if (this.type == "character") {
-        initValue = this.system.scores.dex.mod + this.system.initiative.mod;
+    let initRoll = "1d8";
+    const isGroupInit = game.settings.get("wwn", "initiative") === "group";
+    if (this.type == "character") {
+      const alert = this.items.find((i) => i.name === "Alert")?.system.ownedLevel || 0;
+      let alertBonus = alert === 2 ? 100 : alert;
+
+      if (isGroupInit) {
+        initValue = this.system.scores.dex.mod + this.system.initiative.mod + alertBonus;
+        this.system.initiative.alertTwo = alert === 2 ? true : false;
       } else {
-        initValue = this.system.initiative.mod;
+        if (alert === 1) {
+          initRoll = "2d8kh";
+          initValue = this.system.scores.dex.mod + this.system.initiative.mod;
+        } else {
+          initValue = this.system.scores.dex.mod + this.system.initiative.mod + alertBonus;
+        }
       }
+    } else {
+      initValue = this.system.initiative.mod;
     }
+
     this.system.initiative.value = initValue;
+    this.system.initiative.roll = initRoll;
   }
 
   setXP() {
@@ -1241,7 +1261,8 @@ export class WwnActor extends Actor {
     if (this.type === "faction") return;
     const data = this.system;
     const saves = data.saves;
-    const baseSave = data.saves.baseSave.value;
+    const baseSave = this.type === "monster" ? 15 : 16;
+
     Object.keys(saves).forEach((s) => {
       if (!saves[s].mod) {
         saves[s].mod = 0;
@@ -1251,21 +1272,20 @@ export class WwnActor extends Actor {
     if (this.type === "monster") {
       const monsterHD = data.hp.hd.toLowerCase().split("d");
       ["evasion", "physical", "mental", "luck"].forEach((save) => {
-        data.saves[save].value = Math.max(baseSave - Math.floor(monsterHD[0] / 2), 2) + data.saves[save].mod;
+        data.saves[save].value = Math.max(baseSave - Math.floor(monsterHD[0] / 2), 2) + data.saves[save].mod + data.saves.baseSave.mod;
       });
     }
     if (this.type === "character") {
       const charLevel = data.details.level;
       const newSaves = {
-        evasionVal: baseSave,
-        physicalVal: baseSave,
-        mentalVal: baseSave,
-        luckVal: baseSave
+        evasionVal: baseSave + data.saves.baseSave.mod + data.saves.evasion.mod,
+        physicalVal: baseSave + data.saves.baseSave.mod + data.saves.physical.mod,
+        mentalVal: baseSave + data.saves.baseSave.mod + data.saves.mental.mod,
+        luckVal: baseSave + data.saves.baseSave.mod + data.saves.luck.mod
       }
-      newSaves.evasionVal -= Math.max(data.scores.int.mod, data.scores.dex.mod) - data.saves.evasion.mod;
-      newSaves.physicalVal -= Math.max(data.scores.con.mod, data.scores.str.mod) - data.saves.physical.mod;
-      newSaves.mentalVal -= Math.max(data.scores.wis.mod, data.scores.cha.mod) - data.saves.mental.mod;
-      newSaves.luckVal += data.saves.luck.mod;
+      newSaves.evasionVal -= Math.max(data.scores.int.mod, data.scores.dex.mod);
+      newSaves.physicalVal -= Math.max(data.scores.con.mod, data.scores.str.mod);
+      newSaves.mentalVal -= Math.max(data.scores.wis.mod, data.scores.cha.mod);
 
       const removeLevelSave = game.settings.get("wwn", "removeLevelSave");
       Object.keys(newSaves).forEach((save) => {
@@ -1335,6 +1355,8 @@ export class WwnActor extends Actor {
       data.wis = this.system.scores.wis.mod;
       data.int = this.system.scores.int.mod;
       data.cha = this.system.scores.cha.mod;
+      data.init = this.system.initiative.value;
+      data.initiativeRoll = this.system.initiative.roll;
     }
     return data;
   }

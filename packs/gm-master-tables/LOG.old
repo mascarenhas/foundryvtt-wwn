@@ -1,7 +1,3 @@
-2024/06/30-13:39:06.553 3a08 Recovering log #2009
-2024/06/30-13:39:06.561 3a08 Delete type=0 #2009
-2024/06/30-13:39:06.561 3a08 Delete type=3 #2008
-2024/06/30-13:42:30.335 ba0 Level-0 table #2013: started
-2024/06/30-13:42:30.335 ba0 Level-0 table #2013: 0 bytes OK
-2024/06/30-13:42:30.337 ba0 Delete type=0 #2011
-2024/06/30-13:42:30.345 ba0 Manual compaction at level-0 from '!tables!0aHNowVvpqcOitxG' @ 72057594037927935 : 1 .. '!tables.results!sz7YZ7j6O0eGuv1i.yeglgwHaI3qvQZnT' @ 0 : 0; will stop at (end)
+2025/03/28-00:19:20.735 14c4 Recovering log #2523
+2025/03/28-00:19:20.741 14c4 Delete type=0 #2523
+2025/03/28-00:19:20.742 14c4 Delete type=3 #2522

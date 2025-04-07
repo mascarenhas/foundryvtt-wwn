@@ -2,7 +2,7 @@
   "id": "wwn",
   "title": "Worlds Without Number",
   "description": "Play Worlds Without Number on Foundry VTT",
-  "version": "1.4.8",
+  "version": "1.5.0-beta4.2",
   "compatibility": {
     "minimum": "12",
     "verified": "12",
@@ -13,7 +13,7 @@
       "name": "SobranDM",
       "url": "https://github.com/SobranDM",
       "discord": "Sobran#8580",
-      "flags": {}
+      "flags": { }
     }
   ],
   "esmodules": [
@@ -30,43 +30,16 @@
       "path": "packs/instinct.db",
       "type": "RollTable",
       "private": false,
-      "flags": {}
-    },
-    {
-      "name": "armor",
-      "label": "Armor",
-      "system": "wwn",
-      "path": "packs/armor.db",
-      "type": "Item",
-      "private": false,
-      "flags": {}
-    },
-    {
-      "name": "weapons",
-      "label": "Weapons",
-      "system": "wwn",
-      "path": "packs/weapons.db",
-      "type": "Item",
-      "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "arts",
-      "label": "Arts",
+      "label": "Abilities",
       "system": "wwn",
       "path": "packs/arts.db",
       "type": "Item",
       "private": false,
-      "flags": {}
-    },
-    {
-      "name": "foci",
-      "label": "Foci and Abilities",
-      "system": "wwn",
-      "path": "packs/foci.db",
-      "type": "Item",
-      "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "skills",
@@ -75,25 +48,16 @@
       "path": "packs/skills.db",
       "type": "Item",
       "private": false,
-      "flags": {}
-    },
-    {
-      "name": "spells",
-      "label": "Spells",
-      "system": "wwn",
-      "path": "packs/spells.db",
-      "type": "Item",
-      "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "adventuring-gear",
-      "label": "Adventuring Gear",
+      "label": "Gear",
       "system": "wwn",
       "path": "packs/adventuring-gear.db",
       "type": "Item",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "magic-items",
@@ -102,7 +66,7 @@
       "path": "packs/magic-items.db",
       "type": "Item",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "magic-tables",
@@ -111,7 +75,7 @@
       "path": "packs/magic-tables.db",
       "type": "RollTable",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "magic-item-masters",
@@ -120,7 +84,7 @@
       "path": "packs/magic-item-masters.db",
       "type": "RollTable",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "gm-subtables",
@@ -129,7 +93,7 @@
       "path": "packs/gm-subtables.db",
       "type": "RollTable",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "gm-master-tables",
@@ -138,7 +102,7 @@
       "path": "packs/gm-master-tables.db",
       "type": "RollTable",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "creatures-of-a-far-age",
@@ -147,7 +111,7 @@
       "path": "packs/creatures-of-a-far-age.db",
       "type": "Actor",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "ose-monsters",
@@ -156,7 +120,7 @@
       "path": "packs/ose-monsters.db",
       "type": "Actor",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "ose-spells",
@@ -165,7 +129,7 @@
       "path": "packs/ose-spells.db",
       "type": "Item",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "tags",
@@ -174,7 +138,7 @@
       "path": "packs/tags.db",
       "type": "JournalEntry",
       "private": false,
-      "flags": {}
+      "flags": { }
     },
     {
       "name": "assets",
@@ -183,7 +147,7 @@
       "path": "packs/assets.db",
       "type": "Item",
       "private": false,
-      "flags": {}
+      "flags": { }
     }
   ],
   "languages": [
@@ -191,7 +155,7 @@
       "lang": "en",
       "name": "English",
       "path": "lang/en.json",
-      "flags": {}
+      "flags": { }
     }
   ],
   "grid": {
@@ -200,5 +164,5 @@
   },
   "url": "https://github.com/SobranDM/foundryvtt-wwn",
   "manifest": "https://github.com/SobranDM/foundryvtt-wwn/releases/latest/download/system.json",
-  "download": "https://github.com/SobranDM/foundryvtt-wwn/releases/download/v1.4.8/wwn.zip"
+  "download": "https://github.com/SobranDM/foundryvtt-wwn/releases/download/v1.5.0-beta4.2/wwn.zip"
 }

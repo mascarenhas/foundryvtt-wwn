@@ -45,7 +45,7 @@
             "mod": 0
           },
           "baseSave": {
-            "value": 16,
+            "value": null,
             "mod": 0
           }
         },
@@ -58,7 +58,8 @@
         "initiative": {
           "value": 0,
           "mod": 0,
-          "roll": 0
+          "roll": "1d8",
+          "alertTwo": false
         },
         "currency": {
           "cp": 0,
@@ -123,10 +124,10 @@
             "value": 0,
             "max": 3
           },
-          "spellList": {},
-          "artsList": {}
+          "spellList": { },
+          "artsList": { }
         },
-        "classes": {}
+        "classes": { }
       }
     },
     "character": {
@@ -231,7 +232,7 @@
         }
       },
       "languages": {
-        "value": []
+        "value": [ ]
       }
     },
     "monster": {
@@ -277,15 +278,17 @@
       "forceRating": 1,
       "cunningRating": 1,
       "wealthRating": 1,
+      "magicRating": "None",
       "facCreds": 0,
       "xp": 0,
       "homeworld": "",
       "active": true,
       "factionGoal": "",
       "factionGoalDesc": "",
-      "tags": [],
-      "log": [],
+      "tags": [ ],
+      "log": [ ],
       "initiative": {
+        "roll": "1d8",
         "value": 0
       }
     }
@@ -307,6 +310,11 @@
       "quantity": 1,
       "treasure": false,
       "personal": false,
+      "container": {
+        "isContainer": false,
+        "isOpen": false
+      },
+      "containerId": "",
       "price": 0,
       "weight": 0,
       "weightless": "",
@@ -319,7 +327,7 @@
       "stowed": false,
       "effects": {
         "active": false,
-        "list": []
+        "list": [ ]
       }
     },
     "weapon": {
@@ -342,7 +350,7 @@
       "shockTotal": 0,
       "skill": "stab",
       "score": "str",
-      "tags": [],
+      "tags": [ ],
       "slow": false,
       "missile": false,
       "melee": true,
@@ -368,7 +376,8 @@
       "armorBonus": 0,
       "type": "light",
       "price": 0,
-      "weight": 0
+      "weight": 0,
+      "containerId": ""
     },
     "spell": {
       "lvl": 1,
