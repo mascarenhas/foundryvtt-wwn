@@ -486,7 +486,7 @@ export class WwnActor extends Actor {
       }
       skillValue = this.items.find(
         (item) => item.type === "skill" && item.name.toLowerCase() === skillAttack.toLowerCase()
-      ).system.ownedLevel;
+      )?.system?.ownedLevel || 0;
       artValue = this.items.find(
         (item) => item.type === "art" && item.name.toLowerCase() === artAttack.toLowerCase()
       )
