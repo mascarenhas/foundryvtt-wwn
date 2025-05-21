@@ -60,27 +60,68 @@ export class WWNCombat extends Combat {
     }
   }
 
-  async rollInitiative() {
-    const combatants = game.combat.combatants;
-    const results = {};
+async rollInitiative(ids = null) {
+  const allCombatantsInContext = game.combat.combatants;
+  let combatantsToRoll;
 
-    for (let combatant of combatants) {
-      const combatantData = combatant.token.delta.syntheticActor.system;
-      const roll = new Roll(`${combatantData.initiative.roll}+${combatantData.initiative.value}`);
+  if (ids === null) {
+    combatantsToRoll = allCombatantsInContext;
+  } else if (Array.isArray(ids)) {
+    if (ids.length === 0) {
+      return this; // No initiative to roll for an empty array
+    }
+    combatantsToRoll = allCombatantsInContext.filter(c => c && ids.includes(c.id));
+  } else {
+    console.warn("WWN | rollInitiative received 'ids' parameter that was not null and not an array. Defaulting to all combatants.", ids);
+    combatantsToRoll = allCombatantsInContext;
+  }
+
+  if (!combatantsToRoll || combatantsToRoll.length === 0) {
+    return this; // No combatants to roll for
+  }
+
+  const results = {};
+  for (let combatant of combatantsToRoll) {
+    if (!combatant || !combatant.id) {
+      console.warn("WWN | Skipping combatant with no ID during initiative roll.");
+      continue;
+    }
+
+    const combatantActor = combatant.actor;
+    if (!combatantActor || !combatantActor.system) {
+        console.warn(`WWN | Skipping combatant ${combatant.name} (${combatant.id}) due to missing actor or system data.`);
+        continue;
+    }
+
+    const initiativeData = combatantActor.system.initiative;
+    if (!initiativeData || typeof initiativeData.roll !== 'string' || typeof initiativeData.value !== 'number') {
+      console.warn(`WWN | Skipping combatant ${combatant.name} (${combatant.id}) due to missing or invalid initiative data (roll: '${initiativeData?.roll}', value: '${initiativeData?.value}').`);
+      continue;
+    }
+
+    try {
+      const roll = new Roll(`${initiativeData.roll}+${initiativeData.value}`);
       const evaluatedRoll = await roll.evaluate();
-
       results[combatant.id] = {
         initiative: evaluatedRoll.total,
         roll: evaluatedRoll
-      }
+      };
+    } catch (error) {
+      console.error(`WWN | Error rolling initiative for ${combatant.name} (${combatant.id}):`, error);
     }
-
-    const updates = this.combatants.map((c) => ({ _id: c.id, initiative: results[c.id].initiative }));
-    await this.updateEmbeddedDocuments("Combatant", updates);
-    await this.#rollInitiativeUIFeedback(results);
-    await this.activateCombatant(0);
-    return this;
   }
+
+  if (Object.keys(results).length === 0) {
+    return this; // No successful rolls
+  }
+
+  const updates = Object.keys(results).map(id => ({ _id: id, initiative: results[id].initiative }));
+  await this.updateEmbeddedDocuments("Combatant", updates);
+  await this.#rollInitiativeUIFeedback(results);
+  // Consider if activateCombatant(0) is always desired or should depend on context
+  await this.activateCombatant(0); 
+  return this;
+}
 
   async #rollInitiativeUIFeedback(results = {}) {
     const content = [
