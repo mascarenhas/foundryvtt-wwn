@@ -124,22 +124,28 @@ async rollInitiative(ids = null) {
 }
 
   async #rollInitiativeUIFeedback(results = {}) {
-    const content = [
-      Object.entries(results).map(
-        ([id, result]) => this.#constructInitiativeOutputForIndividual(id, result.roll)
-      ).join("\n")
-    ];
-    const chatData = content.map(c => {
-      return {
+    const individualContentPromises = Object.entries(results).map(
+      // #constructInitiativeOutputForIndividual is already async from the previous step
+      ([id, result]) => this.#constructInitiativeOutputForIndividual(id, result.roll)
+    );
+    const individualContentStrings = await Promise.all(individualContentPromises);
+    
+    const combinedContent = individualContentStrings.join("\n");
+
+    // Ensure chatData is an array with a single message object if we're combining all rolls into one message.
+    // The original code's structure `content.map(c => {speaker, sound, content: c})` with `content` being an array of one string
+    // effectively meant `ChatMessage.implementation.createDocuments` was called with an array containing one chat data object.
+    if (combinedContent) { // Only create a message if there's content
+      const chatMessageData = {
         speaker: { alias: game.i18n.localize("WWN.Initiative") },
         sound: CONFIG.sounds.dice,
-        content: c
+        content: combinedContent
       };
-    });
-    ChatMessage.implementation.createDocuments(chatData);
+      ChatMessage.implementation.createDocuments([chatMessageData]);
+    }
   }
 
-  #constructInitiativeOutputForIndividual(id, roll) {
+  async #constructInitiativeOutputForIndividual(id, roll) {
     const combatant = this.combatants.get(id);
     if (!combatant) return '';
 
@@ -149,15 +155,8 @@ async rollInitiative(ids = null) {
       <div class="dice-result">
         <div class="dice-formula">${roll.formula}</div>
           <div class="dice-tooltip">
-                <section class="tooltip-part">
-                  <div class="dice">
-                      <header class="part-header flexrow">
-                          <span class="part-formula">${roll.formula}</span>
-                          <span class="part-total">${roll.total}</span>
-                      </header>
-                  </div>
-                </section>
-          </div>
+                ${await roll.getTooltip()}
+              </div>
         <h4 class="dice-total">${roll.total}</h4>
       </div>
     </div>
