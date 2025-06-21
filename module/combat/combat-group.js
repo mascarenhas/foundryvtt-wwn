@@ -31,17 +31,39 @@ export class WWNGroupCombat extends WWNCombat {
   async rollInitiative() {
     const groupsToRollFor = this.availableGroups.filter(g => g !== "black");
     const groupInitiatives = groupsToRollFor.map(group => {
-      const initValues = game.combat.combatants
-        .filter(c => c.group === group)
-        .map(c => c.token.delta.syntheticActor.system.initiative.value);
+      const groupCombatants = game.combat.combatants.filter(c => c.group === group);
+      const alertOneCombatants = groupCombatants.find(c => c.token.delta.syntheticActor.items.find(i => i.name === "Alert" && i.system.ownedLevel === 1));
+      const initValues = groupCombatants
+        .map(c => alertOneCombatants ? c.token.delta.syntheticActor.system.initiative.value + 1 : c.token.delta.syntheticActor.system.initiative.value);
       return Math.max(...initValues);
     });
+
     const rollPerGroup = groupsToRollFor.reduce((prev, curr) => ({
       ...prev,
       [curr]: new Roll(`1d8+${groupInitiatives[groupsToRollFor.indexOf(curr)]}`)
     }), {});
 
     const results = await this.#prepareGroupInitiativeDice(rollPerGroup);
+
+    // Check for ties and resolve them
+    const initiativeValues = new Map();
+    for (const [group, result] of Object.entries(results)) {
+      if (group === "black") continue; // Skip black group
+      const value = result.initiative;
+      if (!initiativeValues.has(value)) {
+        initiativeValues.set(value, []);
+      }
+      initiativeValues.get(value).push(group);
+    }
+
+    // For each tie, randomly select one group to get a small bonus
+    for (const [value, groups] of initiativeValues.entries()) {
+      if (groups.length > 1) {
+        // Randomly select one group to get the bonus
+        const selectedGroup = groups[Math.floor(Math.random() * groups.length)];
+        results[selectedGroup].initiative = value + 0.001;
+      }
+    }
 
     const alertCombatants = this.combatants.filter(c => c.group === "black");
     this.alertResults = {};
@@ -86,70 +108,62 @@ export class WWNGroupCombat extends WWNCombat {
   }
 
   async #rollInitiativeUIFeedback(groups = []) {
-    const content = [
-      Object.keys(groups).map(
-        (k) => this.#constructInitiativeOutputForGroup(k, groups[k].roll)
-      ).join("\n")
-    ];
-    const chatData = content.map(c => {
-      return {
-        speaker: { alias: game.i18n.localize("WWN.Initiative") },
-        sound: CONFIG.sounds.dice,
-        content: c
-      };
-    });
-    ChatMessage.implementation.createDocuments(chatData);
-  }
+    // Collect all roll results
+    const rollResults = [];
 
-  #constructInitiativeOutputForGroup(group, roll) {
-    console.log(group, roll);
-    if (group === "black") {
-      const alertCombatants = this.combatants.filter(c => c.group === "black");
-      return alertCombatants.map(combatant => {
-        const alertResult = this.alertResults[combatant.id];
-        if (!alertResult) return '';
+    // Handle regular groups first
+    for (const [group, result] of Object.entries(groups)) {
+      if (group === "black") continue; // Skip black group for now
 
-        return `
-        <p>${game.i18n.format("WWN.roll.initiative", { group: combatant.name })}
-        <div class="dice-roll">   
-          <div class="dice-result">
-            <div class="dice-formula">${alertResult.roll.formula}</div>
-              <div class="dice-tooltip">
-                    <section class="tooltip-part">
-                      <div class="dice">
-                          <header class="part-header flexrow">
-                              <span class="part-formula">${alertResult.roll.formula}</span>
-                              <span class="part-total">${alertResult.roll.total}</span>
-                          </header>
-                      </div>
-                    </section>
-              </div>
-            <h4 class="dice-total">${alertResult.roll.total}</h4>
-          </div>
-        </div>
-      `;
-      }).join("\n");
-    } else {
-      return `
-      <p>${game.i18n.format("WWN.roll.initiative", { group })}
-      <div class="dice-roll">   
-        <div class="dice-result">
-          <div class="dice-formula">${roll.formula}</div>
-            <div class="dice-tooltip">
-                  <section class="tooltip-part">
-                    <div class="dice">
-                        <header class="part-header flexrow">
-                            <span class="part-formula">${roll.terms.map(t => t.total).join(" ")}</span>
-                            <span class="part-total">${roll.total}</span>
-                        </header>
-                    </div>
-                  </section>
-            </div>
-          <h4 class="dice-total">${roll.total}</h4>
-        </div>
-      </div>
-    `;
+      const rollWWN = await result.roll.render();
+      rollResults.push({
+        group: group.charAt(0).toUpperCase() + group.slice(1), // Capitalize first letter
+        rollWWN,
+        roll: result.roll
+      });
     }
+
+    // Handle alert combatants
+    for (const combatant of this.combatants.filter(c => c.group === "black")) {
+      const alertResult = this.alertResults[combatant.id];
+      if (!alertResult) continue;
+
+      const rollWWN = await alertResult.roll.render();
+      rollResults.push({
+        group: combatant.name,
+        rollWWN,
+        roll: alertResult.roll
+      });
+    }
+
+    // Sort results by initiative (highest first)
+    rollResults.sort((a, b) => b.roll.total - a.roll.total);
+
+    // Create a single chat message with all rolls
+    const content = `
+      <div class="initiative-header">Group Initiative</div>
+      ${rollResults.map(result => `
+        <div class="initiative-roll">
+          <div class="roll-header">${result.group}</div>
+          ${result.rollWWN}
+        </div>
+      `).join('')}
+    `;
+
+    const chatData = {
+      speaker: { alias: game.i18n.localize("WWN.Initiative") },
+      sound: CONFIG.sounds.dice,
+      content: `<div class="wwn chat-message"><div class="wwn chat-block">${content}</div></div>`
+    };
+
+    // Handle Dice So Nice for all rolls
+    if (game.dice3d) {
+      for (const result of rollResults) {
+        await game.dice3d.showForRoll(result.roll, game.user, true);
+      }
+    }
+
+    await ChatMessage.create(chatData);
   }
 
   // ===========================================================================
@@ -181,5 +195,112 @@ export class WWNGroupCombat extends WWNCombat {
     }
 
     return initiativeMap;
+  }
+
+  /**
+   * Override nextTurn to handle group initiative
+   * @returns {Promise<this>}
+   */
+  async nextTurn() {
+    if (this.round === 0) return this.nextRound();
+
+    // Get current combatant and its group
+    const currentCombatant = this.combatants.get(this.current.combatantId);
+    if (!currentCombatant) return this.nextRound();
+
+    // Get all groups sorted by initiative
+    const groups = [...new Set(this.combatants.map(c => c.group))]
+      .map(group => {
+        const combatants = this.combatants.filter(c => c.group === group);
+        const initiative = Math.max(...combatants.map(c => c.initiative));
+        return { group, initiative };
+      })
+      .sort((a, b) => b.initiative - a.initiative); // Sort by initiative, highest first
+
+    const currentGroupIndex = groups.findIndex(g => g.group === currentCombatant.group);
+
+    // If we're on the last group, move to next round
+    if (currentGroupIndex === groups.length - 1) {
+      return this.nextRound();
+    }
+
+    // Move to first combatant of next group
+    const nextGroup = groups[currentGroupIndex + 1].group;
+    const nextCombatant = this.combatants.find(c => c.group === nextGroup);
+    if (!nextCombatant) return this.nextRound();
+
+    const turnIndex = this.turns.findIndex(t => t.id === nextCombatant.id);
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, turnIndex);
+
+    // Update the document, passing data through a hook first
+    const updateData = { round: this.round, turn: turnIndex };
+    const updateOptions = { direction: 1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
+  }
+
+  /**
+   * Override previousTurn to handle group initiative
+   * @returns {Promise<this>}
+   */
+  async previousTurn() {
+    if (this.round === 0) return this;
+
+    // Get current combatant and its group
+    const currentCombatant = this.combatants.get(this.current.combatantId);
+    if (!currentCombatant) return this.previousRound();
+
+    // Get all groups sorted by initiative
+    const groups = [...new Set(this.combatants.map(c => c.group))]
+      .map(group => {
+        const combatants = this.combatants.filter(c => c.group === group);
+        const initiative = Math.max(...combatants.map(c => c.initiative));
+        return { group, initiative };
+      })
+      .sort((a, b) => b.initiative - a.initiative); // Sort by initiative, highest first
+
+    const currentGroupIndex = groups.findIndex(g => g.group === currentCombatant.group);
+
+    // If we're on the first group, move to previous round
+    if (currentGroupIndex === 0) {
+      return this.previousRound();
+    }
+
+    // Move to first combatant of previous group
+    const prevGroup = groups[currentGroupIndex - 1].group;
+    const prevCombatant = this.combatants.find(c => c.group === prevGroup);
+    if (!prevCombatant) return this.previousRound();
+
+    const turnIndex = this.turns.findIndex(t => t.id === prevCombatant.id);
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, turnIndex);
+
+    // Update the document, passing data through a hook first
+    const updateData = { round: this.round, turn: turnIndex };
+    const updateOptions = { direction: -1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
+  }
+
+  /**
+   * Override setInitiative to update all combatants in the same group
+   * @param {string} id         The combatant ID for which to set initiative
+   * @param {number} value      A specific initiative value to set
+   */
+  async setInitiative(id, value) {
+    const combatant = this.combatants.get(id, { strict: true });
+    if (!combatant) return;
+
+    // Get all combatants in the same group
+    const groupCombatants = this.combatants.filter(c => c.group === combatant.group);
+
+    // Update all combatants in the group
+    const updates = groupCombatants.map(c => ({
+      _id: c.id,
+      initiative: value
+    }));
+
+    await this.updateEmbeddedDocuments("Combatant", updates);
   }
 }
