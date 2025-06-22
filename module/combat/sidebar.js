@@ -151,8 +151,23 @@ export class WWNCombatTab extends foundry.applications.sidebar.tabs.CombatTracke
     event.preventDefault();
     event.stopPropagation();
     const btn = event.currentTarget;
-    const li = btn.closest.combatant;
-    this.viewed;
+    const li = btn.closest(".combatant");
+    const combat = this.viewed; // this.viewed is the current Combat encounter
+    const combatantId = li.dataset.combatantId;
+    // const c = combat.combatants.get(combatantId); // c is not used in the new logic, can be removed if not needed for other controls
+
+    // Check if the specific control for individual initiative roll was clicked
+    if (btn.dataset.control === "rollInitiative") {
+      if (combatantId && combat) {
+        // Call our custom rollInitiative with the specific combatant's ID
+        await combat.rollInitiative([combatantId]);
+      }
+      // Do not call super._onCombatantControl(event) here as we've handled it.
+      // The event's default action and propagation are already stopped.
+      return; 
+    }
+
+    // For any other combatant controls, fall back to the default FoundryVTT behavior
     return super._onCombatantControl(event);
   }
 
