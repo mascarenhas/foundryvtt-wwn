@@ -20,6 +20,7 @@ import { WWNGroupCombatant } from "./module/combat/combatant-group.js";
 import { WWNCombat } from "./module/combat/combat.js";
 import { WWNCombatant } from "./module/combat/combatant.js";
 import { WWNCombatTab } from "./module/combat/sidebar.js";
+import { WWNCombatTracker } from "./module/combat/combat-tracker.js";
 
 /* -------------------------------------------- */
 /*  Foundry VTT Initialization                  */
@@ -47,6 +48,7 @@ Hooks.once("init", async function () {
   // Register custom system settings
   registerSettings();
   const isGroupInitiative = game.settings.get(game.system.id, "initiative") === "group";
+
   if (isGroupInitiative) {
     CONFIG.Combat.documentClass = WWNGroupCombat;
     CONFIG.Combatant.documentClass = WWNGroupCombatant;
@@ -85,6 +87,9 @@ Hooks.once("init", async function () {
     label: "WWN.SheetClassItem"
   });
 
+  // Initialize combat tracker modifications
+  WWNCombatTracker.init();
+
   await preloadHandlebarsTemplates();
 });
 
@@ -122,10 +127,11 @@ Hooks.once("ready", async () => {
 });
 
 // License and KOFI infos
+Hooks.on("renderActorDirectory", async (app, html, data) => {
+  party.addControl(app, html);
+});
+
 Hooks.on("renderSidebarTab", async (object, html) => {
-  if (object instanceof ActorDirectory) {
-    party.addControl(object, html);
-  }
   if (object instanceof Settings) {
     let gamesystem = html.find("#game-details");
     // SRD Link
@@ -136,13 +142,12 @@ Hooks.on("renderSidebarTab", async (object, html) => {
     const template = "systems/wwn/templates/chat/license.html";
     const rendered = await renderTemplate(template);
     gamesystem.find(".system").append(rendered);
-
   }
 });
 
 Hooks.on("preCreateToken", WWNCombat.preCreateToken);
 Hooks.on("renderChatLog", (app, html, data) => WwnItem.chatListeners(html));
-Hooks.on("getChatLogEntryContext", chat.addChatMessageContextOptions);
-Hooks.on("renderChatMessage", chat.addChatMessageButtons);
+Hooks.on("renderChatMessageHTML", (app, html, data) => WwnItem.chatListeners(html));
+Hooks.on("getChatMessageContextOptions", chat.addChatMessageContextOptions);
 Hooks.on("renderRollTableConfig", treasure.augmentTable);
 Hooks.on("updateActor", party.update);

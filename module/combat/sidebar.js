@@ -2,17 +2,12 @@ import { WWN } from "../config.js";
 import { WWNGroupCombat } from "./combat-group.js";
 import WWNCombatGroupSelector from "./combat-set-groups.js";
 
-export class WWNCombatTab extends CombatTracker {
+export class WWNCombatTab extends foundry.applications.sidebar.tabs.CombatTracker {
   // ===========================================================================
   // APPLICATION SETUP
   // ===========================================================================
 
   /** @inheritdoc */
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      template: 'systems/wwn/templates/sidebar/combat-tracker.hbs',
-    });
-  }
 
   static GROUP_CONFIG_APP = new WWNCombatGroupSelector();
 
@@ -32,6 +27,7 @@ export class WWNCombatTab extends CombatTracker {
       return turn;
     });
 
+    // Group combatants by their group and sort by initiative
     const groups = turns.reduce((arr, turn) => {
       const idx = arr.findIndex(r => r.group === turn.group);
 
@@ -46,7 +42,7 @@ export class WWNCombatTab extends CombatTracker {
         initiative: turn.initiative,
         turns: [turn]
       }];
-    }, []);
+    }, []).sort((a, b) => b.initiative - a.initiative); // Sort groups by initiative, highest first
 
     return foundry.utils.mergeObject(context, {
       turns,
@@ -72,6 +68,73 @@ export class WWNCombatTab extends CombatTracker {
     html.find('.combat-button[data-control="set-groups"]').click((ev) => {
       WWNCombatTab.GROUP_CONFIG_APP.render(true, { focus: true });
     });
+  }
+
+  /**
+   * Handle updating initiative for a Combatant within the Combat encounter
+   * @param {Event} event   The originating click event
+   * @private
+   */
+  async _onUpdateInitiative(event) {
+    // Let Foundry handle the base initiative update
+    await super._onUpdateInitiative(event);
+
+    // If not in group initiative mode, use default behavior
+    if (game.settings.get(game.system.id, "initiative") !== "group") {
+      return;
+    }
+
+    // Get the combatant that was just updated
+    const { combatantId } = event.target.closest("[data-combatant-id]")?.dataset ?? {};
+    const combatant = this.viewed.combatants.get(combatantId);
+    if (!combatant) return;
+
+    // Update all other combatants in the same group to match
+    const groupCombatants = this.viewed.combatants.filter(c => c.group === combatant.group && c.id !== combatant.id);
+    if (groupCombatants.length === 0) return;
+
+    const updates = groupCombatants.map(c => ({
+      _id: c.id,
+      initiative: combatant.initiative
+    }));
+
+    await this.viewed.updateEmbeddedDocuments("Combatant", updates);
+
+    // Check for ties after updating initiative
+    const groups = [...new Set(this.viewed.combatants.map(c => c.group))]
+      .map(group => {
+        const combatants = this.viewed.combatants.filter(c => c.group === group);
+        const initiative = Math.max(...combatants.map(c => c.initiative));
+        return { group, initiative };
+      });
+
+    // Find groups with the same initiative
+    const initiativeValues = new Map();
+    for (const { group, initiative } of groups) {
+      if (group === "black") continue; // Skip black group
+      if (!initiativeValues.has(initiative)) {
+        initiativeValues.set(initiative, []);
+      }
+      initiativeValues.get(initiative).push(group);
+    }
+
+    // For each tie, randomly select one group to get a small bonus
+    const tieUpdates = [];
+    for (const [value, tiedGroups] of initiativeValues.entries()) {
+      if (tiedGroups.length > 1) {
+        // Randomly select one group to get the bonus
+        const selectedGroup = tiedGroups[Math.floor(Math.random() * tiedGroups.length)];
+        const groupCombatants = this.viewed.combatants.filter(c => c.group === selectedGroup);
+        tieUpdates.push(...groupCombatants.map(c => ({
+          _id: c.id,
+          initiative: value + 0.001
+        })));
+      }
+    }
+
+    if (tieUpdates.length > 0) {
+      await this.viewed.updateEmbeddedDocuments("Combatant", tieUpdates);
+    }
   }
 
   async #toggleFlag(combatant, flag) {
@@ -119,7 +182,7 @@ export class WWNCombatTab extends CombatTracker {
         name: game.i18n.localize("WWN.combat.SetCombatantAsActive"),
         icon: '<i class="fas fa-star-of-life"></i>',
         callback: (li) => {
-          const combatantId = li.data('combatant-id')
+          const combatantId = li.dataset.combatantId;
           const turnToActivate = this.viewed.turns.findIndex(t => t.id === combatantId);
           this.viewed.activateCombatant(turnToActivate);
         }

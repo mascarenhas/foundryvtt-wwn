@@ -1,4 +1,6 @@
 import { WwnDice } from "../dice.js";
+import { addEventListener as addCustomEventListener } from "../utils/listener-funcs.js";
+import { applyChatCardDamage } from "../chat.js";
 
 /**
  * Override and extend the basic :class:`Item` implementation
@@ -39,20 +41,387 @@ export class WwnItem extends Item {
     );
   }
 
+  // Add static properties to store bound event handlers
+  static _boundClickHandler = null;
+  static _boundToggleHandler = null;
+  static _boundSelectTokensHandler = null;
+
   static chatListeners(html) {
-    html.on("click", ".card-buttons button", this._onChatCardAction.bind(this));
-    html.on("click", ".item-name", this._onChatCardToggleContent.bind(this));
+    if (!html) {
+      console.error("No HTML element provided to attach listeners to");
+      return;
+    }
+
+    // Handle both jQuery objects and raw HTML strings
+    let cards;
+    if (html instanceof jQuery) {
+      // Look for both chat cards and save results within chat messages
+      cards = html.find('.chat-card, .chat-message .save-results, .chat-message .save-header');
+      // Convert jQuery object to array for consistent handling
+      cards = Array.from(cards);
+    } else {
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      cards = Array.from(container.querySelectorAll('.chat-card, .chat-message .save-results, .chat-message .save-header'));
+    }
+
+    if (!cards.length) return;
+
+    // Remove existing listeners if they exist
+    if (this._boundClickHandler) {
+      document.removeEventListener('click', this._boundClickHandler);
+    }
+    if (this._boundToggleHandler) {
+      document.removeEventListener('click', this._boundToggleHandler);
+    }
+    if (this._boundSelectTokensHandler) {
+      document.removeEventListener('click', this._boundSelectTokensHandler);
+    }
+
+    // Create new bound handlers
+    this._boundClickHandler = this._handleChatCardClick.bind(this);
+    this._boundToggleHandler = this._handleChatCardToggle.bind(this);
+    this._boundSelectTokensHandler = this._handleTokenSelection.bind(this);
+
+    // Add listeners to the document for event delegation
+    document.addEventListener('click', this._boundClickHandler);
+    document.addEventListener('click', this._boundToggleHandler);
+    document.addEventListener('click', this._boundSelectTokensHandler);
+  }
+
+  static _handleChatCardClick(event) {
+    // Only handle clicks within chat cards
+    const card = event.target.closest('.chat-card');
+    if (!card) return;
+
+    // Check if the click was on a button within a chat card
+    const button = event.target.closest('button, .card-buttons button, .damage-application');
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Get the message that contains this button
+    const message = button.closest('.message, .chat-message');
+    if (!message) return;
+
+    const messageId = message.dataset.messageId;
+    if (!messageId) return;
+
+    const messageObj = game.messages.get(messageId);
+    if (!messageObj) return;
+
+    // Handle damage buttons (both types)
+    const action = button.dataset.action;
+
+    if (action === 'apply-damage' || action === 'apply-shock') {
+      // Check for selected tokens
+      const targets = this._getChatCardTargets(card);
+      if (!targets.length) {
+        ui.notifications.warn("You must have one or more tokens selected to apply damage.");
+        return;
+      }
+
+      let amount;
+
+      if (action === 'apply-shock') {
+        // For shock damage, we can parse the number directly
+        amount = parseInt(button.dataset.damage);
+      } else {
+        // For regular damage, we need to parse the HTML string
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = button.dataset.damage;
+        const diceTotal = tempDiv.querySelector('.dice-total');
+        if (diceTotal) {
+          amount = parseInt(diceTotal.textContent);
+        }
+      }
+
+      if (!isNaN(amount)) {
+        // Apply the damage multiplier
+        const multiplier = parseFloat(button.dataset.damageMultiplier) || 1;
+        const finalAmount = Math.floor(amount * multiplier);
+        applyChatCardDamage(finalAmount, 1);
+        return;
+      } else {
+        console.warn("Failed to parse damage amount:", button.dataset.damage);
+      }
+    }
+
+    // Handle other button actions
+    this._onChatCardAction(event);
+  }
+
+  static _handleChatCardToggle(event) {
+    // Only handle clicks within chat cards
+    const card = event.target.closest('.chat-card');
+    if (!card) return;
+
+    // Check if the click was on an item name within a chat card
+    const itemName = event.target.closest('.chat-card .item-name');
+    if (!itemName) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    this._onChatCardToggleContent(event);
+  }
+
+  static _onChatCardToggleContent(event) {
+    // Get the clicked element (should be the <a> tag inside .item-name)
+    const clickedElement = event.target;
+    // Find the closest .item-name element (in case we clicked the <a> tag)
+    const itemName = clickedElement.closest('.item-name');
+    if (!itemName) return;
+
+    // Find the chat card that contains this item name
+    const card = itemName.closest('.chat-card');
+    if (!card) return;
+
+    const content = card.querySelector('.card-content');
+    if (!content) return;
+
+    // Toggle visibility using native methods
+    if (content.style.display === 'none') {
+      content.style.display = 'block';
+    } else {
+      content.style.display = 'none';
+    }
+  }
+
+  static async _onChatCardAction(event) {
+    // Get the clicked button
+    const button = event.target.closest('button');
+    if (!button) return;
+
+    button.disabled = true;
+
+    try {
+      // Find the chat card that contains this button
+      const card = button.closest('.chat-card');
+      if (!card) {
+        console.warn("Could not find chat card for button click");
+        return;
+      }
+
+      // Find the message that contains this card
+      const message = card.closest('.message') || card.closest('.chat-message');
+      if (!message) {
+        console.warn("Could not find message for chat card");
+        return;
+      }
+
+      const messageId = message.dataset.messageId;
+      if (!messageId) {
+        console.warn("No message ID found for chat card");
+        return;
+      }
+
+      const messageObj = game.messages.get(messageId);
+      if (!messageObj) {
+        console.warn("Could not find message object for ID:", messageId);
+        return;
+      }
+
+      const action = button.dataset.action;
+      if (!action) {
+        console.warn("No action specified for button");
+        return;
+      }
+
+      // Validate permission to proceed with the roll
+      const isTargetted = action === "save";
+      if (!(isTargetted || game.user.isGM || messageObj.isAuthor)) {
+        console.warn("User not authorized to perform this action");
+        return;
+      }
+
+      // Get the Actor from a synthetic Token
+      const actor = this._getChatCardActor(card);
+      if (!actor) {
+        console.warn("Could not find actor for chat card");
+        return;
+      }
+
+      // Get the Item
+      const item = actor.items.get(card.dataset.itemId);
+      if (!item) {
+        ui.notifications.error(
+          `The requested item ${card.dataset.itemId} no longer exists on Actor ${actor.name}`
+        );
+        return;
+      }
+
+      // Get card targets
+      let targets = [];
+      let sceneId = null;
+      if (isTargetted) {
+        targets = this._getChatCardTargets(card);
+        // Get scene ID from first token if available
+        const firstToken = targets.find(t => t.token)?.token;
+        sceneId = firstToken?.scene?.id;
+      }
+
+      // Attack and Damage Rolls
+      if (action === "damage") await item.rollDamage({ event });
+      else if (action === "formula") await item.rollFormula({ event });
+      // Saving Throws for card targets
+      else if (action === "save") {
+        if (!targets.length) {
+          ui.notifications.warn(
+            `You must have one or more controlled Tokens in order to use this option.`
+          );
+          return;
+        }
+
+        // Create dialog data with token information
+        const dialogData = {
+          tokens: targets.map(t => ({
+            id: t.token?.id || t.id,
+            name: t.token?.name || t.name,
+            actorId: t.actorId,
+            actorLink: t.actorLink
+          }))
+        };
+
+        // Render the save dialog template
+        const template = "systems/wwn/templates/chat/save-dialog.html";
+        const html = await renderTemplate(template, dialogData);
+
+        // Create and render the dialog
+        const d = new Dialog({
+          title: "Selected Token Saves",
+          content: html,
+          buttons: {
+            confirm: {
+              icon: '<i class="fas fa-check"></i>',
+              label: "Confirm",
+              callback: async (html) => {
+                const form = html[0].querySelector("form");
+                const globalModifierInput = form.querySelector(".save-dialog-global-modifier");
+                const globalModifier = parseInt(globalModifierInput.value) || 0;
+
+                // Collect all save results
+                const saveResults = [];
+
+                // Process each target's save
+                for (const dialogToken of dialogData.tokens) {
+                  const individualModifierInput = form.querySelector(`[name="modifier-${dialogToken.id}"]`);
+                  const individualModifier = individualModifierInput ? individualModifierInput.value : "";
+                  const modifier = individualModifier !== "" ? parseInt(individualModifier) : globalModifier;
+
+                  // Find the matching target actor
+                  const target = targets.find(t => (t.token?.id || t.id) === dialogToken.id);
+                  if (!target?.actor) continue;
+
+                  // Get the token and create its ID
+                  const token = target.token;
+                  let fullTokenId = null;
+
+                  if (token) {
+                    fullTokenId = `${sceneId}.${token.id}`;
+                  } else if (sceneId) {
+                    fullTokenId = `${sceneId}.${target.actorId}`;
+                  } else {
+                    fullTokenId = target.actorId;
+                  }
+
+                  // Get the save type and verify it exists
+                  const saveType = button.dataset.save;
+                  if (!saveType || !target.actor.system?.saves?.[saveType]) continue;
+
+                  // Create save data and roll
+                  const saveData = {
+                    actor: target.actor,
+                    roll: {
+                      type: "above",
+                      target: target.actor.system.saves[saveType].value,
+                      magic: target.actor.type === "character" ? target.actor.system.scores.wis.mod : 0,
+                      modifier: modifier
+                    }
+                  };
+
+                  const rollFormula = `1d20${modifier ? ` + ${modifier}` : ''}`;
+                  const roll = await new Roll(rollFormula, saveData).roll();
+                  const result = await WwnDice.digestResult(saveData, roll);
+                  const rollWWN = await roll.render();
+
+                  saveResults.push({
+                    name: dialogToken.name,
+                    tokenId: fullTokenId,
+                    rollWWN,
+                    roll,
+                    ...result,
+                    target: target.actor.system.saves[saveType].value,
+                    modifier: modifier
+                  });
+                }
+
+                // Sort results by roll total (highest first)
+                saveResults.sort((a, b) => b.roll.total - a.roll.total);
+
+                // Separate successful and failed saves
+                const successfulSaves = saveResults.filter(r => r.isSuccess);
+                const failedSaves = saveResults.filter(r => r.isFailure);
+
+                // Create a single chat message with all rolls
+                const templateData = {
+                  saveType: game.i18n.localize(`WWN.saves.${button.dataset.save}`),
+                  results: saveResults,
+                  hasSuccessfulSaves: successfulSaves.length > 0,
+                  hasFailedSaves: failedSaves.length > 0
+                };
+
+                const content = await renderTemplate("systems/wwn/templates/chat/save-results.html", templateData);
+
+                const chatData = {
+                  speaker: { alias: game.i18n.localize("WWN.spells.Save") },
+                  sound: CONFIG.sounds.dice,
+                  content: content,
+                  type: CONST.CHAT_MESSAGE_STYLES.OTHER,
+                  user: game.user.id
+                };
+
+                // Handle Dice So Nice for all rolls
+                if (game.dice3d) {
+                  for (const result of saveResults) {
+                    await game.dice3d.showForRoll(result.roll, game.user, true);
+                  }
+                }
+
+                // Create the chat message and initialize listeners
+                const message = await ChatMessage.create(chatData);
+                if (message) {
+                  // Initialize listeners for the new message
+                  const html = $(message.element);
+                  this.chatListeners(html);
+                }
+              }
+            },
+            cancel: {
+              icon: '<i class="fas fa-times"></i>',
+              label: "Cancel",
+              callback: () => { }
+            }
+          },
+          default: "confirm"
+        });
+
+        d.render(true);
+      }
+    } catch (error) {
+      console.error("Error in chat card action:", error);
+      ui.notifications.error("An error occurred while processing the action.");
+    } finally {
+      // Re-enable the button
+      button.disabled = false;
+    }
   }
 
   getChatData(htmlOptions) {
     const itemData = { ...this.system };
 
-    // Rich text description
-    // data.description = TextEditor.enrichHTML(data.description, htmlOptions);
-
     // Item properties
     const props = [];
-    const labels = this.labels;
 
     if (this.type == "weapon") {
       itemData.tags.forEach((t) => props.push(t.value));
@@ -89,6 +458,7 @@ export class WwnItem extends Item {
 
   async rollSkill(options = {}) {
     const template = "systems/wwn/templates/items/dialogs/roll-skill.html";
+
     const dialogData = {
       choices: {
         "str": "WWN.scores.str.short",
@@ -108,7 +478,7 @@ export class WwnItem extends Item {
       dicePool: this.system.skillDice,
       name: this.name,
       rollMode: game.settings.get("core", "rollMode"),
-      rollModes: CONFIG.Dice.rollModes,
+      rollModes: CONFIG.Dice.rollModes
     };
     const newData = {
       actor: this.actor,
@@ -258,7 +628,9 @@ export class WwnItem extends Item {
 
   async rollFormula(options = {}) {
     const data = this.system;
+
     if (!data.roll) {
+      console.warn("No roll formula found for item:", this.name);
       throw new Error("This Item does not have a formula to roll!");
     }
 
@@ -278,7 +650,25 @@ export class WwnItem extends Item {
       },
     };
 
-    // Roll and return
+    // If the Art has damage, use sendAttackRoll
+    if (data.damage) {
+      newData.roll.dmg = [data.damage];
+      newData.roll.type = "attack"; // Set type to attack to use sendAttackRoll
+
+      return await WwnDice.Roll({
+        event: options.event,
+        parts: rollParts,
+        data: newData,
+        skipDialog: true,
+        speaker: ChatMessage.getSpeaker({ actor: this }),
+        flavor: game.i18n.format("WWN.roll.formula", { label: label }),
+        title: game.i18n.format("WWN.roll.formula", { label: label }),
+        rollTitle: data.roll,
+        dmgTitle: data.damage
+      });
+    }
+
+    // Otherwise use regular sendRoll
     return await WwnDice.Roll({
       event: options.event,
       parts: rollParts,
@@ -518,75 +908,6 @@ export class WwnItem extends Item {
     return ChatMessage.create(chatData);
   }
 
-  /**
-   * Handle toggling the visibility of chat card content when the name is clicked
-   * @param {Event} event   The originating click event
-   * @private
-   */
-  static _onChatCardToggleContent(event) {
-    event.preventDefault();
-    const header = event.currentTarget;
-    const card = header.closest(".chat-card");
-    const content = card.querySelector(".card-content");
-    if (content.style.display == "none") {
-      $(content).slideDown(200);
-    } else {
-      $(content).slideUp(200);
-    }
-  }
-
-  static async _onChatCardAction(event) {
-    event.preventDefault();
-
-    // Extract card data
-    const button = event.currentTarget;
-    button.disabled = true;
-    const card = button.closest(".chat-card");
-    const messageId = card.closest(".message").dataset.messageId;
-    const message = game.messages.get(messageId);
-    const action = button.dataset.action;
-
-    // Validate permission to proceed with the roll
-    const isTargetted = action === "save";
-    if (!(isTargetted || game.user.isGM || message.isAuthor)) return;
-
-    // Get the Actor from a synthetic Token
-    const actor = this._getChatCardActor(card);
-    if (!actor) return;
-
-    // Get the Item
-    const item = actor.items.get(card.dataset.itemId);
-    if (!item) {
-      return ui.notifications.error(
-        `The requested item ${card.dataset.itemId} no longer exists on Actor ${actor.name}`
-      );
-    }
-
-    // Get card targets
-    let targets = [];
-    if (isTargetted) {
-      targets = this._getChatCardTargets(card);
-    }
-    // Attack and Damage Rolls
-    if (action === "damage") await item.rollDamage({ event });
-    else if (action === "formula") await item.rollFormula({ event });
-    // Saving Throws for card targets
-    else if (action === "save") {
-      if (!targets.length) {
-        ui.notifications.warn(
-          `You must have one or more controlled Tokens in order to use this option.`
-        );
-        return (button.disabled = false);
-      }
-      for (let t of targets) {
-        await t.rollSave(button.dataset.save, { event });
-      }
-    }
-
-    // Re-enable the button
-    button.disabled = false;
-  }
-
   static _getChatCardActor(card) {
     // Case 1 - a synthetic actor from a Token
     const tokenKey = card.dataset.tokenId;
@@ -608,11 +929,33 @@ export class WwnItem extends Item {
   static _getChatCardTargets(card) {
     const character = game.user.character;
     const controlled = canvas.tokens.controlled;
-    const targets = controlled.reduce(
-      (arr, t) => (t.actor ? arr.concat([t.actor]) : arr),
-      []
-    );
-    if (character && controlled.length === 0) targets.push(character);
+    const targets = controlled.map(t => {
+      // Ensure we have a valid actor
+      const actor = t.actor || game.actors.get(t.document.actorId);
+      if (!actor) return null;
+
+      return {
+        actor: actor,
+        token: t,
+        name: t.name,
+        id: t.id,
+        actorId: actor.id,
+        actorLink: t.document.actorLink
+      };
+    }).filter(t => t !== null);
+
+    // Add character if no tokens are controlled
+    if (character && controlled.length === 0) {
+      targets.push({
+        actor: character,
+        token: null,
+        name: character.name,
+        id: character.id,
+        actorId: character.id,
+        actorLink: false
+      });
+    }
+
     return targets;
   }
 
@@ -930,6 +1273,128 @@ export class WwnItem extends Item {
       d.render(true);
     } else {
       this._assetLogAction();
+    }
+  }
+
+  /**
+   * Get attack rolls for multiple assets simultaneously
+   * @param {Array<WwnItem>} assets - Array of asset items to get rolls for
+   * @param {boolean} isOffense - Whether these are offensive attacks
+   * @returns {Promise<Array<{asset: WwnItem, status: string, value: Array<Roll>|Error}>>}
+   */
+  static async getMultipleAssetAttackRolls(assets, isOffense) {
+    // Create an array of promises for each asset's attack rolls
+    const rollPromises = assets.map(async (asset) => {
+      try {
+        const rolls = await asset.getAssetAttackRolls(isOffense);
+        return {
+          asset,
+          status: 'fulfilled',
+          value: rolls
+        };
+      } catch (error) {
+        return {
+          asset,
+          status: 'rejected',
+          value: error
+        };
+      }
+    });
+
+    // Use Promise.allSettled to wait for all rolls to complete
+    const results = await Promise.allSettled(rollPromises);
+
+    // Transform the results into a more usable format
+    return results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return {
+          asset: assets[index],
+          status: 'fulfilled',
+          value: result.value
+        };
+      } else {
+        return {
+          asset: assets[index],
+          status: 'rejected',
+          value: result.reason
+        };
+      }
+    });
+  }
+
+  // Example usage in rollAsset method:
+  async rollMultipleAssets(assets, isOffense) {
+    const results = await WwnItem.getMultipleAssetAttackRolls(assets, isOffense);
+
+    // Process the results
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        const [hitRoll, damageRoll] = result.value;
+        // Handle successful rolls
+        console.log(`${result.asset.name} rolled:`, hitRoll.total, damageRoll.total);
+      } else {
+        // Handle failed rolls
+        console.error(`Failed to roll for ${result.asset.name}:`, result.value);
+      }
+    }
+
+    return results;
+  }
+
+  static _handleTokenSelection(event) {
+    // Only handle clicks on select-tokens buttons
+    const button = event.target.closest('.select-tokens');
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Get the action and find the appropriate save group
+    const action = button.dataset.action;
+    if (!action) return;
+
+    const message = button.closest('.chat-message');
+    if (!message) return;
+
+    const targetGroup = Array.from(message.querySelectorAll('.save-group'))
+      .find(group => {
+        const header = group.querySelector('.save-group-header')?.textContent.toLowerCase();
+        return (action === 'select-successful' && header?.includes('successful')) ||
+          (action === 'select-failed' && header?.includes('failed'));
+      });
+
+    if (!targetGroup) return;
+
+    // Get all save items and their token IDs
+    const tokenIds = Array.from(targetGroup.querySelectorAll('.save-item'))
+      .map(item => item.dataset.tokenId)
+      .filter(id => id);
+
+    if (!tokenIds.length) {
+      ui.notifications.warn("No tokens found to select");
+      return;
+    }
+
+    // Find and select the tokens on the canvas
+    const tokens = [];
+    for (const id of tokenIds) {
+      const [sceneId, tokenId] = id.split('.');
+      const scene = game.scenes.get(sceneId);
+      if (!scene) continue;
+
+      const token = canvas.tokens.placeables.find(t =>
+        t.scene.id === sceneId && t.id === tokenId
+      );
+
+      if (token) tokens.push(token);
+    }
+
+    if (tokens.length) {
+      canvas.tokens.releaseAll();
+      tokens.forEach(token => token.control({ releaseOthers: false }));
+      ui.notifications.info(`Selected ${tokens.length} token${tokens.length === 1 ? '' : 's'}`);
+    } else {
+      ui.notifications.warn("No tokens found on the current scene");
     }
   }
 }

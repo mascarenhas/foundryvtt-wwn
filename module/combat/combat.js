@@ -124,43 +124,50 @@ async rollInitiative(ids = null) {
 }
 
   async #rollInitiativeUIFeedback(results = {}) {
-    const individualContentPromises = Object.entries(results).map(
-      // #constructInitiativeOutputForIndividual is already async from the previous step
-      ([id, result]) => this.#constructInitiativeOutputForIndividual(id, result.roll)
-    );
-    const individualContentStrings = await Promise.all(individualContentPromises);
-    
-    const combinedContent = individualContentStrings.join("\n");
+    // Collect all roll results
+    const rollResults = [];
 
-    // Ensure chatData is an array with a single message object if we're combining all rolls into one message.
-    // The original code's structure `content.map(c => {speaker, sound, content: c})` with `content` being an array of one string
-    // effectively meant `ChatMessage.implementation.createDocuments` was called with an array containing one chat data object.
-    if (combinedContent) { // Only create a message if there's content
-      const chatMessageData = {
-        speaker: { alias: game.i18n.localize("WWN.Initiative") },
-        sound: CONFIG.sounds.dice,
-        content: combinedContent
-      };
-      ChatMessage.implementation.createDocuments([chatMessageData]);
+    // Process each combatant's roll
+    for (const [id, result] of Object.entries(results)) {
+      const combatant = this.combatants.get(id);
+      if (!combatant) continue;
+
+      const rollWWN = await result.roll.render();
+      rollResults.push({
+        group: combatant.name,
+        rollWWN,
+        roll: result.roll
+      });
     }
-  }
 
-  async #constructInitiativeOutputForIndividual(id, roll) {
-    const combatant = this.combatants.get(id);
-    if (!combatant) return '';
+    // Sort results by initiative (highest first)
+    rollResults.sort((a, b) => b.roll.total - a.roll.total);
 
-    return `
-    <p>${game.i18n.format("WWN.roll.initiative", { group: combatant.name })}
-    <div class="dice-roll">   
-      <div class="dice-result">
-        <div class="dice-formula">${roll.formula}</div>
-          <div class="dice-tooltip">
-                ${await roll.getTooltip()}
-              </div>
-        <h4 class="dice-total">${roll.total}</h4>
-      </div>
-    </div>
-  `;
+    // Create a single chat message with all rolls
+    const content = `
+      <div class="initiative-header">Individual Initiative</div>
+      ${rollResults.map(result => `
+        <div class="initiative-roll">
+          <div class="roll-header">${result.group}</div>
+          ${result.rollWWN}
+        </div>
+      `).join('')}
+    `;
+
+    const chatData = {
+      speaker: { alias: game.i18n.localize("WWN.Initiative") },
+      sound: CONFIG.sounds.dice,
+      content: `<div class="wwn chat-message"><div class="wwn chat-block">${content}</div></div>`
+    };
+
+    // Handle Dice So Nice for all rolls
+    if (game.dice3d) {
+      for (const result of rollResults) {
+        await game.dice3d.showForRoll(result.roll, game.user, true);
+      }
+    }
+
+    await ChatMessage.create(chatData);
   }
 
   // ===========================================================================
