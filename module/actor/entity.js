@@ -52,6 +52,8 @@ export class WwnActor extends Actor {
       if (this.system.spells.leveledSlots) this.computeSlots();
       this.computeSaves();
       this.computeTotalSP();
+      this.populateCombatSkills();
+      this.populateArts();
       this.setXP();
       this.computePrepared();
       this.computeInit();
@@ -474,16 +476,20 @@ export class WwnActor extends Actor {
     const rollLabels = [];
     const dmgLabels = [];
     const weaponShock = attData.item.system.shock.damage;
-    let statAttack, skillAttack, statValue, skillValue;
+    let statAttack, skillAttack, statValue, skillValue, artAttack, artValue;
     if (data.character) {
       statAttack = attData.item.system.score;
       skillAttack = attData.item.system.skill;
+      artAttack = attData.item.system.art || "none";
       if (!skillAttack) {
         return ui.notifications.error("No skill set for this weapon. Please edit weapon and enter a skill.");
       }
       skillValue = this.items.find(
         (item) => item.type === "skill" && item.name.toLowerCase() === skillAttack.toLowerCase()
       )?.system?.ownedLevel || 0;
+      artValue = this.items.find(
+        (item) => item.type === "art" && item.name.toLowerCase() === artAttack.toLowerCase()
+      )
       statValue = this.system.scores[statAttack].mod;
     }
 
@@ -610,6 +616,7 @@ export class WwnActor extends Actor {
       title: label,
       rollTitle: rollTitle,
       dmgTitle: dmgTitle,
+      afterRolling: () => { if (artValue) artValue.spendArt({ skipDialog: true }); },
     });
   }
 
@@ -1069,27 +1076,14 @@ export class WwnActor extends Actor {
   computeTotalSP() {
     const data = this.system;
     if (this.type != "character") return;
-    let newTotal = 0;
-    if (game.settings.get("wwn", "useGoldStandard")) {
-      newTotal =
-        data.currency.cp * 0.01 +
-        data.currency.sp * 0.1 +
-        data.currency.gp * 1 +
-        data.currency.pp * 5 +
-        data.currency.ep * 0.5 +
-        data.currency.bank +
-        data.personalTreasure;
-    } else {
-      newTotal =
-        data.currency.cp * 0.1 +
-        data.currency.sp +
-        data.currency.gp * 10 +
-        data.currency.pp * 50 +
-        data.currency.ep * 5 +
-        data.currency.bank +
-        data.personalTreasure;
-    }
-
+    let newTotal =
+      data.currency.cp * 0.1 +
+      data.currency.sp +
+      data.currency.gp * 100 +
+      data.currency.pp * 1000 +
+      data.currency.ep * 10 +
+      data.currency.bank +
+      data.treasure;
     this.system.currency.total = newTotal;
   }
 
@@ -1307,6 +1301,28 @@ export class WwnActor extends Actor {
       this.system.saves.mental.value = newSaves.mentalVal;
       this.system.saves.luck.value = newSaves.luckVal;
     }
+  }
+
+  async populateCombatSkills() {
+    const data = this.system;
+    if (this.type != "character") {
+      return;
+    }
+    const filteredSkills = this.items.filter(
+      (skill) => skill.system.combatSkill
+    );
+    data.skills.combatSkills = filteredSkills.map((skill) => skill.name);
+  }
+
+  async populateArts() {
+    const data = this.system;
+    if (this.type != "character") {
+      return;
+    }
+    const filteredArts = this.items.filter(
+      (item) => item.type === "art"
+    );
+    data.arts = filteredArts.map((art) => art.name);
   }
 
   _getRollData() {
