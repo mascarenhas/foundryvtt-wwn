@@ -25,6 +25,15 @@ export class WWNCombat extends Combat {
     );
   }
 
+  async #rollOnlyUnrolled() {
+    const idsNeedingRoll = this.combatants
+      .filter(c => c && (c.initiative === null || c.initiative === undefined))
+      .map(c => c.id);
+
+    if (idsNeedingRoll.length === 0) return;
+    await this.rollInitiative(idsNeedingRoll);
+  }
+
 
   // ===========================================================================
   // COMBAT LIFECYCLE MANAGEMENT
@@ -33,7 +42,7 @@ export class WWNCombat extends Combat {
   async startCombat() {
     await super.startCombat();
     if (this.#rerollBehavior !== "reset")
-      await this.#rollAbsolutelyEveryone();
+      await this.#rollOnlyUnrolled();
     return this;
   }
 
