@@ -428,19 +428,17 @@ export class WwnActor extends Actor {
       item: attData.item,
       roll: {
         type: "damage",
+        dmg: [],
       },
     };
 
     let dmgParts = [];
     if (!attData.roll.dmg) {
       dmgParts.push("1d6");
+      rollData.roll.dmg = ["1d6"];
     } else {
       dmgParts.push(attData.roll.dmg);
-    }
-
-    // Add Str to damage
-    if (attData.roll.type == "melee") {
-      dmgParts.push(data.scores.str.mod);
+      rollData.roll.dmg = [attData.roll.dmg];
     }
 
     // Damage roll
@@ -803,34 +801,25 @@ export class WwnActor extends Actor {
   }
 
   computeInit() {
-    let initValue = 0;
     let initRoll = "1d8";
-    const isGroupInit = game.settings.get("wwn", "initiative") === "group";
+    let initValue = this.system.initiative.mod;
     if (this.type == "character") {
-      const alert = this.items.find((i) => i.name === "Alert")?.system.ownedLevel || 0;
-      let alertBonus = alert === 2 ? 100 : alert;
-
-      if (isGroupInit) {
-        if (alert !== 1) {
-          initValue = this.system.scores.dex.mod + this.system.initiative.mod + alertBonus;
-          this.system.initiative.alertTwo = alert === 2 ? true : false;
-        } else {
-          initValue = this.system.scores.dex.mod + this.system.initiative.mod;
-        }
-      } else {
-        if (alert === 1) {
-          initRoll = "2d8kh";
-          initValue = this.system.scores.dex.mod + this.system.initiative.mod;
-        } else {
-          initValue = this.system.scores.dex.mod + this.system.initiative.mod + alertBonus;
-        }
-      }
-    } else {
-      initValue = this.system.initiative.mod;
+      initValue += this.system.scores.dex.mod;
     }
 
-    this.system.initiative.value = initValue;
+    const isGroupInit = game.settings.get("wwn", "initiative") === "group";
+    if (!isGroupInit) {
+      const alert = this.items.find((i) => i.name === "Alert")?.system.ownedLevel || 0;
+      if (alert >= 1) initRoll = "2d8kh";
+
+      const hasVigilant = this.items.some(i => i.name === "Vigilant");
+      if (alert === 2 || hasVigilant) {
+        initValue += 100;
+      }
+    }
+
     this.system.initiative.roll = initRoll;
+    this.system.initiative.value = initValue;
   }
 
   setXP() {
@@ -1173,22 +1162,44 @@ export class WwnActor extends Actor {
     let exertPenalty = 0;
     let sneakPenalty = 0;
 
+    // Compute Trauma Target if trauma system is enabled
+    let traumaTarget = 6; // Base trauma target
+    if (game.settings.get("wwn", "useTrauma")) {
+      traumaTarget += data.trauma.bonus || 0;
+    }
+
     const armors = this.items.filter((i) => i.type == "armor");
     armors.forEach((a) => {
       if (!a.system.equipped) {
         return;
       }
+
+      // Add trauma mod from equipped armor
+      if (game.settings.get("wwn", "useTrauma")) {
+        traumaTarget += a.system.traumaMod || 0;
+      }
+
       if (a.system.type != "shield") {
         baseAac = Number(a.system.aac.value) + a.system.aac.mod;
-        // Check if armor is medium or heavy and apply appropriate Sneak/Exert penalty
-        if (a.system.type === "medium" && a.system.weight > sneakPenalty) {
-          sneakPenalty = a.system.weight;
-        }
-        if (a.system.type === "heavy" && a.system.weight > sneakPenalty) {
-          sneakPenalty = a.system.weight;
-        }
-        if (a.system.type === "heavy" && a.system.weight > exertPenalty) {
-          exertPenalty = a.system.weight;
+
+        // Check if flat armor penalty setting is enabled
+        if (game.settings.get("wwn", "useFlatArmorPenalty")) {
+          // If flat armor penalty is enabled, only check for ashesHeavy boolean
+          if (a.system.ashesHeavy) {
+            sneakPenalty = Math.max(sneakPenalty, 1);
+            exertPenalty = Math.max(exertPenalty, 1);
+          }
+        } else {
+          // Apply normal armor type penalties based on system.type and weight
+          if (a.system.type === "medium" && a.system.weight > sneakPenalty) {
+            sneakPenalty = a.system.weight;
+          }
+          if (a.system.type === "heavy" && a.system.weight > sneakPenalty) {
+            sneakPenalty = a.system.weight;
+          }
+          if (a.system.type === "heavy" && a.system.weight > exertPenalty) {
+            exertPenalty = a.system.weight;
+          }
         }
       } else if (a.system.type == "shield") {
         AacShieldMod = 1 + a.system.aac.mod;
@@ -1224,6 +1235,11 @@ export class WwnActor extends Actor {
     }
     this.system.skills.sneakPenalty = sneakPenalty;
     this.system.skills.exertPenalty = exertPenalty;
+
+    // Set trauma target if trauma system is enabled
+    if (game.settings.get("wwn", "useTrauma")) {
+      this.system.trauma.value = traumaTarget;
+    }
   }
 
   computeModifiers() {
@@ -1256,6 +1272,7 @@ export class WwnActor extends Actor {
     Object.keys(scores).map((score) => {
       let newMod =
         this.system.scores[score].tweak +
+        this.system.scores[score].bonus +
         WwnActor._valueFromTable(table, scores[score].value);
       this.system.scores[score].mod = newMod;
     });

@@ -55,14 +55,22 @@ export class WwnItem extends Item {
     // Handle both jQuery objects and raw HTML strings
     let cards;
     if (html instanceof jQuery) {
-      // Look for both chat cards and save results within chat messages
-      cards = html.find('.chat-card, .chat-message .save-results, .chat-message .save-header');
+      // Old renderChatLog hook - html is a jQuery object
+      cards = html.find('.chat-card, .chat-message .save-results, .chat-message .save-header, .chat-message');
       // Convert jQuery object to array for consistent handling
       cards = Array.from(cards);
-    } else {
+    } else if (typeof html === 'string') {
+      // New renderChatMessageHTML hook - html is a string
       const container = document.createElement('div');
       container.innerHTML = html;
-      cards = Array.from(container.querySelectorAll('.chat-card, .chat-message .save-results, .chat-message .save-header'));
+      cards = Array.from(container.querySelectorAll('.chat-card, .chat-message .save-results, .chat-message .save-header, .chat-message'));
+    } else {
+      // Handle other cases (like HTMLElement)
+      const container = html instanceof HTMLElement ? html : document.createElement('div');
+      if (!(html instanceof HTMLElement)) {
+        container.innerHTML = html;
+      }
+      cards = Array.from(container.querySelectorAll('.chat-card, .chat-message .save-results, .chat-message .save-header, .chat-message'));
     }
 
     if (!cards.length) return;
@@ -90,8 +98,8 @@ export class WwnItem extends Item {
   }
 
   static _handleChatCardClick(event) {
-    // Only handle clicks within chat cards
-    const card = event.target.closest('.chat-card');
+    // Only handle clicks within chat cards or chat messages
+    const card = event.target.closest('.chat-card, .chat-message');
     if (!card) return;
 
     // Check if the click was on a button within a chat card
@@ -105,11 +113,18 @@ export class WwnItem extends Item {
     const message = button.closest('.message, .chat-message');
     if (!message) return;
 
-    const messageId = message.dataset.messageId;
-    if (!messageId) return;
+    // For roll-result messages, we don't need to validate the message object
+    // since they don't have data-messageId and aren't stored in game.messages
+    if (message.classList.contains('chat-message')) {
+      // This is a roll-result message, proceed without message validation
+    } else {
+      // This is a regular chat card, validate the message
+      const messageId = message.dataset.messageId;
+      if (!messageId) return;
 
-    const messageObj = game.messages.get(messageId);
-    if (!messageObj) return;
+      const messageObj = game.messages.get(messageId);
+      if (!messageObj) return;
+    }
 
     // Handle damage buttons (both types)
     const action = button.dataset.action;
@@ -128,20 +143,57 @@ export class WwnItem extends Item {
         // For shock damage, we can parse the number directly
         amount = parseInt(button.dataset.damage);
       } else {
-        // For regular damage, we need to parse the HTML string
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = button.dataset.damage;
-        const diceTotal = tempDiv.querySelector('.dice-total');
-        if (diceTotal) {
-          amount = parseInt(diceTotal.textContent);
+        // Check if Godbound damage is enabled
+        if (game.settings.get("wwn", "godboundDamage")) {
+          // GODBOUND DAMAGE HANDLING
+          // First, try to parse as a direct number (for roll-result messages)
+          amount = parseInt(button.dataset.damage);
+
+          // If that fails, it's HTML content that needs parsing (for item cards)
+          if (isNaN(amount)) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = button.dataset.damage;
+
+            // Look for the Godbound damage total in the conversion display
+            const godboundValues = tempDiv.querySelectorAll('.godbound-values');
+            if (godboundValues.length >= 1) {
+              // The first godbound-values element contains "Normal Damage" which is actually Godbound damage
+              const normalDamageText = godboundValues[0].textContent;
+              // Extract the total from the end of the string (after the = sign)
+              const match = normalDamageText.match(/= (\d+)$/);
+              if (match) {
+                amount = parseInt(match[1]);
+              }
+            }
+
+            // If we couldn't find Godbound damage, fall back to normal parsing
+            if (isNaN(amount)) {
+              const diceTotal = tempDiv.querySelector('.dice-total');
+              if (diceTotal) {
+                amount = parseInt(diceTotal.textContent);
+              }
+            }
+          }
+        } else {
+          // NORMAL DAMAGE HANDLING (existing code)
+          // For regular damage, we need to parse the HTML string
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = button.dataset.damage;
+          const diceTotal = tempDiv.querySelector('.dice-total');
+          if (diceTotal) {
+            amount = parseInt(diceTotal.textContent);
+          } else {
+            amount = parseInt(button.dataset.damage);
+          }
         }
       }
-
+      console.log(amount);
+      console.log(typeof amount);
       if (!isNaN(amount)) {
         // Apply the damage multiplier
         const multiplier = parseFloat(button.dataset.damageMultiplier) || 1;
-        const finalAmount = Math.floor(amount * multiplier);
-        applyChatCardDamage(finalAmount, 1);
+
+        applyChatCardDamage(amount, multiplier);
         return;
       } else {
         console.warn("Failed to parse damage amount:", button.dataset.damage);
@@ -650,25 +702,7 @@ export class WwnItem extends Item {
       },
     };
 
-    // If the Art has damage, use sendAttackRoll
-    if (data.damage) {
-      newData.roll.dmg = [data.damage];
-      newData.roll.type = "attack"; // Set type to attack to use sendAttackRoll
-
-      return await WwnDice.Roll({
-        event: options.event,
-        parts: rollParts,
-        data: newData,
-        skipDialog: true,
-        speaker: ChatMessage.getSpeaker({ actor: this }),
-        flavor: game.i18n.format("WWN.roll.formula", { label: label }),
-        title: game.i18n.format("WWN.roll.formula", { label: label }),
-        rollTitle: data.roll,
-        dmgTitle: data.damage
-      });
-    }
-
-    // Otherwise use regular sendRoll
+    // Always use sendRoll and let the godbound damage logic handle the conversion
     return await WwnDice.Roll({
       event: options.event,
       parts: rollParts,
@@ -1398,3 +1432,6 @@ export class WwnItem extends Item {
     }
   }
 }
+
+
+

@@ -1,5 +1,43 @@
 # Changelog
 
+## New in 1.6.0
+
+### Changes
+
+- Added Trauma system from Cities/Ashes Without Number. This is gated behind a system-level setting.
+  - Note that this does note include the split Ranged/Melee AC from CWN.
+  - If active, trauma is rolled, and compared to the target token's trauma target.
+  - Trauma damage always displays if there is no target, but only if the trauma roll succeeds otherwise.
+  - Separate damage buttons for applying trauma damage.
+  - Monster trauma target is entered directly, while characters are calculated.
+  - New Active Effect target: "system.trauma.bonus" adds to actor's trauma target beyond what armor applies. Example: Hard to Kill Edge.
+  - New Active Effect target: "system.trauma.targetBonus" adds to actor's trauma die roll granted by weapon. Example: Killing Blow Edge.
+  - Trauma ratings were added to weapons and armor in the compendium. In the case of weapons, it is a judgment call based on some loose guidelines, so your interpration may differ from mine. The rating on the blackjack is particularly likely to make someone scoff.
+- Added a setting to use the Ashes Without Number flat skill penalty for heavy armor.
+  - If active, the weight class of armor will not affect Sneak or Exert penalties, nor will it appear on the armor sheet. Instead a Heavy checkbox will dictate whether that armor inflicts a -1 penalty.
+
+### Fixes
+
+- There was an issue where a container could be dragged into itself, thereby rupturing the space-time continuum and eating all of your items. Existing containers should be restored and duct tape has been applied to the space-time continuum to prevent such behavior in the future.
+- Monsters weren't restoring attack counter on next round.
+
+## New in 1.5.1
+
+### Changes
+
+- Extended Godbound damage logic to work with spells, arts, and abilities.
+
+### Fixes
+
+- Various initiative fixes.
+- Various broken compendium links.
+  - Thanks to pandaniel for the above two fixes.
+- Added missing weapon items for weapon arts and linked them in art descriptions.
+  - Thanks to Dreaming Dark for these items, as well as new artwork for Atlas class arts.
+  - There is also art in `wwn/assets/default` for the Verderer, though their arts/spells aren't actually included in any compendiums.
+- Armor and weapons were getting added to containers correctly but not actually displaying, causing them to appear lost.
+- Removed errant 'damage' entry on arts.
+
 ## New in 1.5.0
 
 ### Note: Updated for v13. No attempt was made to maintain compatibility with v12.
@@ -10,9 +48,12 @@
 
 - Rerolling an individual rerolls all combatants.
 - If two groups ends up with the same initiative value, all combatants will display with decimals. This is a janky workaround to prevent groups with identical initiatives from ending up mixed in the tracker. Doing it the "right" way proved more trouble than it was worth.
+- There are a few broken links in amongst the items, though most should be fixed.
 
 ### Changes
 
+- Added `bonus` as a target for Active Effects to adjust attribute mods without using Tweaks.
+  - Example: `system.scores.str.bonus`
 - Added container items.
   - If a container is equipped or stowed, all items inside are considered stowed.
   - If a container is neither equipped or stowed, all items inside are neither equipped nor stowed.
@@ -46,9 +87,18 @@
     - Fixed faction attacks forcing attacks to be against certain asset types.
 - Fixed an error with monster saves.
   - This was caused by an ill-advised "optimization" that had ramifications I didn't foresee. To ensure that all monsters in compendiums are fixed, this is a breaking change. Namely, if you had any characters or monsters that used the "Base Save" in Tweaks to modify their saving throws, you will have to redo the change using the "Universal Save Mod", also located in Tweaks.
-- Clicking a save button on a chat card has been vastly improved.
+- Clicking a saving throw button on a chat card has been vastly improved.
   - Now opens a dialog asking for a universal modifier and has individual modifier overrides for each selected token.
   - Rolls all saves at once and outputs a single chat card containing the results.
+- Added support for Godbound damage.
+  - This is activated in system settings.
+  - When on, the damage buttons are changed to only the following:
+    - Apply Damage <-- this is normal damage
+    - Apply Healing
+    - Straight Damage <-- applies the damage straight
+    - Straight Healing
+  - The actual die rolls don't display in the normal Foundry way, so be away of that. You still see the values.
+  - Because the "normal damage" values are passed through a table and your attribute bonus dynamically applied to whichever would be most beneficial, the normal damage and straight damage values won't match exactly. This is to be expected. I'm not sure how to better communicate this to the user.
 - Fixed weapon charges not displaying on inventory tab.
 - Possible fix for an Item Piles interaction.
 - Moved party sheet button so it is no longer hidden by Foundry's search button in the actors tab.

@@ -236,7 +236,36 @@ export const registerSettings = function () {
     type: Boolean,
     config: true,
     requiresReload: true
+  });
 
+  game.settings.register("wwn", "godboundDamage", {
+    name: "Godbound Damage",
+    hint: "Use Godbound-style damage calculation for attacks.",
+    default: false,
+    scope: "world",
+    type: Boolean,
+    config: true,
+    requiresReload: false
+  });
+
+  game.settings.register("wwn", "useTrauma", {
+    name: "Use Trauma",
+    hint: "Enable the trauma system for armor and character sheets.",
+    default: false,
+    scope: "world",
+    type: Boolean,
+    config: true,
+    requiresReload: true
+  });
+
+  game.settings.register("wwn", "useFlatArmorPenalty", {
+    name: "Use Flat Armor Penalty",
+    hint: "In Ashes Without Number, heavy armor inflicts a flat Sneak/Exert penalty.",
+    default: false,
+    scope: "world",
+    type: Boolean,
+    config: true,
+    requiresReload: true
   });
 
   game.settings.register("wwn", "systemMigrationVersion", {
