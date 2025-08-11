@@ -87,7 +87,7 @@
   "WWN.roll.skills": "{skills} Test",
   "WWN.roll.details.skills": "Roll 1d6 <= {expl} for success",
   "WWN.roll.reaction": "Reaction roll",
-  "WWN.roll.initiative": "Group {group} rolls for Initiative!",
+  "WWN.roll.initiative": "{group} rolls for Initiative!",
   "WWN.roll.individualInit": "{name} rolls for Initiative!",
   "WWN.roll.loyalty": "Loyalty Check",
   "WWN.table.treasure.roll": "Roll Treasure",
