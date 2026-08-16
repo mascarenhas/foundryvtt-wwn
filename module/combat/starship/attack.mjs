@@ -12,6 +12,7 @@ import {
 } from "./systems.mjs";
 import { weaponsLockedOut } from "./crises.mjs";
 import { createRollMessage } from "../../chat/chat-card.mjs";
+import { enrichItemDescription } from "../../chat/item-description.mjs";
 import { showWwnDialog, cancelButton } from "../../applications/wwn-dialog.mjs";
 import { WwnAttackRoll, WwnDamageRoll } from "../../dice/rolls.mjs";
 import { computeShipWeaponOutcome } from "./weapon-outcome.mjs";
@@ -199,8 +200,19 @@ export async function resolveShipWeaponHit({
   }
   notices.push(...outcome.notices);
 
+  const rollMeta = [
+    { label: game.i18n.localize("WWN.Roll.Attack"), breakdown: attackBreakdown ?? "" },
+  ];
+  if (rolls.length > 1) {
+    rollMeta.push({
+      label: game.i18n.localize("WWN.Roll.Damage"),
+      breakdown: damageBreakdown ?? "",
+    });
+  }
+
   await createRollMessage({
     rolls,
+    rollMeta,
     kind: "attack",
     actor: attacker.actor,
     img: weapon.img,
@@ -208,9 +220,8 @@ export async function resolveShipWeaponHit({
     subtitle: game.i18n.format("WWN.Roll.VsTarget", { target: target.name }),
     badge,
     bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+    description: await enrichItemDescription(weapon),
     context: {
-      attackBreakdown: attackBreakdown ?? `${outcome.attack} vs AC ${outcome.ac}`,
-      damageBreakdown: damageBreakdown ?? null,
       applyRows,
       notices,
       hit: outcome.hit && !negated,
@@ -310,6 +321,10 @@ export async function postResolvedShipWeaponCard({
 
   return createRollMessage({
     rolls: [attackRoll, damageRoll],
+    rollMeta: [
+      { label: game.i18n.localize("WWN.Roll.Attack"), breakdown: attackBreakdown ?? "" },
+      { label: game.i18n.localize("WWN.Roll.Damage"), breakdown: damageBreakdown ?? "" },
+    ],
     kind: "attack",
     actor: starship,
     img: weapon.img,
@@ -322,9 +337,8 @@ export async function postResolvedShipWeaponCard({
       type: hit ? "hit" : "miss",
     },
     bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+    description: await enrichItemDescription(weapon),
     context: {
-      attackBreakdown,
-      damageBreakdown,
       applyRows,
       notices,
       hit: hit !== false,

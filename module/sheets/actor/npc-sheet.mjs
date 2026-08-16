@@ -1,9 +1,9 @@
 /**
- * WWN NPC (monster) sheet: Main, Details, Effects.
+ * WWN NPC (monster) sheet: Main, Powers, Details, Effects.
  *
- * No Favorites UI. Monster data model: manual AC, flat `hd`, morale/instinct/
+ * Favorites dock on Main. Monster data model: manual AC, flat `hd`, morale/instinct/
  * reaction/appearing rolls, and pattern-color cycling for attack items.
- * Powers live on the Main tab (right column); former Config fields live on Details.
+ * Powers live on the Powers tab; former Config fields live on Details.
  */
 import { WwnBaseActorSheet } from "./base-actor-sheet.mjs";
 import composeMixins from "../mixins/compose-mixins.mjs";
@@ -13,14 +13,15 @@ import { WwnDice } from "../../dice/dice.mjs";
 const TPL = "systems/wwn/templates/actor/npc";
 
 /**
- * NPC sheet. No Favorites dock.
+ * NPC sheet with Favorites dock on Main.
  *
- * Tabs: Main | Details | Effects.
+ * Tabs: Main | Powers | Details | Effects.
  */
 export class WwnNpcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBaseActorSheet) {
   /** @override */
   static DEFAULT_OPTIONS = {
     classes: ["npc"],
+    position: { width: 640, height: 640 },
     actions: {
       rollNpcHp: WwnNpcSheet.#onRollNpcHp,
       rollInstinct: WwnNpcSheet.#onRollInstinct,
@@ -36,6 +37,7 @@ export class WwnNpcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBase
     primary: {
       tabs: [
         { id: "main", label: "WWN.Tabs.Main" },
+        { id: "powers", label: "WWN.Tabs.Powers" },
         { id: "details", label: "WWN.Tabs.Details" },
         { id: "effects", label: "WWN.Tabs.Effects" },
       ],
@@ -47,7 +49,11 @@ export class WwnNpcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBase
   static PARTS = {
     header: { template: `${TPL}/header.hbs` },
     tabs: { template: "templates/generic/tab-navigation.hbs" },
-    main: { template: `${TPL}/tabs/main.hbs`, scrollable: [""] },
+    main: {
+      template: `${TPL}/tabs/main.hbs`,
+      scrollable: [".wwn-npc-attacks", ".wwn-favorites-dock .item-list", ""],
+    },
+    powers: { template: "systems/wwn/templates/actor/npc/tabs/powers.hbs", scrollable: [""] },
     details: { template: `${TPL}/tabs/details.hbs`, scrollable: [""] },
     effects: { template: "systems/wwn/templates/actor/partials/effects-tab.hbs", scrollable: [""] },
   };
@@ -58,13 +64,11 @@ export class WwnNpcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBase
     const actor = this.actor;
     const system = actor.system;
 
-    // NPCs have no Favorites UI — HP tracker only.
+    // NPCs show HP tracker only (no XP/effort bars).
     context.resourceBars = context.resourceBars.filter((bar) => bar.id === "hp");
-    context.favorites = [];
-    context.favoritesEnabled = false;
 
-    // Legacy "attributes" tab lists weapons as an attack-pattern group, then
-    // armor/gear/ammo beneath. Lists come from the base sheet's `_prepareItems`.
+    // Weapons are the Main Attacks list; leftover armor/gear/ammo go under Attacks & Equipment on Main.
+    // Lists come from the base sheet's `_prepareItems`.
     context.attackPatterns = [...context.weapons].sort((a, b) => a.name.localeCompare(b.name));
     context.otherItems = [...context.armors, ...context.ammoItems, ...context.gear].sort((a, b) =>
       a.name.localeCompare(b.name)

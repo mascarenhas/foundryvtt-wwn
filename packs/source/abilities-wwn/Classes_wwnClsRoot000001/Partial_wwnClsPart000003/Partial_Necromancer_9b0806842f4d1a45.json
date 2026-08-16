@@ -3,31 +3,7 @@
   "name": "Partial Necromancer",
   "type": "classEdge",
   "img": "systems/wwn/assets/icons/items/class-ability.png",
-  "effects": [
-    {
-      "_id": "2e1f529145904bd5",
-      "name": "Cold Flesh",
-      "img": "icons/svg/aura.svg",
-      "type": "base",
-      "disabled": false,
-      "transfer": true,
-      "statuses": [],
-      "flags": {},
-      "changes": [],
-      "system": {
-        "changes": [
-          {
-            "key": "system.combat.innateAc.min",
-            "type": "upgrade",
-            "value": "12 + floor(@level / 2)",
-            "priority": null,
-            "phase": "final"
-          }
-        ]
-      },
-      "_key": "!items.effects!9b0806842f4d1a45.2e1f529145904bd5"
-    }
-  ],
+  "effects": [],
   "flags": {},
   "folder": "wwnClsPart000003",
   "sort": 0,
@@ -80,6 +56,12 @@
         8,
         9
       ]
-    }
+    },
+    "bonusSkills": [
+      "magic"
+    ],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusSkillsMode": ""
   }
 }

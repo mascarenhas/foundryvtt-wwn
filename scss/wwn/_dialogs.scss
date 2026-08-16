@@ -1,5 +1,80 @@
 /* Dialog / ApplicationV2 windows opened via showWwnDialog and themed apps */
 
+.application.wwn-dialog,
+.wwn.wwn-dialog {
+  .window-content {
+    color: var(--wwn-text, var(--wwn-dark-alt));
+
+    /* Beat V1 .wwn input reset so dialog fields look like sheet controls. */
+    input:not([type="checkbox"]),
+    select,
+    textarea {
+      background: var(--wwn-input-bg, rgba(255, 255, 255, 0.6));
+      border: 1px solid var(--wwn-border-soft, var(--wwn-border));
+      border-radius: 0.15rem;
+      color: var(--wwn-text, var(--wwn-dark-alt));
+      padding: 0.15rem 0.35rem;
+
+      &:hover:not(:disabled),
+      &:focus:not(:disabled) {
+        background: var(--wwn-input-bg, rgba(255, 255, 255, 0.75));
+        box-shadow: none;
+      }
+    }
+  }
+
+  .wwn-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 16rem;
+  }
+
+  .wwn-dialog-hint {
+    margin: 0;
+    font-style: italic;
+    opacity: 0.8;
+  }
+
+  .form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+
+    > label {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .form-fields {
+      flex: 0 1 8rem;
+      min-width: 5rem;
+      justify-content: flex-end;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}
+
+.wwn-dialog--group-save {
+  .wwn-dialog-body {
+    min-width: 20rem;
+  }
+
+  .wwn-dialog-token-mods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 20rem;
+    overflow-y: auto;
+  }
+}
+
 .wwn-app--creator,
 .wwn-dialog--creator {
   .attribute-list .form-fields {

@@ -101,10 +101,10 @@ export default class WwnPower extends WwnItemBase {
     schema.bonusSkills = new fields.ArrayField(new fields.StringField(), { required: true, initial: [] });
     schema.bonusSkillsPick = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.bonusSkillsChosen = new fields.ArrayField(new fields.StringField(), { required: true, initial: [] });
-    /** Empty = listed skills only; `"any"` = open primary-skill pick when list empty and pick > 0. */
+    /** Empty = listed skills only; `"any"` / `"noncombat"` = open pick when list empty and pick > 0. */
     schema.bonusSkillsMode = new fields.StringField({
       required: true,
-      choices: ["", "any"],
+      choices: ["", "any", "noncombat"],
       initial: "",
       blank: true,
     });

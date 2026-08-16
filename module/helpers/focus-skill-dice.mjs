@@ -1,3 +1,5 @@
+import { skillSlugOf } from "./skill-set.mjs";
+
 /**
  * Focus-driven skill roll dice (Specialist, Gifted Chirurgeon, etc.).
  */
@@ -39,7 +41,7 @@ export async function promptFocusSkillBonus(focus, actor) {
   const skills = actor.items
     .filter((i) => i.type === "skill")
     .map((skill) => ({
-      slug: skill.system.slug || skill.name.slugify({ strict: true }).replace(/-/g, ""),
+      slug: skillSlugOf(skill),
       label: skill.name,
     }));
 

@@ -1,0 +1,7 @@
+{{!-- Shared AppV2 prose field. Pass name, value, documentUuid, enriched; optional compact / fill. --}}
+<div class="wwn-sheet-editor{{#if compact}} wwn-sheet-editor--compact{{/if}}{{#if fill}} wwn-sheet-editor--fill{{/if}}">
+  <prose-mirror name="{{name}}" toggled value="{{value}}"
+    data-document-uuid="{{documentUuid}}" {{#unless editable}}disabled{{/unless}}>
+    {{{enriched}}}
+  </prose-mirror>
+</div>

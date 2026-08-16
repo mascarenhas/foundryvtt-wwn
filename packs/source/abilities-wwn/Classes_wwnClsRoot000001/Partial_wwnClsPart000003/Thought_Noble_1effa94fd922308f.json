@@ -34,6 +34,12 @@
     },
     "preparedGrant": {
       "progression": []
-    }
+    },
+    "bonusSkills": [
+      "notice"
+    ],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusSkillsMode": ""
   }
 }

@@ -19,6 +19,12 @@
             "type": "add",
             "value": 2,
             "phase": "final"
+          },
+          {
+            "key": "system.combat.autoStabilize",
+            "type": "override",
+            "value": "true",
+            "phase": "final"
           }
         ]
       },
@@ -40,9 +46,9 @@
     },
     "internalResource": {
       "value": 0,
-      "max": 0
+      "max": 1
     },
-    "resourceLength": "none",
+    "resourceLength": "day",
     "bonusSkills": [],
     "bonusSkillsPick": 0,
     "bonusSkillsChosen": [],

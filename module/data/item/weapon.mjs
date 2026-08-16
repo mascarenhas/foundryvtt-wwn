@@ -24,6 +24,13 @@ export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
       }
     }
 
+    // Pre-migration sheets wrote `system.skill`; the schema now uses skillFallback.
+    if (typeof source.skill === "string") {
+      if (!source.skillFallback) source.skillFallback = source.skill;
+      delete source.skill;
+    }
+    delete source.skillDamage;
+
     const needs =
       source.ammoMode === undefined ||
       source.ammoFallback === undefined ||
@@ -46,7 +53,6 @@ export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
 
     schema.damage = new fields.StringField({ required: true, initial: "1d6" });
     schema.bonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
-    schema.skillDamage = new fields.BooleanField({ initial: false });
 
     schema.shock = new fields.SchemaField({
       damage: new fields.StringField({ required: true, blank: true, initial: "" }),

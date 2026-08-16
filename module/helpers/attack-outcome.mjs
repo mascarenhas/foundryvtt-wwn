@@ -90,6 +90,76 @@ export function applyShockFloor(damage, shock) {
 }
 
 /**
+ * AC used when comparing a target to a weapon's Shock threshold.
+ * Shocking Assault / Close Combatant / Armsmaster treat every target as AC 10.
+ * @param {object} attacker
+ * @param {object} targetActor
+ * @param {number|null} [resolvedAc]
+ * @returns {number}
+ */
+export function effectiveShockCompareAc(attacker, targetActor, resolvedAc = null) {
+  if (attacker?.system?.combat?.treatAllMeleeAsAcTen) return 10;
+  if (Number.isFinite(resolvedAc)) return Number(resolvedAc);
+  const melee = Number(targetActor?.system?.combat?.ac?.melee?.value);
+  return Number.isFinite(melee) ? melee : 10;
+}
+
+/**
+ * Chat cards only resolve vs a single targeted token.
+ * Zero or two-plus actor tokens are treated as untargeted.
+ * @param {Iterable} [targets]
+ * @returns {{ target: object|null, untargeted: boolean }}
+ */
+export function resolveChatAttackTarget(targets) {
+  const list = [];
+  for (const token of targets ?? []) {
+    if (token?.actor) list.push(token);
+  }
+  if (list.length === 1) return { target: list[0], untargeted: false };
+  return { target: null, untargeted: true };
+}
+
+/**
+ * Whether a weapon's stored Shock damage is a real base (not 0 / blank).
+ * Pack ranged weapons typically persist `shock.damage` as `"0"`.
+ * @param {unknown} damage
+ * @returns {boolean}
+ */
+export function hasBaseShockDamage(damage) {
+  if (damage == null) return false;
+  const raw = String(damage).trim();
+  if (!raw || raw === "0") return false;
+  return true;
+}
+
+/**
+ * Whether the Shock roll row should appear. Untargeted attacks always show it.
+ * Omit only when every resolved target's compare AC exceeds the threshold.
+ * @param {number} threshold
+ * @param {number[]} compareAcs
+ * @returns {boolean}
+ */
+export function shouldShowShockRow(threshold, compareAcs = []) {
+  if (!Array.isArray(compareAcs) || !compareAcs.length) return true;
+  const acLimit = Number(threshold);
+  if (!Number.isFinite(acLimit)) return true;
+  return compareAcs.some((ac) => Number(ac) <= acLimit);
+}
+
+/**
+ * Struck-through "0 Shock" is miss-only. Hits still use Shock as a damage floor.
+ * @param {{ hit?: boolean, showShockRow?: boolean, canUseShock?: boolean, hasCompareAcs?: boolean }} args
+ */
+export function shouldEmitNoShockPlaceholder({
+  hit = false,
+  showShockRow = false,
+  canUseShock = false,
+  hasCompareAcs = false,
+} = {}) {
+  return !hit && !showShockRow && !!canUseShock && !!hasCompareAcs;
+}
+
+/**
  * Build localized notice strings from resolution context.
  * @param {object} ctx
  * @param {(key: string, data?: object) => string} localize
@@ -117,28 +187,16 @@ export function buildAttackNotices(ctx, localize) {
         kind: piece.isShield ? L("WWN.Armor.shield") : L("WWN.Roll.NoticeArmor"),
       }));
     }
-
-    if (ctx.ac != null && ctx.acKind) {
-      notices.push(L("WWN.Roll.NoticeTargetAc", {
-        ac: ctx.ac,
-        kind: ctx.acKind === "ranged" ? L("WWN.Armor.ACRanged") : L("WWN.Armor.ACMelee"),
-      }));
-    }
   }
 
   if (ctx.shockSuppressedReason === "tl") {
     notices.push(L("WWN.Roll.NoticeNoShockTl"));
   } else if (ctx.shockSuppressedReason === "immune") {
     notices.push(L("WWN.Roll.NoticeNoShockImmune"));
-  } else if (ctx.shockSuppressedReason === "ac") {
-    notices.push(L("WWN.Roll.NoticeNoShockAc", {
-      targetAc: ctx.shockTargetAc,
-      threshold: ctx.shockThreshold,
-    }));
   }
 
   if (ctx.shockFloored) {
-    notices.push(L("WWN.Roll.NoticeShockFloor", { shock: ctx.shockTotal, damage: ctx.rawDamage }));
+    notices.push(L("WWN.Roll.NoticeShockFloor"));
   }
 
   return notices;
@@ -154,6 +212,7 @@ export function buildAttackNotices(ctx, localize) {
  */
 export function buildAttackApplyRows({
   hit,
+  untargeted = false,
   blockedByTl,
   damageValue,
   damageFloored = false,
@@ -161,7 +220,6 @@ export function buildAttackApplyRows({
   shockTotal,
   shockAppliesOnMiss,
   shockLabelAc,
-  shockTargetAc,
   trauma,
   missDamageValue,
   labels,
@@ -194,13 +252,13 @@ export function buildAttackApplyRows({
     });
   }
 
-  if (!hit && !blockedByTl && shockTotal != null && shockAppliesOnMiss) {
+  if (!blockedByTl && shockTotal != null && ((!hit && shockAppliesOnMiss) || untargeted)) {
+    const threshold = Number(shockLabelAc);
     applyRows.push({
       id: "shock",
-      label: shockTargetAc != null
-        ? labels.shockVsTarget(shockTotal, shockLabelAc, shockTargetAc)
-        : labels.shockVs(shockTotal, shockLabelAc),
+      label: labels.shock,
       value: shockTotal,
+      suffix: Number.isFinite(threshold) ? labels.shockSuffix?.(threshold) : "",
     });
   }
 

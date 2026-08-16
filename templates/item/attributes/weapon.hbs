@@ -32,7 +32,14 @@
           <div class="form-group">
             <label title="{{localize 'WWN.skill'}}">{{localize "WWN.skill"}}</label>
             <div class="form-fields">
-              <input name="system.skill" type="text" placeholder="Skill" value="{{system.skill}}" />
+              <input name="system.skillFallback" type="text" placeholder="Skill" value="{{system.skillFallback}}"
+                data-dtype="String" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>{{localize "WWN.items.AtkBonus"}}</label>
+            <div class="form-fields">
+              <input type="text" name="system.bonus" value="{{system.bonus}}" data-dtype="String" />
             </div>
           </div>
           <div class="form-group">
@@ -42,12 +49,6 @@
                 <option value=""></option>
                 {{selectOptions config.saves selected=system.save}}
               </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>{{localize "WWN.items.AtkBonus"}}</label>
-            <div class="form-fields">
-              <input type="text" name="system.bonus" value="{{system.bonus}}" data-dtype="String" />
             </div>
           </div>
           <div class="form-group">
@@ -108,13 +109,6 @@
             </div>
           </div>
           {{/if}}
-          <div class="form-group">
-            <label title="{{localize 'WWN.items.SkillDamageLong'}}">{{localize "WWN.items.SkillDamageShort"}}</label>
-            <div class="form-fields">
-              <input type="checkbox" name="system.skillDamage" {{checked system.skillDamage}} data-dtype="Boolean"
-                title="{{localize 'WWN.items.SkillDamageLong'}}" />
-            </div>
-          </div>
           <div class="form-group">
             <label title="{{localize 'WWN.items.BurstLong'}}">{{localize "WWN.items.BurstShort"}}</label>
             <div class="form-fields">

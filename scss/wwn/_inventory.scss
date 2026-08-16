@@ -458,6 +458,34 @@
     }
   }
 
+  /* Favorites dock reuses .inventory; keep one-line names and right-aligned controls. */
+  .inventory.wwn-favorites-dock {
+    .item {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+    }
+
+    .item-name {
+      min-width: 0;
+
+      h4 {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .item-controls {
+      flex: 0 0 auto;
+      width: auto;
+      max-width: none;
+      margin-left: auto;
+    }
+  }
+
   &.pc .tab.inventory.active {
     display: flex;
     flex-direction: column;
@@ -466,24 +494,8 @@
   }
 
   &.npc {
-    .attributes-tab {
-      flex-direction: row;
-      flex-grow: 0;
-
-      section.flexrow {
-        flex-direction: column;
-      }
-
-      .attribute-value.flexrow {
-        flex-direction: row;
-      }
-
-      .inventory {
-        width: 420px;
-      }
-    }
-
-    .inventory {
+    /* Favorites dock reuses .inventory; do not pin it to the old 420px column. */
+    .inventory:not(.wwn-favorites-dock) {
       padding-top: 0px;
       margin-top: 0px;
       max-height: 380px;

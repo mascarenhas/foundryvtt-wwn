@@ -305,7 +305,7 @@
 
     {{#unless hasPowersContent}}
     {{#unless showPreparedCounter}}
-    <h4 class="powers-empty-state">{{localize "WWN.Power.EmptyHint"}}</h4>
+    <h4 class="powers-empty-state">{{#if isNpc}}{{localize "WWN.Power.EmptyHintNpc"}}{{else}}{{localize "WWN.Power.EmptyHint"}}{{/if}}</h4>
     {{/unless}}
     {{/unless}}
 

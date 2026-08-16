@@ -13,6 +13,7 @@ import { WwnAttackRoll, WwnDamageRoll, WwnSkillRoll } from "../dice/rolls.mjs";
 import { createRollMessage, createNoticeMessage } from "../chat/chat-card.mjs";
 import { showWwnDialog, rollButton, cancelButton } from "../applications/wwn-dialog.mjs";
 import { isNpc } from "./actor-types.mjs";
+import { resolveChatAttackTarget } from "./attack-outcome.mjs";
 import {
   DEFAULT_STATION_SKILL,
   resolveStation,
@@ -94,7 +95,10 @@ async function rollNpcStationCheck(actor, { title, skipDialog = false } = {}) {
     actor,
     title,
     bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
-    context: { breakdown: parts.breakdown() },
+    rollMeta: [{
+      label: game.i18n.localize("WWN.Roll.Formula"),
+      breakdown: parts.breakdown(),
+    }],
   });
 }
 
@@ -130,7 +134,7 @@ async function postShipWeaponCard({
   if (!createMessage) return evaluated;
 
   const target = targetActor
-    ?? [...(game.user?.targets ?? [])][0]?.actor
+    ?? resolveChatAttackTarget(game.user?.targets).target?.actor
     ?? null;
   const combat = game.combat;
   const attackerCombatant = combat ? combatantForStarship(combat, starship) : null;
@@ -329,7 +333,10 @@ export async function rollSpikeDrill(starship, { difficulty, skipDialog = false 
       actor,
       title,
       bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
-      context: { breakdown: parts.breakdown() },
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
     });
   }
 

@@ -136,7 +136,8 @@
     }
   }
 
-  .editor {
+  /* V1 TinyMCE chrome only — AppV2 <prose-mirror> uses .wwn-sheet-editor. */
+  &:not(.wwn-sheet) .editor {
     height: 300px;
     padding: 4px;
   }

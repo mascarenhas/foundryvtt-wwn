@@ -17,7 +17,7 @@
           {
             "key": "system.combat.innateAc.min",
             "type": "upgrade",
-            "value": 13,
+            "value": 12,
             "phase": "final"
           }
         ]
@@ -28,6 +28,30 @@
         }
       },
       "_key": "!items.effects!bi2EKXHDv2L6mt4f.4u1ZG6PGfVlrF5CA"
+    },
+    {
+      "_id": "kP8wLm2nQx4vRtY1",
+      "type": "base",
+      "name": "Lizardman (AC +1)",
+      "img": "systems/wwn/assets/icons/items/focus.png",
+      "transfer": true,
+      "disabled": false,
+      "system": {
+        "changes": [
+          {
+            "key": "system.combat.ac.mod",
+            "type": "add",
+            "value": 1,
+            "phase": "initial"
+          }
+        ]
+      },
+      "flags": {
+        "wwn": {
+          "focusLevel": 1
+        }
+      },
+      "_key": "!items.effects!bi2EKXHDv2L6mt4f.kP8wLm2nQx4vRtY1"
     },
     {
       "_id": "YDHRqxlGebedfvF7",

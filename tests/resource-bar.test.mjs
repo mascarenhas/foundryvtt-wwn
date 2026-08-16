@@ -71,9 +71,26 @@ describe("prepareResourceBars", () => {
     const strain = bars.find((b) => b.id === "strain");
     assert.equal(strain.value, 2);
     assert.equal(strain.ceiling, 4);
-    assert.equal(strain.pct, 50);
     assert.equal(strain.maxPath, null);
     assert.equal(strain.mode, "negative");
+  });
+
+  it("inverts negative-mode fill so the bar empties as value approaches max", () => {
+    globalThis.game = {
+      settings: {
+        get: (_module, key) => key === "useAlienation" || key === "useStress",
+      },
+    };
+    const bars = prepareResourceBars(
+      makeActor({
+        strain: { value: 1, max: 4 },
+        alienation: { value: 0, valueMax: 2 },
+        stress: { value: 5, valueMax: 5 },
+      }),
+    );
+    assert.equal(bars.find((b) => b.id === "strain").pct, 75);
+    assert.equal(bars.find((b) => b.id === "alienation").pct, 100);
+    assert.equal(bars.find((b) => b.id === "stress").pct, 0);
   });
 
   it("flags overflow for valueMax trackers when value exceeds ceiling", () => {

@@ -19,6 +19,7 @@ import {
   normalizeWeightless,
   normalizeArmorType,
   applyEmbeddedItemMigration,
+  migrateActorItems,
   isBarePlaceholderActorData,
 } from "../module/migration/transforms.mjs";
 
@@ -155,6 +156,204 @@ describe("migrateFocus", () => {
     assert.ok(keys.includes("system.combat.meleeShock"));
   });
 
+  it("seeds Shocking Assault unarmedShock separately from meleeShock", () => {
+    const out = migrateFocus({
+      _id: "ShockParent000001",
+      name: "Shocking Assault",
+      type: "focus",
+      system: { ownedLevel: 2 },
+      effects: [],
+    });
+    const l2 = out.effects.find((e) => e.name === "Shocking Assault (Level 2)");
+    const keys = (l2.system?.changes ?? []).map((c) => c.key);
+    assert.ok(keys.includes("system.combat.meleeShock"));
+    assert.ok(keys.includes("system.combat.unarmedShock"));
+  });
+
+  it("drops retired art-as-armor items from actor inventories", () => {
+    const out = migrateActorItems([
+      { _id: "KeepArmor00000001", name: "Leather", type: "armor", system: { type: "light" } },
+      { _id: "ColdFleshGear0001", name: "Cold Flesh", type: "armor", system: { type: "light", ac: 12 } },
+      { _id: "PavisGear00000001", name: "Pavis of Elements", type: "armor", system: { type: "light" } },
+    ]);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].name, "Leather");
+  });
+
+  it("seeds Die Hard autoStabilize and a daily internal resource", () => {
+    const out = migrateFocus({
+      _id: "DieHardParent0001",
+      name: "Die Hard",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+    const l1 = out.effects.find((e) => e.name === "Die Hard (Level 1)");
+    const keys = (l1.system?.changes ?? []).map((c) => c.key);
+    assert.ok(keys.includes("system.hitDice.perLevelMod"));
+    assert.ok(keys.includes("system.combat.autoStabilize"));
+    assert.equal(out.system.internalResource.max, 1);
+    assert.equal(out.system.resourceLength, "day");
+  });
+
+  it("patches an existing Die Hard L1 AE that lacks autoStabilize", () => {
+    const out = migrateFocus({
+      _id: "DieHardParent0002",
+      name: "Die Hard",
+      type: "focus",
+      system: { ownedLevel: 1, internalResource: { value: 0, max: 1 }, resourceLength: "day" },
+      effects: [
+        {
+          name: "Die Hard (Level 1)",
+          flags: { wwn: { focusLevel: 1 } },
+          system: {
+            changes: [{ key: "system.hitDice.perLevelMod", type: "add", value: 2, phase: "final" }],
+          },
+        },
+      ],
+    });
+    const keys = out.effects[0].system.changes.map((c) => c.key);
+    assert.ok(keys.includes("system.combat.autoStabilize"));
+    assert.equal(keys.filter((k) => k === "system.combat.autoStabilize").length, 1);
+  });
+
+  it("seeds Unarmed Combatant L2 punchMissDamage", () => {
+    const out = migrateFocus({
+      _id: "UnarmedParent0001",
+      name: "Unarmed Combatant",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+    const l2 = out.effects.find((e) => e.name === "Unarmed Combatant (Level 2)");
+    assert.equal(l2.disabled, true);
+    assert.equal(l2.flags.wwn.focusLevel, 2);
+    assert.equal(l2.system.changes[0].key, "system.combat.punchMissDamage");
+    assert.deepEqual(out.system.bonusSkills, ["punch"]);
+  });
+
+  it("seeds Gyre L2 mental attribute choice AEs", () => {
+    const out = migrateFocus({
+      _id: "GyreParent0000001",
+      name: "Origin Focus: Elf, Gyre",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+    const names = out.effects.map((e) => e.name);
+    assert.ok(names.includes("Elf, Gyre L2 (Intelligence +1)"));
+    assert.ok(names.includes("Elf, Gyre L2 (Wisdom +1)"));
+    assert.ok(names.includes("Elf, Gyre L2 (Charisma +1)"));
+    assert.ok(out.effects.every((e) => e.disabled && e.flags.wwn.skipFocusLevelSync));
+  });
+
+  it("seeds Half-Elf Dex+1 / Con−1 choice AE", () => {
+    const out = migrateFocus({
+      _id: "HalfElfParent0001",
+      name: "Origin Focus: Elf, Half-Elf",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+    assert.equal(out.effects.length, 1);
+    assert.equal(out.effects[0].name, "Elf, Half-Elf (Dexterity +1 / Constitution −1)");
+    assert.equal(out.effects[0].disabled, true);
+    const keys = out.effects[0].system.changes.map((c) => `${c.key}:${c.value}`);
+    assert.ok(keys.includes("system.abilities.dex.baseMod:1"));
+    assert.ok(keys.includes("system.abilities.con.baseMod:-1"));
+  });
+
+  it("seeds a single enabled AE for Developed Attribute (Dexterity)", () => {
+    const out = migrateFocus({
+      _id: "DevDex0000000001",
+      name: "Developed Attribute (Dexterity)",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+    assert.equal(out.effects.length, 1);
+    assert.equal(out.effects[0].disabled, false);
+    assert.deepEqual(out.effects[0].system.changes, [
+      { key: "system.abilities.dex.baseMod", type: "add", value: 1, phase: "initial" },
+    ]);
+  });
+
+  it("splits a legacy combined Developed Attribute using the enabled AE", () => {
+    const out = migrateFocus({
+      _id: "DevLegacy0000001",
+      name: "Developed Attribute",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [
+        {
+          name: "Developed Attribute (Strength)",
+          disabled: true,
+          system: { changes: [{ key: "system.abilities.str.baseMod", type: "add", value: 1, phase: "initial" }] },
+        },
+        {
+          name: "Developed Attribute (Wisdom)",
+          disabled: false,
+          system: { changes: [{ key: "system.abilities.wis.baseMod", type: "add", value: 1, phase: "initial" }] },
+        },
+      ],
+    });
+    assert.equal(out.name, "Developed Attribute (Wisdom)");
+    assert.equal(out.effects.length, 1);
+    assert.equal(out.effects[0].disabled, false);
+    assert.equal(out.effects[0].system.changes[0].key, "system.abilities.wis.baseMod");
+  });
+
+  it("splits an unpicked combined Developed Attribute using the first variant", () => {
+    const out = migrateFocus({
+      _id: "DevLegacy0000002",
+      name: "Developed Attribute",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [
+        {
+          name: "Developed Attribute (Strength)",
+          disabled: true,
+          system: { changes: [{ key: "system.abilities.str.baseMod", type: "add", value: 1, phase: "initial" }] },
+        },
+        {
+          name: "Developed Attribute (Wisdom)",
+          disabled: true,
+          system: { changes: [{ key: "system.abilities.wis.baseMod", type: "add", value: 1, phase: "initial" }] },
+        },
+      ],
+    });
+    assert.equal(out.name, "Developed Attribute (Strength)");
+    assert.equal(out.effects.length, 1);
+    assert.equal(out.effects[0].disabled, false);
+    assert.equal(out.effects[0].system.changes[0].key, "system.abilities.str.baseMod");
+  });
+
+  it("rewrites Lizardman innate 13 to 12 and seeds AC +1", () => {
+    const out = migrateFocus({
+      _id: "LizardParent0001",
+      name: "Origin Focus: Lizardman",
+      type: "focus",
+      system: { ownedLevel: 1 },
+      effects: [
+        {
+          name: "Lizardman (Level 1)",
+          flags: { wwn: { focusLevel: 1 } },
+          system: {
+            changes: [
+              { key: "system.combat.innateAc.min", type: "upgrade", value: 13, phase: "final" },
+            ],
+          },
+        },
+      ],
+    });
+    const innate = out.effects.find((e) => e.name === "Lizardman (Level 1)");
+    const acBonus = out.effects.find((e) => e.name === "Lizardman (AC +1)");
+    assert.equal(innate.system.changes[0].value, 12);
+    assert.deepEqual(acBonus.system.changes, [
+      { key: "system.combat.ac.mod", type: "add", value: 1, phase: "initial" },
+    ]);
+  });
+
   it("does not duplicate Alert seeds on re-run", () => {
     const first = migrateFocus({
       _id: "AlertParent00001",
@@ -211,6 +410,15 @@ describe("migratePcCombatAb merge helpers", () => {
     );
     assert.ok(patch);
     assert.equal(typeof patch.combat.abMod, "number");
+  });
+
+  it("does not invent a residual when combat.ab is missing (partial updates)", () => {
+    assert.equal(migratePcCombatAb({ details: { level: 8 } }), null);
+    assert.equal(migratePcCombatAb({ details: { level: 6 }, combat: {} }), null);
+    assert.equal(
+      migratePcCombatAb({ details: { level: 8 }, combat: { initiative: { mod: 1 } } }),
+      null,
+    );
   });
 
   it("infers warrior progression from classEdge", () => {
@@ -294,7 +502,7 @@ describe("isBarePlaceholderActorData", () => {
 });
 
 describe("migrateActorData type preservation", () => {
-  it("merges residual abMod without wiping other combat fields", () => {
+  it("does not rewrite modern PC combat on live migrate (world migrate owns residuals)", () => {
     const out = migrateActorData({
       type: "character",
       name: "Veteran",
@@ -308,10 +516,34 @@ describe("migrateActorData type preservation", () => {
       effects: [],
     });
     assert.equal(out.type, "character");
-    assert.equal(out.system.combat.abMod, 0); // warrior L4 base AB 4 → residual 0
+    assert.equal(out.system, null);
+  });
+
+  it("clears a spurious -half-level abMod left by live actor migration", () => {
+    const out = migrateActorData({
+      type: "character",
+      name: "High Mage",
+      system: {
+        abilities: { int: { value: 14, mod: 1 } },
+        details: { level: 6 },
+        combat: { abMod: -3, initiative: { mod: 1 } },
+      },
+      items: [{ type: "classEdge", system: { attackProgression: "mage" } }],
+      effects: [],
+    });
+    assert.equal(out.system.combat.abMod, 0);
     assert.equal(out.system.combat.initiative.mod, 1);
-    assert.equal(out.system.combat.soak, 2);
-    assert.equal(out.system.combat.ab, 4);
+  });
+
+  it("does not inject combat into a partial level-only migrate payload", () => {
+    const out = migrateActorData({
+      type: "character",
+      name: "Leveling",
+      system: { details: { level: 8 } },
+      items: [{ type: "classEdge", system: { attackProgression: "warrior" } }],
+      effects: [],
+    });
+    assert.equal(out.system, null);
   });
 
   it("keeps character type when migrating scores shape", () => {

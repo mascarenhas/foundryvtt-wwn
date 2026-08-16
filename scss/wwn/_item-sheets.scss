@@ -18,6 +18,11 @@
     flex: 1 1 auto;
   }
 
+  /* Parent Attack | Damage (etc.) stays two columns; fields inside each box stack. */
+  .wwn-form-panel-fields {
+    grid-template-columns: 1fr;
+  }
+
   .wwn-form-panel {
     .notes {
       margin: 0.15rem 0 0;
@@ -165,7 +170,4 @@
     }
   }
 
-  .wwn-item-description .editor {
-    min-height: 12rem;
-  }
 }

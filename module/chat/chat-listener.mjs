@@ -11,6 +11,20 @@ import {
 import { applyPowerEffectsToActor } from "../helpers/power-effects.mjs";
 import { getApplyRows, resolveApplyRowAmount } from "./damage-amount.mjs";
 
+export const WWN_CHAT_CARD_ACTIONS = Object.freeze([
+  "toggleHeal",
+  "setMultiplier",
+  "applyRow",
+  "applyStraight",
+  "rollCardSave",
+  "selectSaveGroup",
+  "applyHitDice",
+  "powerDamage",
+  "applyTargetStrain",
+  "applyPowerEffects",
+  "toggleDescription",
+]);
+
 export class ChatListener {
   /** Attach the delegated listener to the chat log. */
   static activate() {
@@ -26,10 +40,11 @@ export class ChatListener {
   }
 
   static async #onAction(event, target, message) {
-    event.preventDefault();
     const action = target.dataset.action;
+    if (!WWN_CHAT_CARD_ACTIONS.includes(action)) return;
     const card = target.closest(".wwn-chat-card");
     if (!card) return;
+    event.preventDefault();
     switch (action) {
       case "toggleHeal": {
         const healing = card.dataset.heal === "true";
@@ -62,13 +77,29 @@ export class ChatListener {
         await ChatListener.#applyToTokens(raw * sign, multiplier);
         break;
       }
+      case "toggleDescription": {
+        const drawer = target.closest(".wwn-chat-desc-drawer");
+        if (!drawer) return;
+        const collapsed = drawer.classList.toggle("collapsed");
+        target.setAttribute("aria-expanded", String(!collapsed));
+        break;
+      }
       case "rollCardSave": {
         const saveId = target.dataset.save;
-        const actors = ChatListener.#ownedActorTargets();
-        if (actors === null) return;
-        for (const actor of actors) {
-          await game.wwn.WwnDice.rollSave(actor, saveId, { skipDialog: true });
-        }
+        const tokens = ChatListener.#ownedTokenTargets();
+        if (tokens === null) return;
+        const { rollCardGroupSave } = await import("./group-saves.mjs");
+        await rollCardGroupSave(tokens, saveId);
+        break;
+      }
+      case "selectSaveGroup": {
+        const { selectSaveGroupTokens, controlCanvasTokens } = await import("./group-saves.mjs");
+        const tokens = selectSaveGroupTokens(
+          target.dataset.group,
+          message,
+          canvas.tokens?.placeables ?? []
+        );
+        controlCanvasTokens(tokens);
         break;
       }
       case "applyHitDice": {
@@ -151,23 +182,23 @@ export class ChatListener {
   }
 
   /** Selected tokens take priority; fall back to targeted tokens. */
-  static #actorTargets() {
+  static #tokenTargets() {
     let tokens = canvas.tokens?.controlled ?? [];
-    if (!tokens.length) tokens = Array.from(game.user.targets);
-    return tokens.map((t) => t.actor).filter((a) => a);
+    if (!tokens.length) tokens = Array.from(game.user.targets ?? []);
+    return tokens.filter((t) => t.actor);
   }
 
   /**
-   * Owned (or GM-accessible) targets for apply actions.
-   * @returns {Actor[]|null} null when the caller already received a warning
+   * Owned (or GM-accessible) token targets for apply / save actions.
+   * @returns {Token[]|null} null when the caller already received a warning
    */
-  static #ownedActorTargets() {
-    const all = ChatListener.#actorTargets();
+  static #ownedTokenTargets() {
+    const all = ChatListener.#tokenTargets();
     if (!all.length) {
       ui.notifications.warn(game.i18n.localize("WWN.Chat.NoTokenSelected"));
       return null;
     }
-    const owned = all.filter((a) => a.isOwner || game.user.isGM);
+    const owned = all.filter((t) => t.actor.isOwner || game.user.isGM);
     if (!owned.length) {
       ui.notifications.warn(game.i18n.localize("WWN.Chat.ApplyDenied"));
       return null;
@@ -175,9 +206,29 @@ export class ChatListener {
     return owned;
   }
 
+  /**
+   * Owned (or GM-accessible) actors for apply actions.
+   * @returns {Actor[]|null} null when the caller already received a warning
+   */
+  static #ownedActorTargets() {
+    const tokens = ChatListener.#ownedTokenTargets();
+    return tokens === null ? null : tokens.map((t) => t.actor);
+  }
+
   static async #applyToTokens(amount, multiplier) {
     const actors = ChatListener.#ownedActorTargets();
     if (actors === null) return;
+    const { buildApplyDamageNotice } = await import("./apply-damage-notice.mjs");
+    const { createNoticeMessage } = await import("./chat-card.mjs");
+    const notice = buildApplyDamageNotice(
+      amount,
+      multiplier,
+      actors.map((a) => a.name)
+    );
+    await createNoticeMessage({
+      ...notice,
+      flags: { kind: "apply-damage" },
+    });
     for (const actor of actors) {
       try {
         await actor.applyDamage(amount, multiplier);

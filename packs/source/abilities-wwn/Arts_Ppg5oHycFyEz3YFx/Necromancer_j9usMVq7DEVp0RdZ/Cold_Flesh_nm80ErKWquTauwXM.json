@@ -3,7 +3,28 @@
   "name": "Cold Flesh",
   "type": "power",
   "img": "systems/wwn/assets/icons/powers/necromancer-art.png",
-  "effects": [],
+  "effects": [
+    {
+      "_id": "nm80acInnate0001",
+      "type": "base",
+      "name": "Cold Flesh",
+      "img": "systems/wwn/assets/icons/powers/necromancer-art.png",
+      "transfer": true,
+      "disabled": false,
+      "system": {
+        "changes": [
+          {
+            "key": "system.combat.innateAc.min",
+            "type": "upgrade",
+            "value": "12 + floor(@level / 2)",
+            "phase": "final"
+          }
+        ]
+      },
+      "flags": {},
+      "_key": "!items.effects!nm80ErKWquTauwXM.nm80acInnate0001"
+    }
+  ],
   "folder": "j9usMVq7DEVp0RdZ",
   "sort": 0,
   "flags": {

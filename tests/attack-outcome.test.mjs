@@ -11,6 +11,11 @@ import {
   naturalAttackDie,
   skillLevelWithCb,
   traumaticDamage,
+  effectiveShockCompareAc,
+  shouldShowShockRow,
+  shouldEmitNoShockPlaceholder,
+  hasBaseShockDamage,
+  resolveChatAttackTarget,
 } from "../module/helpers/attack-outcome.mjs";
 import { resolveTargetAcForAttack } from "../module/helpers/attack-ac.mjs";
 import { resolveWeaponTlGate, PRIMITIVE_IMMUNE_TL } from "../module/helpers/weapon-tl.mjs";
@@ -91,11 +96,11 @@ describe("naturalAttackDie", () => {
 describe("buildAttackApplyRows", () => {
   const labels = {
     damage: "Damage",
-    damageFloored: "Damage (Shock floor)",
+    damageFloored: "Damage (Shock)",
     missDamage: "Miss damage",
     straight: null,
-    shockVs: (v, ac) => `Shock ${v} vs ${ac}`,
-    shockVsTarget: (v, t, a) => `Shock ${v} (${a}≤${t})`,
+    shock: "Shock",
+    shockSuffix: (ac) => `(AC≤ ${ac})`,
     trauma: (r) => `Trauma x${r}`,
   };
 
@@ -142,6 +147,28 @@ describe("buildAttackApplyRows", () => {
     assert.equal(rows[0].altValue, 5);
   });
 
+  it("offers shock apply alongside damage when no target was resolved", () => {
+    const rows = buildAttackApplyRows({
+      hit: true,
+      untargeted: true,
+      blockedByTl: false,
+      damageValue: 8,
+      damageFloored: false,
+      straightValue: null,
+      shockTotal: 5,
+      shockAppliesOnMiss: true,
+      shockLabelAc: 15,
+      shockTargetAc: null,
+      trauma: null,
+      missDamageValue: null,
+      labels,
+    });
+    assert.deepEqual(rows.map((r) => r.id), ["damage", "shock"]);
+    assert.equal(rows[1].value, 5);
+    assert.equal(rows[1].label, "Shock");
+    assert.equal(rows[1].suffix, "(AC≤ 15)");
+  });
+
   it("on miss adds shock row when it applies", () => {
     const rows = buildAttackApplyRows({
       hit: false,
@@ -160,6 +187,8 @@ describe("buildAttackApplyRows", () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0].id, "shock");
     assert.equal(rows[0].value, 3);
+    assert.equal(rows[0].label, "Shock");
+    assert.equal(rows[0].suffix, "(AC≤ 15)");
   });
 
   it("traumatic hit emits only trauma row (replaces base damage)", () => {
@@ -242,6 +271,8 @@ describe("miss shock vs ignored armor AC", () => {
 });
 
 describe("buildAttackNotices", () => {
+  const L = (key, data) => (data ? `${key}:${JSON.stringify(data)}` : key);
+
   it("localizes TL block and suppresses ignore notices when blocked", () => {
     const notices = buildAttackNotices({
       blockedByTl: true,
@@ -249,21 +280,151 @@ describe("buildAttackNotices", () => {
       ignored: [{ name: "Leather", reason: "firearm", isShield: false }],
       ac: 12,
       acKind: "melee",
-    }, (key, data) => (data ? `${key}:${JSON.stringify(data)}` : key));
+    }, L);
     assert.ok(notices.some((n) => n.includes("NoticeTlBlocked")));
     assert.ok(!notices.some((n) => n.includes("NoticeIgnoreFirearm")));
-    assert.ok(!notices.some((n) => n.includes("NoticeTargetAc")));
   });
 
-  it("localizes ignore reasons when the attack resolves vs AC", () => {
+  it("keeps ignore notices and does not print target AC above the table", () => {
     const notices = buildAttackNotices({
       blockedByTl: false,
       hitReason: "hit",
       ignored: [{ name: "Leather", reason: "firearm", isShield: false }],
       ac: 12,
       acKind: "melee",
-    }, (key, data) => (data ? `${key}:${JSON.stringify(data)}` : key));
+      separateRanged: false,
+    }, L);
     assert.ok(notices.some((n) => n.includes("NoticeIgnoreFirearm")));
-    assert.ok(notices.some((n) => n.includes("NoticeTargetAc")));
+    assert.ok(!notices.some((n) => n.includes("NoticeTargetAc")));
+  });
+
+  it("does not name melee or ranged AC in notices", () => {
+    const notices = buildAttackNotices({
+      blockedByTl: false,
+      hitReason: "hit",
+      ac: 10,
+      acKind: "melee",
+      separateRanged: true,
+    }, L);
+    assert.equal(notices.length, 0);
+  });
+
+  it("uses the short shock-floor and over-threshold copy", () => {
+    const floored = buildAttackNotices({
+      blockedByTl: false,
+      hitReason: "hit",
+      shockFloored: true,
+      shockTotal: 5,
+      rawDamage: 2,
+    }, L);
+    assert.ok(floored.includes("WWN.Roll.NoticeShockFloor"));
+
+    const over = buildAttackNotices({
+      blockedByTl: false,
+      hitReason: "miss",
+      shockSuppressedReason: "ac",
+      shockTargetAc: 16,
+      shockThreshold: 15,
+    }, L);
+    assert.ok(!over.some((n) => n.includes("NoticeNoShockAc")));
+  });
+});
+
+describe("effectiveShockCompareAc", () => {
+  it("uses resolved attack AC when the attacker has no AC-10 shock focus", () => {
+    const attacker = { system: { combat: { treatAllMeleeAsAcTen: false } } };
+    const target = { system: { combat: { ac: { melee: { value: 16 } } } } };
+    assert.equal(effectiveShockCompareAc(attacker, target, 12), 12);
+  });
+
+  it("falls back to the target's melee AC, then 10", () => {
+    const attacker = { system: { combat: {} } };
+    assert.equal(effectiveShockCompareAc(attacker, { system: { combat: { ac: { melee: { value: 16 } } } } }, null), 16);
+    assert.equal(effectiveShockCompareAc(attacker, { system: { combat: {} } }, null), 10);
+  });
+
+  it("treats every target as AC 10 when the shock focus is active", () => {
+    const attacker = { system: { combat: { treatAllMeleeAsAcTen: true } } };
+    const target = { system: { combat: { ac: { melee: { value: 18 } } } } };
+    assert.equal(effectiveShockCompareAc(attacker, target, 18), 10);
+  });
+});
+
+describe("hasBaseShockDamage", () => {
+  it("omits shock when the weapon base is 0, null, or empty", () => {
+    assert.equal(hasBaseShockDamage(undefined), false);
+    assert.equal(hasBaseShockDamage(null), false);
+    assert.equal(hasBaseShockDamage(""), false);
+    assert.equal(hasBaseShockDamage(0), false);
+    assert.equal(hasBaseShockDamage("0"), false);
+    assert.equal(hasBaseShockDamage(" 0 "), false);
+  });
+
+  it("keeps real shock formulas and flat values", () => {
+    assert.equal(hasBaseShockDamage("1d4"), true);
+    assert.equal(hasBaseShockDamage("2"), true);
+    assert.equal(hasBaseShockDamage(2), true);
+  });
+});
+
+describe("shouldShowShockRow", () => {
+  it("shows Shock when no targets were resolved", () => {
+    assert.equal(shouldShowShockRow(15, []), true);
+  });
+
+  it("omits Shock when every target's compare AC exceeds the threshold", () => {
+    assert.equal(shouldShowShockRow(15, [16, 18]), false);
+  });
+
+  it("shows Shock when any target is at or below the threshold", () => {
+    assert.equal(shouldShowShockRow(15, [16, 15]), true);
+    assert.equal(shouldShowShockRow(15, [12]), true);
+  });
+
+  it("still shows Shock for high-AC targets when the AC-10 focus applies", () => {
+    const attacker = { system: { combat: { treatAllMeleeAsAcTen: true } } };
+    const highAc = { system: { combat: { ac: { melee: { value: 18 } } } } };
+    const compare = effectiveShockCompareAc(attacker, highAc, 18);
+    assert.equal(shouldShowShockRow(15, [compare]), true);
+    assert.equal(shouldShowShockRow(9, [compare]), false);
+  });
+});
+
+describe("shouldEmitNoShockPlaceholder", () => {
+  it("is miss-only when Shock is over AC", () => {
+    assert.equal(shouldEmitNoShockPlaceholder({
+      hit: true,
+      showShockRow: false,
+      canUseShock: true,
+      hasCompareAcs: true,
+    }), false);
+    assert.equal(shouldEmitNoShockPlaceholder({
+      hit: false,
+      showShockRow: false,
+      canUseShock: true,
+      hasCompareAcs: true,
+    }), true);
+  });
+});
+
+describe("resolveChatAttackTarget", () => {
+  const actorToken = (id) => ({ id, actor: { id } });
+
+  it("treats zero or several targeted tokens as untargeted", () => {
+    assert.deepEqual(resolveChatAttackTarget([]), { target: null, untargeted: true });
+    assert.deepEqual(resolveChatAttackTarget(null), { target: null, untargeted: true });
+    assert.deepEqual(
+      resolveChatAttackTarget([actorToken("a"), actorToken("b")]),
+      { target: null, untargeted: true },
+    );
+  });
+
+  it("resolves only when exactly one token with an actor is targeted", () => {
+    const one = actorToken("solo");
+    assert.deepEqual(resolveChatAttackTarget([one]), { target: one, untargeted: false });
+    assert.deepEqual(
+      resolveChatAttackTarget([{ id: "empty" }, one]),
+      { target: one, untargeted: false },
+    );
   });
 });

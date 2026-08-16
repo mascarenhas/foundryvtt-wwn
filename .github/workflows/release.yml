@@ -69,6 +69,7 @@ jobs:
         uses: ncipollo/release-action@v1.13.0
         with:
           allowUpdates: true
+          omitPrereleaseDuringUpdate: true
           name: ${{ github.event.release.name }}
           tag: ${{ github.event.release.tag_name }}
           body: ${{ github.event.release.body }}

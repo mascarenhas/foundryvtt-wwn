@@ -71,6 +71,7 @@ export default class WwnActorBase extends foundry.abstract.TypeDataModel {
     this.combat.allShock = 0;
     this.combat.meleeShock = 0;
     this.combat.rangeShock = 0;
+    this.combat.unarmedShock = 0;
 
     this.combat.immuneToSurprise = false;
     this.combat.treatAllMeleeAsAcTen = false;

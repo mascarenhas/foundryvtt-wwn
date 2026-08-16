@@ -106,7 +106,7 @@ WWN.saveSets = {
 /**
  * Universal header tracker registry. Filtered at render time by setting.
  * mode "positive": full bar is good (HP). mode "negative": rising value is
- * bad (Strain/Alienation/Stress) — bar fills as value rises.
+ * bad (Strain/Alienation/Stress) — bar empties as value approaches max.
  */
 WWN.headerTrackers = [
   { id: "hp", path: "hp", label: "WWN.Tracker.HP", mode: "positive", always: true, ceiling: "max", editableMax: true },

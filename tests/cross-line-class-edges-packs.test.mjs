@@ -85,6 +85,62 @@ describe("AWN classEdge packs", () => {
   });
 });
 
+describe("WWN classEdge bonus skills", () => {
+  const items = collect(path.join(ROOT, "abilities-wwn"));
+  const byName = Object.fromEntries(items.map(({ data }) => [data.name, data]));
+
+  const MAGIC = [
+    "Full High Mage",
+    "Partial High Mage",
+    "Full Elementalist",
+    "Partial Elementalist",
+    "Full Necromancer",
+    "Partial Necromancer",
+    "Full Invoker",
+    "Partial Invoker",
+    "Accursed",
+    "Mageslayer",
+  ];
+
+  it("grants Magic to the core mage trio, Invokers, Accursed, and Mageslayer", () => {
+    for (const name of MAGIC) {
+      const edge = byName[name];
+      assert.ok(edge, `${name} is missing`);
+      assert.deepEqual(edge.system.bonusSkills, ["magic"], name);
+      assert.equal(edge.system.bonusSkillsPick, 1, name);
+    }
+  });
+
+  it("grants the specialty skill for other partial casters", () => {
+    assert.deepEqual(byName.Healer.system.bonusSkills, ["heal"]);
+    assert.deepEqual(byName["Blood Priest"].system.bonusSkills, ["pray"]);
+    assert.deepEqual(byName["Thought Noble"].system.bonusSkills, ["notice"]);
+    assert.deepEqual(byName.Duelist.system.bonusSkills, ["stab"]);
+    assert.deepEqual(byName.Beastmaster.system.bonusSkills, ["survive"]);
+    assert.deepEqual(byName.Skinshifter.system.bonusSkills, ["survive"]);
+    assert.deepEqual(byName.Bard.system.bonusSkills, ["perform"]);
+  });
+
+  it("lets Vowed and Wise pick any non-combat skill", () => {
+    for (const name of ["Vowed", "Wise"]) {
+      const edge = byName[name];
+      assert.ok(edge, `${name} is missing`);
+      assert.deepEqual(edge.system.bonusSkills, []);
+      assert.equal(edge.system.bonusSkillsPick, 1);
+      assert.equal(edge.system.bonusSkillsMode, "noncombat");
+    }
+  });
+
+  it("does not invent a class skill for Warrior or Expert", () => {
+    for (const name of ["Full Warrior", "Partial Warrior", "Full Expert", "Partial Expert"]) {
+      const edge = byName[name];
+      assert.ok(edge, `${name} is missing`);
+      assert.deepEqual(edge.system.bonusSkills ?? [], []);
+      assert.equal(Number(edge.system.bonusSkillsPick) || 0, 0);
+    }
+  });
+});
+
 describe("CWN classEdge packs", () => {
   const items = collect(path.join(ROOT, "abilities-cwn"));
   const byName = Object.fromEntries(items.map(({ data }) => [data.name, data]));

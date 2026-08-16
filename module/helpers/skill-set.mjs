@@ -32,7 +32,7 @@ export async function refreshSkillSetCache({ notify = false } = {}) {
   const next = emptyCache();
   for (const i of docs) {
     if (i.type !== "skill") continue;
-    const slug = i.system?.slug || i.name.slugify({ strict: true }).replace(/-/g, "");
+    const slug = skillSlugOf(i);
     if (!slug) continue;
     next.allSlugs.push(slug);
     next.labels[slug] = i.name;
@@ -86,6 +86,50 @@ export async function loadSkillSetDocuments({ notify = true } = {}) {
     return [];
   }
   return pack.getDocuments();
+}
+
+/**
+ * @param {{ type?: string, name?: string, system?: { slug?: string } }} item
+ * @returns {string}
+ */
+export function skillSlugOf(item) {
+  const fromSystem = String(item?.system?.slug ?? "").trim().toLowerCase();
+  if (fromSystem) return fromSystem;
+  const name = String(item?.name ?? "").trim();
+  if (!name) return "";
+  return name.slugify({ strict: true }).replace(/-/g, "");
+}
+
+/**
+ * Clone pack skill data for embedding on an actor (new id, no folder).
+ * @param {Iterable<{ type?: string, toObject?: Function }>} docs
+ * @param {string} slug
+ * @returns {object|null}
+ */
+export function skillCreateDataFromPackDocs(docs, slug) {
+  const normalized = String(slug ?? "").trim().toLowerCase();
+  if (!normalized) return null;
+  const doc = [...docs].find((i) => i?.type === "skill" && skillSlugOf(i) === normalized);
+  if (!doc) return null;
+  const data = typeof doc.toObject === "function"
+    ? doc.toObject()
+    : foundry.utils.deepClone(doc);
+  delete data._id;
+  delete data.folder;
+  delete data._key;
+  delete data._stats;
+  return data;
+}
+
+/**
+ * @param {string} slug
+ * @param {object} [options]
+ * @param {boolean} [options.notify=false]
+ * @returns {Promise<object|null>}
+ */
+export async function getSkillCreateDataBySlug(slug, { notify = false } = {}) {
+  const docs = await loadSkillSetDocuments({ notify });
+  return skillCreateDataFromPackDocs(docs, slug);
 }
 
 /**

@@ -1,0 +1,36 @@
+{{#if tooltipHtml}}
+<tbody class="dice-roll wwn-chat-roll" data-action="expandRoll">
+  <tr class="wwn-chat-roll-summary">
+    <td class="wwn-chat-roll-label-cell">
+      <span class="wwn-chat-roll-label{{#if strikeLabel}} wwn-chat-roll-label--struck{{/if}}">{{label}}</span>
+    </td>
+    <td class="wwn-chat-roll-detail">{{#if detail}}{{detail}}{{/if}}</td>
+    <td class="wwn-chat-roll-total-cell">
+      {{#if total}}<span class="wwn-chat-roll-total">{{total}}</span>{{/if}}
+      {{#if breakdown}}
+      <i class="fa-solid fa-circle-question wwn-chat-hint" data-tooltip="{{breakdown}}"
+        aria-label="{{localize 'WWN.Roll.BreakdownHint'}}"></i>
+      {{/if}}
+    </td>
+  </tr>
+  <tr class="wwn-chat-roll-tooltip">
+    <td colspan="3">{{{tooltipHtml}}}</td>
+  </tr>
+</tbody>
+{{else}}
+<tbody class="wwn-chat-roll">
+  <tr class="wwn-chat-roll-summary">
+    <td class="wwn-chat-roll-label-cell">
+      <span class="wwn-chat-roll-label{{#if strikeLabel}} wwn-chat-roll-label--struck{{/if}}">{{label}}</span>
+    </td>
+    <td class="wwn-chat-roll-detail">{{#if detail}}{{detail}}{{/if}}</td>
+    <td class="wwn-chat-roll-total-cell">
+      {{#if total}}<span class="wwn-chat-roll-total">{{total}}</span>{{/if}}
+      {{#if breakdown}}
+      <i class="fa-solid fa-circle-question wwn-chat-hint" data-tooltip="{{breakdown}}"
+        aria-label="{{localize 'WWN.Roll.BreakdownHint'}}"></i>
+      {{/if}}
+    </td>
+  </tr>
+</tbody>
+{{/if}}

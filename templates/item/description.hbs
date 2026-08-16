@@ -3,12 +3,8 @@
   <div class="wwn-attributes-body">
     <div class="wwn-form-panel wwn-item-description">
       <div class="wwn-section-header">{{localize "WWN.Tabs.Description"}}</div>
-      <div class="description resizable-editor">
-        <prose-mirror name="system.description" toggled value="{{source.description}}"
-          data-document-uuid="{{item.uuid}}" {{#unless editable}}disabled{{/unless}}>
-          {{{enrichedDescription}}}
-        </prose-mirror>
-      </div>
+      {{> wwnSheetEditor name="system.description" value=source.description
+        documentUuid=item.uuid enriched=enrichedDescription fill=true}}
     </div>
   </div>
 </section>

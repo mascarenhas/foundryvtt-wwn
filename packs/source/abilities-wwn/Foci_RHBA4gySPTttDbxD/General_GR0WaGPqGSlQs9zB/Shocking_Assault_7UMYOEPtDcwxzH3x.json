@@ -43,6 +43,12 @@
             "type": "add",
             "value": 2,
             "phase": "final"
+          },
+          {
+            "key": "system.combat.unarmedShock",
+            "type": "add",
+            "value": 2,
+            "phase": "final"
           }
         ]
       },

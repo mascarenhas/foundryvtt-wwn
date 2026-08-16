@@ -122,19 +122,17 @@
       </div>
     </div>
 
-    <div class="wwn-form-panel">
-      <div class="wwn-section-header">{{localize "WWN.Profile.Description"}}</div>
-      <prose-mirror name="system.biography" toggled value="{{source.system.biography}}"
-        data-document-uuid="{{actor.uuid}}" {{#unless editable}}disabled{{/unless}}>
-        {{{enrichedBiography}}}
-      </prose-mirror>
-    </div>
-    <div class="wwn-form-panel">
-      <div class="wwn-section-header">{{localize "WWN.Profile.Notes"}}</div>
-      <prose-mirror name="system.details.notes" toggled value="{{source.system.details.notes}}"
-        data-document-uuid="{{actor.uuid}}" {{#unless editable}}disabled{{/unless}}>
-        {{{enrichedNotes}}}
-      </prose-mirror>
+    <div class="wwn-sheet-editors">
+      <div class="wwn-form-panel">
+        <div class="wwn-section-header">{{localize "WWN.Profile.Description"}}</div>
+        {{> wwnSheetEditor name="system.biography" value=source.system.biography
+          documentUuid=actor.uuid enriched=enrichedBiography fill=true}}
+      </div>
+      <div class="wwn-form-panel">
+        <div class="wwn-section-header">{{localize "WWN.Profile.Notes"}}</div>
+        {{> wwnSheetEditor name="system.details.notes" value=source.system.details.notes
+          documentUuid=actor.uuid enriched=enrichedNotes fill=true}}
+      </div>
     </div>
   </div>
 </section>
