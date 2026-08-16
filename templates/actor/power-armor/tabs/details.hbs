@@ -57,12 +57,8 @@
 
     <div class="wwn-form-panel">
       <div class="wwn-section-header">{{localize "WWN.category.description"}}</div>
-      <div class="wwn-power-armor-editor">
-        <prose-mirror name="system.description" toggled value="{{source.system.description}}"
-          data-document-uuid="{{actor.uuid}}" {{#unless editable}}disabled{{/unless}}>
-          {{{enrichedDescription}}}
-        </prose-mirror>
-      </div>
+      {{> wwnSheetEditor name="system.description" value=source.system.description
+        documentUuid=actor.uuid enriched=enrichedDescription}}
     </div>
   </div>
 </section>

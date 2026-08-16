@@ -1,0 +1,19 @@
+<div class="wwn-dialog-body">
+  <div class="form-group">
+    <label>{{localize "WWN.Dialog.SituationalModifier"}}</label>
+    <div class="form-fields">
+      <input type="number" name="globalModifier" value="0" autofocus />
+    </div>
+  </div>
+  <p class="wwn-dialog-hint">{{localize "WWN.Dialog.SaveOverrideHint"}}</p>
+  <div class="wwn-dialog-token-mods">
+    {{#each tokens}}
+    <div class="form-group">
+      <label>{{name}}</label>
+      <div class="form-fields">
+        <input type="number" name="modifier-{{id}}" value="" placeholder="{{localize "WWN.Dialog.Override"}}" />
+      </div>
+    </div>
+    {{/each}}
+  </div>
+</div>

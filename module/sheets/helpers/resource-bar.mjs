@@ -28,7 +28,12 @@ export function prepareResourceBars(actor) {
     const ceiling = data[tracker.ceiling ?? "max"] ?? 0;
     const value = data.value ?? 0;
     const overflow = tracker.ceiling === "valueMax" && value > ceiling;
-    let pct = ceiling > 0 ? Math.clamp((value / ceiling) * 100, 0, 100) : 0;
+    let pct = 0;
+    if (ceiling > 0) {
+      const ratio = value / ceiling;
+      pct = tracker.mode === "negative" ? (1 - ratio) * 100 : ratio * 100;
+      pct = Math.clamp(pct, 0, 100);
+    }
     if (overflow) pct = 100;
 
     bars.push({

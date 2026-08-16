@@ -5,6 +5,7 @@ import { deriveMovement } from "../../derivations/movement.mjs";
 import { deriveInitiative } from "../../derivations/initiative.mjs";
 import { deriveResourcePools } from "../../derivations/resource-pools.mjs";
 import { applyInstalledPermanentStrain } from "../../derivations/strain-max.mjs";
+import { applyHdAttackBonus, parseHdCount } from "../../helpers/hd-attack-bonus.mjs";
 
 const fields = foundry.data.fields;
 
@@ -84,6 +85,12 @@ export default class WwnNpc extends WwnActorBase {
     return source;
   }
 
+  /** @inheritDoc */
+  async _preUpdate(changed, options, user) {
+    applyHdAttackBonus(changed, this.hd);
+    return super._preUpdate(changed, options, user);
+  }
+
   prepareDerivedData() {
     super.prepareDerivedData();
     const actor = this.parent;
@@ -102,9 +109,7 @@ export default class WwnNpc extends WwnActorBase {
   getRollData() {
     const data = {};
     // @level for NPCs = HD count
-    data.level = 1;
-    const diceRegex = String(this.hd).match(/(\d+)d\d+/);
-    if (diceRegex) data.level = parseInt(diceRegex[1]);
+    data.level = parseHdCount(this.hd) ?? 1;
     data.lvl = data.level;
     data.halfLevel = Math.ceil(data.level / 2);
     data.atk = this.combat.ab;

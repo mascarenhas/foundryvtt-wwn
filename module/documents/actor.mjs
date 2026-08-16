@@ -10,6 +10,7 @@ import { CREATABLE_ACTOR_TYPES, isNpc, isPc } from "../helpers/actor-types.mjs";
 import { migrateActorData, migrateActorItems } from "../migration/transforms.mjs";
 import { splitSoakDamage } from "../helpers/power-armor-damage.mjs";
 import { getPrimarySkillData } from "../helpers/skill-set.mjs";
+import { isDuplicateOfItemTransfer } from "../helpers/effect-transfer-dedup.mjs";
 
 export class WwnActor extends Actor {
   /**
@@ -69,6 +70,27 @@ export class WwnActor extends Actor {
       return this.system.getRollData();
     }
     return foundry.utils.deepClone(this.system);
+  }
+
+  /**
+   * Foundry v14 yields both `this.effects` and item `transfer` effects.
+   * Transferred copies also live on the actor (often in `_source.effects`);
+   * applying both stacks add-mode changes (ability mods, HD).
+   * Skip actor-side copies of item transfer effects; apply the item effects once.
+   * Actor-owned clones (e.g. power on-use AEs) still apply.
+   * @override
+   * @yields {ActiveEffect}
+   */
+  *allApplicableEffects() {
+    for (const effect of this.effects) {
+      if (isDuplicateOfItemTransfer(this, effect)) continue;
+      yield effect;
+    }
+    for (const item of this.items) {
+      for (const effect of item.effects) {
+        if (effect.transfer) yield effect;
+      }
+    }
   }
 
   /** @inheritDoc */

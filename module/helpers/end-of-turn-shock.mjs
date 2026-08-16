@@ -8,6 +8,9 @@ import { isTruthyAeFlag } from "./combat-ae-flags.mjs";
 import { adjacentShockTargets } from "./savage-fray.mjs";
 import { resolveTargetAcForAttack } from "./attack-ac.mjs";
 import { createRollMessage } from "../chat/chat-card.mjs";
+import { enrichItemDescription } from "../chat/item-description.mjs";
+import { formatShockAcDetail } from "../chat/roll-rows.mjs";
+import { hasBaseShockDamage } from "./attack-outcome.mjs";
 
 /**
  * Grid spaces between two canvas points (Foundry v14 `measurePath`).
@@ -48,7 +51,7 @@ export function readyMeleeShockWeapon(actor) {
       i.type === "weapon" &&
       i.system?.equipped &&
       i.system?.melee &&
-      i.system?.shock?.damage,
+      hasBaseShockDamage(i.system?.shock?.damage),
   ) ?? [];
   if (!weapons.length) return null;
   // Prefer the highest shock damage formula total estimate (numeric prefix), else first.
@@ -101,6 +104,11 @@ export async function applyEndOfTurnAdjacentShock(combatant) {
     }];
     await createRollMessage({
       rolls: [shockRoll],
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.ShockBase"),
+        detail: formatShockAcDetail(weapon.system.shockAcValue ?? weapon.system.shock?.ac),
+        breakdown: parts.shock.breakdown(),
+      }],
       kind: "attack",
       actor,
       img: weapon.img,
@@ -111,6 +119,7 @@ export async function applyEndOfTurnAdjacentShock(combatant) {
         type: "warn",
       },
       bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+      description: await enrichItemDescription(weapon),
       context: {
         applyRows,
         notices: [game.i18n.localize("WWN.Chat.EndOfTurnShock")],

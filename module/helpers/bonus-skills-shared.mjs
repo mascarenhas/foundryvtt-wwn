@@ -5,7 +5,7 @@
  * - focus may use the +3 skill-points path via shouldUseFocusBonusPoints
  * - power / classEdge always grant a single rank (never the points path)
  */
-import { getSkillLabelChoices } from "./skill-set.mjs";
+import { getSkillCreateDataBySlug, getSkillLabelChoices, skillSlugOf } from "./skill-set.mjs";
 
 /**
  * @param {Actor} actor
@@ -15,17 +15,57 @@ import { getSkillLabelChoices } from "./skill-set.mjs";
 export function findSkillBySlug(actor, slug) {
   const normalized = String(slug ?? "").trim().toLowerCase();
   if (!normalized) return undefined;
-  return actor.items.find((i) => {
-    if (i.type !== "skill") return false;
-    const itemSlug = i.system.slug || i.name.slugify({ strict: true }).replace(/-/g, "");
-    return itemSlug === normalized;
-  });
+  return actor.items.find((i) => i.type === "skill" && skillSlugOf(i) === normalized);
 }
 
 /**
- * @param {Item} item
+ * Existing sheet skills are granted in place; secondary / unseeded slugs must be created.
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {{ action: "grant", slug: string, skill: Item } | { action: "create", slug: string }}
+ */
+export function planBonusSkillGrant(actor, slug) {
+  const skill = findSkillBySlug(actor, slug);
+  if (skill) return { action: "grant", slug, skill };
+  return { action: "create", slug };
+}
+
+/**
+ * Find a skill on the actor, or create it from the configured skill pack.
+ * @param {Actor} actor
+ * @param {string} slug
+ * @returns {Promise<Item|undefined>}
+ */
+export async function ensureActorSkillBySlug(actor, slug) {
+  const existing = findSkillBySlug(actor, slug);
+  if (existing) return existing;
+  const data = await getSkillCreateDataBySlug(slug);
+  if (!data) return undefined;
+  const created = await actor.createEmbeddedDocuments("Item", [data]);
+  return Array.isArray(created) ? created[0] : created;
+}
+
+/**
+ * Primary-skill options for an open bonus-skill pick.
+ * `noncombat` drops Punch / Stab / Shoot (CONFIG.WWN.combatSkills).
+ * @param {string[]} primarySlugs
+ * @param {string} mode
+ * @param {string[]} [combatSkills]
  * @returns {string[]}
  */
+export function filterOpenBonusSkillSlugs(
+  primarySlugs,
+  mode,
+  combatSkills = globalThis.CONFIG?.WWN?.combatSkills ?? ["stab", "shoot", "punch"],
+) {
+  const slugs = [...(primarySlugs ?? [])];
+  if (mode === "noncombat") {
+    const combat = new Set(combatSkills);
+    return slugs.filter((slug) => !combat.has(slug));
+  }
+  return slugs;
+}
+
 export function declaredBonusSkills(item) {
   return (item.system.bonusSkills ?? []).map((s) => String(s).trim().toLowerCase()).filter(Boolean);
 }

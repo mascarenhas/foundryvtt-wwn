@@ -1,6 +1,20 @@
-<div>
+<div class="wwn-dialog-body">
+  {{#if abilities}}
+  <div class="form-group">
+    <label>{{localize "WWN.Dialog.RollAttribute"}}</label>
+    <div class="form-fields">
+      <select name="abilityKey">
+        {{#each abilities as |ability|}}
+        <option value="{{ability.key}}" {{#if ability.selected}}selected{{/if}}>{{ability.label}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  {{/if}}
   <div class="form-group">
     <label>{{localize "WWN.Dialog.SituationalModifier"}}</label>
-    <input type="number" name="modifier" value="0" autofocus />
+    <div class="form-fields">
+      <input type="number" name="modifier" value="0" autofocus />
+    </div>
   </div>
 </div>

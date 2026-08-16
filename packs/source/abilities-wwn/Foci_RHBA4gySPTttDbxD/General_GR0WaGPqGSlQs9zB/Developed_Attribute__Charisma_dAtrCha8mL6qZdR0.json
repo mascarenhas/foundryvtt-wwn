@@ -1,0 +1,57 @@
+{
+  "_id": "dAtrCha8mL6qZdR0",
+  "name": "Developed Attribute (Charisma)",
+  "type": "focus",
+  "flags": {},
+  "img": "systems/wwn/assets/icons/items/focus.png",
+  "effects": [
+    {
+      "_id": "zw8IkElkFodjnUl8",
+      "type": "base",
+      "name": "Developed Attribute (Charisma)",
+      "img": "systems/wwn/assets/icons/items/focus.png",
+      "transfer": true,
+      "disabled": false,
+      "system": {
+        "changes": [
+          {
+            "key": "system.abilities.cha.baseMod",
+            "type": "add",
+            "value": 1,
+            "phase": "initial"
+          }
+        ]
+      },
+      "flags": {
+        "wwn": {
+          "focusLevel": 1
+        }
+      },
+      "_key": "!items.effects!dAtrCha8mL6qZdR0.zw8IkElkFodjnUl8"
+    }
+  ],
+  "system": {
+    "description": "<p>Your hero has a remarkable degree of development to one or more of their attributes. This may be derived from an eldritch bloodline, native brilliance, or sheer, stubborn determination. This Focus cannot be taken by heroes with the Mage or Partial Mage classes.</p>\n<p><strong>Level 1: </strong>Your Charisma modifier is increased by +1, up to a maximum of +3. The actual score does not change, but the modifier increases, and may increase again if later advancement improves the attribute enough. You can take a Developed Attribute Focus more than once to improve different attributes.</p>",
+    "ownedLevel": 1,
+    "resourceGrant": {
+      "targetName": "",
+      "targetSource": "",
+      "bonusMax": 0
+    },
+    "internalResource": {
+      "value": 0,
+      "max": 0
+    },
+    "resourceLength": "none",
+    "bonusSkills": [],
+    "bonusSkillsPick": 0,
+    "bonusSkillsChosen": [],
+    "bonusDice": null,
+    "skillBonus": ""
+  },
+  "_key": "!items!dAtrCha8mL6qZdR0",
+  "folder": "GR0WaGPqGSlQs9zB",
+  "ownership": {
+    "default": 0
+  }
+}

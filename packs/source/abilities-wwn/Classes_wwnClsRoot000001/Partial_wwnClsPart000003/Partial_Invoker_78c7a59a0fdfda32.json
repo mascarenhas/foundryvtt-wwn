@@ -56,6 +56,12 @@
         5,
         6
       ]
-    }
+    },
+    "bonusSkills": [
+      "magic"
+    ],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusSkillsMode": ""
   }
 }

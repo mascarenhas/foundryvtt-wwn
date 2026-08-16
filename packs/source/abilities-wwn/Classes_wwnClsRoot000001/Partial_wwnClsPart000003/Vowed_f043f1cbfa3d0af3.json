@@ -3,31 +3,7 @@
   "name": "Vowed",
   "type": "classEdge",
   "img": "systems/wwn/assets/icons/items/class-ability.png",
-  "effects": [
-    {
-      "_id": "56d0ada836cc3451",
-      "name": "Unarmored Defense",
-      "img": "icons/svg/aura.svg",
-      "type": "base",
-      "disabled": false,
-      "transfer": true,
-      "statuses": [],
-      "flags": {},
-      "changes": [],
-      "system": {
-        "changes": [
-          {
-            "key": "system.combat.innateAc.min",
-            "type": "upgrade",
-            "value": "13 + @halfLevel",
-            "priority": null,
-            "phase": "final"
-          }
-        ]
-      },
-      "_key": "!items.effects!f043f1cbfa3d0af3.56d0ada836cc3451"
-    }
-  ],
+  "effects": [],
   "flags": {},
   "folder": "wwnClsPart000003",
   "sort": 0,
@@ -58,6 +34,10 @@
     },
     "preparedGrant": {
       "progression": []
-    }
+    },
+    "bonusSkills": [],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusSkillsMode": "noncombat"
   }
 }

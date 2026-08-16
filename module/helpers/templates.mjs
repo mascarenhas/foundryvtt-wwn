@@ -23,5 +23,7 @@ export async function preloadHandlebarsTemplates() {
     wwnStarshipEquipmentPanel: "systems/wwn/templates/partials/starship-equipment-panel.hbs",
     wwnStarshipCombatActions: "systems/wwn/templates/actor/starship/partials/combat-actions.hbs",
     wwnFavoritesDock: "systems/wwn/templates/partials/favorites-dock.hbs",
+    wwnSheetEditor: "systems/wwn/templates/partials/sheet-editor.hbs",
+    wwnChatRollRow: "systems/wwn/templates/chat/roll-row.hbs",
   });
 }

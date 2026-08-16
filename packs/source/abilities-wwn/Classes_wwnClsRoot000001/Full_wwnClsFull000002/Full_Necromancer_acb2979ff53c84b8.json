@@ -3,31 +3,7 @@
   "name": "Full Necromancer",
   "type": "classEdge",
   "img": "systems/wwn/assets/icons/items/class-ability.png",
-  "effects": [
-    {
-      "_id": "3589500aadd62429",
-      "name": "Cold Flesh",
-      "img": "icons/svg/aura.svg",
-      "type": "base",
-      "disabled": false,
-      "transfer": true,
-      "statuses": [],
-      "flags": {},
-      "changes": [],
-      "system": {
-        "changes": [
-          {
-            "key": "system.combat.innateAc.min",
-            "type": "upgrade",
-            "value": "12 + floor(@level / 2)",
-            "priority": null,
-            "phase": "final"
-          }
-        ]
-      },
-      "_key": "!items.effects!acb2979ff53c84b8.3589500aadd62429"
-    }
-  ],
+  "effects": [],
   "flags": {},
   "folder": "wwnClsFull000002",
   "sort": 0,
@@ -80,6 +56,12 @@
         10,
         12
       ]
-    }
+    },
+    "bonusSkills": [
+      "magic"
+    ],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusSkillsMode": ""
   }
 }

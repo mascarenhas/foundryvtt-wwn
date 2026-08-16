@@ -22,6 +22,65 @@ export function isUnarmedWeapon(weapon) {
 }
 
 /**
+ * Thrown weapons: tag T, or melee weapons that also have a missile profile.
+ * @param {Item|object} weapon
+ * @returns {boolean}
+ */
+export function isThrownWeapon(weapon) {
+  const tags = weapon?.system?.tags ?? [];
+  if (tags.some((t) => String(t).toUpperCase() === "T")) return true;
+  return !!(weapon?.system?.melee && weapon?.system?.missile);
+}
+
+/**
+ * Whether melee combat AEs (meleeDamage / meleeShock / meleeAttack) apply.
+ * Unarmed never uses those buckets (Armsmaster is Stab, not Punch).
+ * Thrown ranged attacks still use the melee buckets (Armsmaster thrown weapons).
+ * @param {Item|object} weapon
+ * @param {"melee"|"ranged"} attackKind
+ * @returns {boolean}
+ */
+export function meleeCombatAeApplies(weapon, attackKind) {
+  if (isUnarmedWeapon(weapon)) return false;
+  if (attackKind === "melee") return true;
+  return attackKind === "ranged" && isThrownWeapon(weapon);
+}
+
+/**
+ * Combat AE buckets for this attack: melee (including thrown) vs ranged-only.
+ * @param {object} combat
+ * @param {Item|object} weapon
+ * @param {"melee"|"ranged"} attackKind
+ * @returns {{ applyMeleeCombatAe: boolean, attack: *, damage: *, shock: * }}
+ */
+export function combatModeMods(combat = {}, weapon, attackKind) {
+  const applyMeleeCombatAe = meleeCombatAeApplies(weapon, attackKind);
+  const ranged = !applyMeleeCombatAe && attackKind === "ranged";
+  return {
+    applyMeleeCombatAe,
+    attack: applyMeleeCombatAe ? combat.meleeAttack ?? 0 : ranged ? combat.rangeAttack ?? 0 : 0,
+    damage: applyMeleeCombatAe ? combat.meleeDamage : ranged ? combat.rangeDamage : 0,
+    shock: applyMeleeCombatAe ? combat.meleeShock : ranged ? combat.rangeShock : 0,
+  };
+}
+
+/**
+ * Shocking Assault L2: unarmed weapons have no shock row, but still get unarmedShock
+ * (kept separate from Armsmaster meleeShock / meleeDamage).
+ * @param {Item|object} weapon
+ * @param {"melee"|"ranged"} attackKind
+ * @param {object} combat
+ * @returns {boolean}
+ */
+export function unarmedMeleeShockFromAe(weapon, attackKind, combat = {}) {
+  return (
+    attackKind === "melee" &&
+    isUnarmedWeapon(weapon) &&
+    !!combat.unarmedShock
+  );
+}
+
+/**
  * Effective weapon TL after Armsman-style melee TL4 bump.
  * @param {Actor|object} attacker
  * @param {Item|object} weapon

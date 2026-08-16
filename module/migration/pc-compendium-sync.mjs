@@ -8,7 +8,7 @@ const NS = "wwn";
 const SYNC_TYPES = new Set(["focus", "classEdge", "power"]);
 
 /** Bump when sync scope or fingerprints change so alpha worlds re-run. */
-export const PC_COMPENDIUM_SYNC_GENERATION = 3;
+export const PC_COMPENDIUM_SYNC_GENERATION = 5;
 
 /** Sole system Item pack used as the sync source of truth. */
 const SYNC_PACK_COLLECTION = `${NS}.abilities-wwn`;
@@ -429,6 +429,10 @@ async function swapOwnedItem(actor, ownedItem, packObject) {
     const { syncFocusTransferEffects } = await import("../helpers/focus-effects.mjs");
     await syncFocusTransferEffects(created);
   }
+  if (created?.type === "classEdge") {
+    const { syncPowerBonusSkills } = await import("../helpers/power-bonus-skills.mjs");
+    await syncPowerBonusSkills(created, actor, { prompt: false });
+  }
 
   console.info(
     `WWN | Synced ${ownedItem.type} "${ownedItem.name}" on ${actor.name} from system compendium.`
@@ -468,6 +472,15 @@ export async function syncPcCompendiumItems() {
       await swapOwnedItem(actor, current, packObject);
       swapped++;
       touched.add(actor.id);
+    }
+    if (stale.length) {
+      const { powerNeedsBonusSkillChoice, syncPowerBonusSkills } = await import(
+        "../helpers/power-bonus-skills.mjs"
+      );
+      for (const item of actor.items) {
+        if (item.type !== "classEdge" || !powerNeedsBonusSkillChoice(item)) continue;
+        await syncPowerBonusSkills(item, actor, { prompt: true });
+      }
     }
   }
 

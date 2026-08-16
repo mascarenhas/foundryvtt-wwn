@@ -96,6 +96,22 @@ describe("classEdgeGrantsFingerprint", () => {
     assert.equal(a, b);
   });
 
+  it("changes when bonusSkills are added", () => {
+    const empty = classEdgeGrantsFingerprint({
+      attackProgression: "mage",
+      bonusSkills: [],
+      bonusSkillsPick: 0,
+      bonusSkillsMode: "",
+    });
+    const magic = classEdgeGrantsFingerprint({
+      attackProgression: "mage",
+      bonusSkills: ["magic"],
+      bonusSkillsPick: 1,
+      bonusSkillsMode: "",
+    });
+    assert.notEqual(empty, magic);
+  });
+
   it("changes when formula changes", () => {
     const a = classEdgeGrantsFingerprint({
       attackProgression: "none",

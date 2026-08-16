@@ -28,5 +28,25 @@ body.wwn-theme-cwn {
   --wwn-success: #06d6a0;
   --wwn-failure: #ef476f;
   --wwn-tag-icon-filter: invert(1);
+  /* Foundry prose/input tokens — custom theme-* classes skip core light/dark mixins. */
+  --color-scheme: dark;
   --color-text-primary: var(--wwn-text);
+  --color-text-emphatic: var(--wwn-text);
+  --color-text-secondary: var(--wwn-text-muted);
+  --color-text-subtle: var(--wwn-text-muted);
+  --input-text-color: var(--wwn-text);
+  --input-background-color: var(--wwn-input-bg);
+  --input-placeholder-color: var(--wwn-text-muted);
+  --input-focus-text-color: var(--wwn-text);
+  --content-link-text-color: var(--wwn-text);
+  --content-link-background: var(--wwn-panel-bg);
+  --content-link-border-color: var(--wwn-border-soft);
+  --content-link-icon-color: var(--wwn-accent);
+  --menu-background: var(--wwn-panel-bg);
+  --dropdown-background: var(--wwn-bg-solid);
+  --dropdown-border: var(--wwn-border-theme);
+  --dialog-background: var(--wwn-bg-solid);
+  --button-text-color: var(--wwn-text);
+  --color-control-hover: var(--wwn-input-bg);
+  --color-form-label-hover: var(--wwn-text);
 }

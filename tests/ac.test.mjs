@@ -66,6 +66,45 @@ describe("deriveAC", () => {
     assert.equal(actor.system.combat.ac.ranged.value, 15);
   });
 
+  it("adds Dex to an innate AC floor", () => {
+    const actor = pcActor({
+      abilities: { dex: { mod: -1 } },
+      combat: { ...baseCombat(), innateAc: { min: 13 } },
+    });
+    deriveAC(actor);
+    assert.equal(actor.system.combat.ac.melee.value, 12);
+  });
+
+  it("stacks innate floor with combat.ac.mod (Lizardman 12+1)", () => {
+    const combat = baseCombat();
+    combat.ac.mod = 1;
+    combat.innateAc.min = 12;
+    const actor = pcActor({
+      abilities: { dex: { mod: -1 } },
+      combat,
+    });
+    deriveAC(actor);
+    assert.equal(actor.system.combat.ac.melee.value, 12);
+  });
+
+  it("applies ac.mod on worn armor and skips the innate floor", () => {
+    const combat = baseCombat();
+    combat.ac.mod = 1;
+    combat.innateAc.min = 12;
+    const actor = pcActor({
+      abilities: { dex: { mod: -1 } },
+      combat,
+      items: [
+        {
+          type: "armor",
+          system: { equipped: true, type: "medium", ac: 14, mod: 0, weight: 1 },
+        },
+      ],
+    });
+    deriveAC(actor);
+    assert.equal(actor.system.combat.ac.melee.value, 14);
+  });
+
   it("honors explicit ranged AC of 0 instead of falling back to melee armor AC", () => {
     mockSettings({
       separateRangedAC: true,

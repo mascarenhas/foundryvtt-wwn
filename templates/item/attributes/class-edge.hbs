@@ -134,6 +134,7 @@
               <select name="system.bonusSkillsMode">
                 <option value="" {{#unless system.bonusSkillsMode}}selected{{/unless}}>{{localize "WWN.Power.BonusSkillsModeListed"}}</option>
                 <option value="any" {{#if (eq system.bonusSkillsMode "any")}}selected{{/if}}>{{localize "WWN.Power.BonusSkillsModeAny"}}</option>
+                <option value="noncombat" {{#if (eq system.bonusSkillsMode "noncombat")}}selected{{/if}}>{{localize "WWN.Power.BonusSkillsModeNoncombat"}}</option>
               </select>
             </div>
           </div>

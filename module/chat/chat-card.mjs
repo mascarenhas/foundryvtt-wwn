@@ -5,7 +5,18 @@
  * calls anywhere else in the system.
  */
 
+import { buildRollRows } from "./roll-rows.mjs";
+
 const SHELL_TEMPLATE = "systems/wwn/templates/chat/card-shell.hbs";
+
+/**
+ * @param {string} [messageMode]
+ * @returns {string}
+ */
+export function resolveChatMessageMode(messageMode) {
+  if (messageMode) return messageMode;
+  return globalThis.game?.settings?.get?.("core", "messageMode") ?? "public";
+}
 
 /**
  * Resolve the speaker for an actor, preferring token aliases.
@@ -23,16 +34,15 @@ export function getWwnSpeaker(actor, token = null) {
  * @returns {Promise<string>} HTML
  */
 async function renderShell({
-  title, subtitle, img, bodyTemplate, context = {}, badge = null, footer = null, rolls = [], defaultHealing = false,
+  title, subtitle, img, bodyTemplate, context = {}, badge = null, footer = null,
+  rolls = [], rollMeta = [], extraRollRows = [], description = "",
+  defaultHealing = false, isPrivate = false,
 }) {
   const { renderTemplate } = foundry.applications.handlebars;
   const body = bodyTemplate ? await renderTemplate(bodyTemplate, context) : (context.body ?? "");
-  // Core only auto-renders dice HTML when content has no custom markup,
-  // so the shell embeds each roll's rendered HTML itself.
-  let rollsHtml = "";
-  for (const roll of rolls) rollsHtml += await roll.render();
+  const rollRows = await buildRollRows(rolls, rollMeta, { isPrivate, extraRows: extraRollRows });
   return renderTemplate(SHELL_TEMPLATE, {
-    title, subtitle, img, badge, body, footer, rollsHtml, defaultHealing,
+    title, subtitle, img, badge, body, footer, rollRows, description, defaultHealing,
   });
 }
 
@@ -41,6 +51,7 @@ async function renderShell({
  *
  * @param {object} options
  * @param {Roll[]} options.rolls          Evaluated Roll instances (native array — DSN works)
+ * @param {object[]} [options.rollMeta]   Per-index row metadata (label, detail, breakdown)
  * @param {string} options.kind           Roll kind stamp for the ChatListener
  * @param {string} options.title
  * @param {string} [options.subtitle]
@@ -56,6 +67,9 @@ async function renderShell({
  */
 export async function createRollMessage({
   rolls = [],
+  rollMeta = [],
+  extraRollRows = [],
+  description = "",
   kind = "formula",
   title,
   subtitle,
@@ -69,8 +83,10 @@ export async function createRollMessage({
   defaultHealing = false,
   messageMode,
 } = {}) {
+  const mode = resolveChatMessageMode(messageMode);
   const content = await renderShell({
-    title, subtitle, img, badge, bodyTemplate, context, rolls, defaultHealing,
+    title, subtitle, img, badge, bodyTemplate, context, rolls, rollMeta, extraRollRows,
+    description, defaultHealing, isPrivate: mode === "blind",
   });
   const messageData = {
     speaker: getWwnSpeaker(actor, token),
@@ -81,7 +97,7 @@ export async function createRollMessage({
       "wwn": { chatCard: true, kind, ...flags },
     },
   };
-  ChatMessage.applyMode(messageData, messageMode);
+  ChatMessage.applyMode(messageData, mode);
   return ChatMessage.create(messageData);
 }
 

@@ -94,7 +94,6 @@ export class WwnActiveEffectConfig extends CoreActiveEffectConfig {
       for (const [path, target] of Object.entries(group.targets)) {
         options.push({ value: path, label: this.#localizeTarget(target, transfer) });
       }
-      options.sort((a, b) => a.label.localeCompare(b.label, game.i18n.lang));
       optgroups.push({ label: game.i18n.localize(group.label), options });
     }
     return optgroups;

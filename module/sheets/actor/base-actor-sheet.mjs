@@ -80,7 +80,8 @@ export class WwnBaseActorSheet extends composeMixins(ActorItemActionsMixin)(
     context.useTrauma = game.settings.get("wwn", "useTrauma");
     context.showMovement = game.settings.get("wwn", "showMovement");
     context.showAlignment = game.settings.get("wwn", "showAlignment");
-    context.favoritesEnabled = isPc(actor);
+    context.favoritesEnabled = isPc(actor) || isNpc(actor);
+    context.isNpc = isNpc(actor);
     applyLegacySheetAliases(context.system, { separateRangedAC: context.separateRangedAC });
 
     // Save list from derived data

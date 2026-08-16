@@ -1,0 +1,40 @@
+<div class="wwn-chat-save-actions">
+  {{#if hasSuccessfulSaves}}
+  <button type="button" data-action="selectSaveGroup" data-group="successful">
+    <i class="fas fa-check-circle"></i> {{localize "WWN.Chat.SelectSuccessful"}}
+  </button>
+  {{/if}}
+  {{#if hasFailedSaves}}
+  <button type="button" data-action="selectSaveGroup" data-group="failed">
+    <i class="fas fa-times-circle"></i> {{localize "WWN.Chat.SelectFailed"}}
+  </button>
+  {{/if}}
+</div>
+
+{{#if hasSuccessfulSaves}}
+<div class="wwn-chat-save-group wwn-chat-save-group--success">
+  <div class="wwn-chat-save-group-header">{{localize "WWN.Chat.SuccessfulSaves"}}</div>
+  <ul class="wwn-chat-save-list">
+    {{#each successful}}
+    <li class="wwn-chat-save-item" data-token-id="{{tokenId}}">
+      <span class="wwn-chat-save-name">{{name}}</span>
+      <span class="wwn-chat-save-detail">({{detail}})</span>
+    </li>
+    {{/each}}
+  </ul>
+</div>
+{{/if}}
+
+{{#if hasFailedSaves}}
+<div class="wwn-chat-save-group wwn-chat-save-group--fail">
+  <div class="wwn-chat-save-group-header">{{localize "WWN.Chat.FailedSaves"}}</div>
+  <ul class="wwn-chat-save-list">
+    {{#each failed}}
+    <li class="wwn-chat-save-item" data-token-id="{{tokenId}}">
+      <span class="wwn-chat-save-name">{{name}}</span>
+      <span class="wwn-chat-save-detail">({{detail}})</span>
+    </li>
+    {{/each}}
+  </ul>
+</div>
+{{/if}}

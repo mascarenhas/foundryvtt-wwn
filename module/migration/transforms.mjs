@@ -5,10 +5,17 @@
  */
 import { mergeWeaponFavorites } from "../helpers/favorites.mjs";
 import { applyFocusBonusSkillSeed, seedFocusAutomationEffects } from "../helpers/focus-automation-seeds.mjs";
+import {
+  developedAttributeFocusName,
+  developedAttributeVariantFromEffects,
+  developedAttributeVariantFromName,
+} from "../helpers/developed-attribute-focus.mjs";
 
 import { remapAssetPath } from "./asset-map.mjs";
 import { normalizeInternalResourceLength } from "../config/power-subtypes.mjs";
 import { mapWeaponAmmoMigration, ammoNameMatches } from "../helpers/ammo.mjs";
+import { skillSlugOf } from "../helpers/skill-set.mjs";
+import { isSpuriousExpertAbResidual } from "../derivations/attack-bonus.mjs";
 
 const MODE_TO_TYPE = { 0: "custom", 1: "multiply", 2: "add", 3: "downgrade", 4: "upgrade", 5: "override" };
 
@@ -173,8 +180,10 @@ function abProgressionBase(key, level) {
  */
 export function migratePcCombatAb(system, { warrior = false, progression } = {}) {
   if (system?.combat?.abMod !== undefined) return null;
+  // Partial updates and pruned defaults have no persisted `ab` to convert.
+  if (typeof system?.combat?.ab !== "number") return null;
   const level = Math.max(system.details?.level ?? 1, 1);
-  const oldAb = Number(system.combat?.ab) || 0;
+  const oldAb = Number(system.combat.ab) || 0;
   const baseKey = progression
     ?? (warrior ? "warrior" : "expert");
   return { combat: { abMod: oldAb - abProgressionBase(baseKey, level) } };
@@ -558,10 +567,40 @@ export function migrateFocus(item) {
       out.system.bonusSkillsPick = 1;
     }
   } else if (name === "die hard") {
-    seed([{ key: "system.hitDice.perLevelMod", type: "add", value: 2, phase: "final" }], {
-      effectName: "Die Hard (Level 1)",
-      focusLevel: 1,
+    seed(
+      [
+        { key: "system.hitDice.perLevelMod", type: "add", value: 2, phase: "final" },
+        { key: "system.combat.autoStabilize", type: "override", value: "true", phase: "final" },
+      ],
+      { effectName: "Die Hard (Level 1)", focusLevel: 1 },
+    );
+    if (!out.system.internalResource?.max) {
+      out.system.internalResource = { value: 0, max: 1 };
+      out.system.resourceLength = "day";
+    }
+    for (const effect of out.effects) {
+      if (effect.name !== "Die Hard (Level 1)") continue;
+      const changes = effect.system?.changes ?? effect.changes ?? [];
+      if (!changes.some((c) => c.key === "system.combat.autoStabilize")) {
+        changes.push({
+          key: "system.combat.autoStabilize",
+          type: "override",
+          value: "true",
+          phase: "final",
+        });
+        if (effect.system) effect.system.changes = changes;
+        else effect.changes = changes;
+      }
+    }
+  } else if (name === "unarmed combatant") {
+    seed([{ key: "system.combat.punchMissDamage", type: "override", value: "1d6", phase: "final" }], {
+      effectName: "Unarmed Combatant (Level 2)",
+      focusLevel: 2,
     });
+    if (!out.system.bonusSkills.length) {
+      out.system.bonusSkills = ["punch"];
+      out.system.bonusSkillsPick = 1;
+    }
   } else if (name === "impervious defense") {
     seed([{ key: "system.combat.innateAc.min", type: "upgrade", value: "@halfLevel + 15", phase: "final" }], {
       effectName: "Impervious Defense (Level 1)",
@@ -576,10 +615,27 @@ export function migrateFocus(item) {
       effectName: "Shocking Assault (Level 1)",
       focusLevel: 1,
     });
-    seed([{ key: "system.combat.meleeShock", type: "add", value: 2, phase: "final" }], {
-      effectName: "Shocking Assault (Level 2)",
-      focusLevel: 2,
-    });
+    seed(
+      [
+        { key: "system.combat.meleeShock", type: "add", value: 2, phase: "final" },
+        { key: "system.combat.unarmedShock", type: "add", value: 2, phase: "final" },
+      ],
+      { effectName: "Shocking Assault (Level 2)", focusLevel: 2 },
+    );
+    for (const effect of out.effects) {
+      if (effect.name !== "Shocking Assault (Level 2)") continue;
+      const changes = effect.system?.changes ?? effect.changes ?? [];
+      if (!changes.some((c) => c.key === "system.combat.unarmedShock")) {
+        changes.push({
+          key: "system.combat.unarmedShock",
+          type: "add",
+          value: 2,
+          phase: "final",
+        });
+        if (effect.system) effect.system.changes = changes;
+        else effect.changes = changes;
+      }
+    }
     if (!out.system.bonusSkills.length) {
       out.system.bonusSkills = ["stab", "punch"];
       out.system.bonusSkillsPick = 1;
@@ -590,29 +646,46 @@ export function migrateFocus(item) {
         effectName: "Polymath",
       });
     }
-  } else if (name === "developed attribute") {
-    const attrs = [
-      ["str", "Strength"],
-      ["dex", "Dexterity"],
-      ["con", "Constitution"],
-      ["int", "Intelligence"],
-      ["wis", "Wisdom"],
-      ["cha", "Charisma"],
-    ];
-    for (const [key, label] of attrs) {
-      seed([{ key: `system.abilities.${key}.baseMod`, type: "add", value: 1, phase: "initial" }], {
-        effectName: `Developed Attribute (${label})`,
-        skipFocusLevelSync: true,
-        disabled: true,
-      });
-    }
   } else if (name === "vigilant") {
     if (!hasSeeded((e) => (e.system?.changes ?? []).some((c) => c.key === "system.combat.initiative.individual.mod"))) {
       seed([{ key: "system.combat.initiative.individual.mod", type: "add", value: 100, phase: "initial" }]);
     }
   }
 
+  const developed = developedAttributeVariantFromName(item.name)
+    ?? (name === "developed attribute" ? developedAttributeVariantFromEffects(out.effects) : null);
+  if (developed) {
+    out.name = developedAttributeFocusName(developed);
+    const keepKey = `system.abilities.${developed.key}.baseMod`;
+    out.effects = out.effects.filter((effect) =>
+      (effect.system?.changes ?? effect.changes ?? []).some((c) => c.key === keepKey),
+    );
+    for (const effect of out.effects) {
+      effect.disabled = false;
+      effect.name = out.name;
+      effect.flags ??= {};
+      effect.flags.wwn ??= {};
+      effect.flags.wwn.focusLevel = 1;
+      delete effect.flags.wwn.skipFocusLevelSync;
+    }
+    seed([{ key: keepKey, type: "add", value: 1, phase: "initial" }], {
+      effectName: out.name,
+      focusLevel: 1,
+      disabled: false,
+    });
+  }
+
   applyFocusBonusSkillSeed(out.system, item.name);
+  if (item.name === "Origin Focus: Lizardman") {
+    for (const effect of out.effects) {
+      const changes = effect.system?.changes ?? effect.changes ?? [];
+      for (const change of changes) {
+        if (change.key === "system.combat.innateAc.min" && Number(change.value) === 13) {
+          change.value = 12;
+        }
+      }
+    }
+  }
   seedFocusAutomationEffects(item.name, seed);
   return out;
 }
@@ -632,7 +705,6 @@ export function migrateWeapon(item) {
       description: s.description ?? "",
       damage: s.damage ?? "1d6",
       bonus: Number(s.bonus) || 0,
-      skillDamage: !!s.skillDamage,
       shock: {
         damage: String(s.shock?.damage ?? ""),
         ac: Number(s.shock?.ac) || 15,
@@ -824,13 +896,30 @@ export function gearMatchesAmmoNeedle(item, needles) {
   return needles.fallbacks.some((fb) => ammoNameMatches(fb, item.name));
 }
 
+const RETIRED_ART_ARMOR_NAMES = new Set([
+  "cold flesh",
+  "pavis of elements",
+  "unarmored defense",
+]);
+
+/**
+ * @param {object} item
+ * @returns {boolean}
+ */
+export function isRetiredArtArmorItem(item) {
+  if (item?.type !== "armor") return false;
+  return RETIRED_ART_ARMOR_NAMES.has(String(item.name ?? "").trim().toLowerCase());
+}
+
 /**
  * Migrate embedded item list with a second pass for weapon-linked gear → ammo.
  * @param {object[]} items
  * @returns {object[]}
  */
 export function migrateActorItems(items) {
-  const first = (items ?? []).map((i) => applyEmbeddedItemMigration(i));
+  const first = (items ?? [])
+    .filter((i) => !isRetiredArtArmorItem(i))
+    .map((i) => applyEmbeddedItemMigration(i));
   const needles = collectWeaponAmmoNeedles(first);
   return first.map((i) => {
     if (i.type !== "item") return i;
@@ -886,7 +975,7 @@ export function migrateSkill(item) {
       score: s.score ?? "int",
       skillDice: s.skillDice ?? "2d6",
       secondary: !!s.secondary,
-      slug: item.name.slugify({ strict: true }).replace(/-/g, ""),
+      slug: skillSlugOf(item),
     },
   };
 }
@@ -1062,18 +1151,20 @@ function migrateCharacter(actor) {
   const effects = (actor.effects ?? []).map(migrateEffectData);
 
   if (!isWwn) {
-    const progression = inferAttackProgression(actor, s);
-    const combatPatch = migratePcCombatAb(s, { progression });
+    // Residuals are a one-shot world-migrate concern. Recomputing them here
+    // on every Actor.migrateData treats pruned `abMod: 0` as missing and
+    // writes `0 - floor(level / 2)` when the payload is a partial update.
     const remappedEffects = effects.map((e) => remapCombatAbEffect(e));
-    if (!combatPatch) {
-      return { type: actor.type, items, effects: remappedEffects, system: null };
+    const level = Math.max(s.details?.level ?? 1, 1);
+    if (isSpuriousExpertAbResidual(s.combat?.abMod, level)) {
+      const system = foundry.utils.deepClone(s);
+      system.combat = {
+        ...(typeof s.combat === "object" && s.combat ? foundry.utils.deepClone(s.combat) : {}),
+        abMod: 0,
+      };
+      return { type: actor.type, items, effects: remappedEffects, system };
     }
-    const system = foundry.utils.deepClone(s);
-    system.combat = {
-      ...(typeof s.combat === "object" && s.combat ? foundry.utils.deepClone(s.combat) : {}),
-      abMod: combatPatch.combat.abMod,
-    };
-    return { type: actor.type, items, effects: remappedEffects, system };
+    return { type: actor.type, items, effects: remappedEffects, system: null };
   }
 
   /* Abilities */

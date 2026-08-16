@@ -1,7 +1,10 @@
 /* AppV2 sheet chrome: horizontal tabs, themed window, main grid, favorites */
 
 .application.wwn-sheet,
-.wwn.wwn-sheet {
+.application.wwn-dialog,
+.wwn.wwn-sheet,
+.wwn.wwn-dialog {
+  color-scheme: var(--color-scheme);
   background: var(--wwn-bg, var(--wwn-tan));
   color: var(--wwn-text, var(--wwn-dark-alt));
   border-color: var(--wwn-border-theme, var(--wwn-border));
@@ -279,7 +282,8 @@
       }
 
       .item-controls {
-        min-width: 0;
+        flex: 0 0 auto;
+        margin-left: auto;
       }
     }
 
@@ -324,28 +328,13 @@
     }
   }
 
-  /* AppV2 <prose-mirror> editors (replaces V1 {{editor}} / .editor-edit chrome) */
+  /* AppV2 <prose-mirror> editors (replaces V1 {{editor}} / .editor-edit chrome).
+     Foundry's host is a flex column; keep that so .editor-container can grow. */
   prose-mirror {
-    display: block;
+    display: flex;
+    flex-direction: column;
     min-height: 8rem;
     max-width: 100%;
-
-    /*
-     * Foundry core shows the toggle with `display: block` on hover
-     * (public/less2/elements/prosemirror.less), which overrides the base
-     * `button { display: flex; … }` centering. Restore flex + zero padding.
-     */
-    &:hover button.toggle:enabled {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
-    }
-
-    button.toggle > i {
-      margin: 0;
-      line-height: 1;
-    }
   }
 
   /* AppV2 window content flex utilities.
@@ -386,6 +375,86 @@
     min-height: 0;
     overflow: auto;
   }
+}
+
+/*
+ * Pin prose field colors on every themed WWN window. Custom theme-wwn/swn/awn/cwn
+ * classes never receive Foundry's theme-light/theme-dark mixins, so contenteditable
+ * Canvas and --input-*-color otherwise fight --wwn-text.
+ */
+.wwn prose-mirror,
+.wwn .prosemirror {
+  color: var(--wwn-text);
+  color-scheme: var(--color-scheme);
+  background: var(--wwn-input-bg);
+  border: 1px solid var(--wwn-border-soft, var(--wwn-border));
+  border-radius: 0.15rem;
+  --input-text-color: var(--wwn-text);
+  --input-background-color: var(--wwn-input-bg);
+  --button-text-color: var(--wwn-text);
+  --menu-background: var(--wwn-panel-bg);
+  --dropdown-background: var(--wwn-bg-solid);
+  --dropdown-border: var(--wwn-border-theme);
+  --dialog-background: var(--wwn-bg-solid);
+  --color-control-hover: var(--wwn-input-bg);
+  --color-form-label-hover: var(--wwn-text);
+
+  .editor-container {
+    flex: 1 1 auto;
+    min-height: 10rem;
+  }
+
+  .editor-content,
+  .ProseMirror {
+    color: var(--wwn-text);
+    background: transparent;
+    min-height: 10rem;
+
+    /*
+     * Pack and V1-saved HTML often bakes Foundry's light-theme #191813 into
+     * spans. Inline color beats theme tokens unless we inherit it back.
+     */
+    [style*="color"] {
+      color: inherit !important;
+    }
+  }
+
+  .source-editor,
+  textarea,
+  code-mirror {
+    color: var(--wwn-text);
+    background: var(--wwn-input-bg);
+  }
+
+  /*
+   * Foundry core shows the toggle with `display: block` on hover
+   * (public/less2/elements/prosemirror.less), which overrides the base
+   * `button { display: flex; … }` centering. Restore flex + zero padding.
+   */
+  &:hover button.toggle:enabled {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  button.toggle {
+    color: var(--wwn-text);
+    background: var(--wwn-panel-bg);
+    border-color: var(--wwn-border-soft, var(--wwn-border));
+
+    > i {
+      margin: 0;
+      line-height: 1;
+    }
+  }
+}
+
+body[class*="wwn-theme-"] #prosemirror-dropdown {
+  color: var(--wwn-text);
+  --button-text-color: var(--wwn-text);
+  --dropdown-background: var(--wwn-bg-solid);
+  --dropdown-border: var(--wwn-border-theme);
 }
 
 /*

@@ -5,12 +5,13 @@ import {
   computeFocusBonusRevoke,
 } from "./focus-bonus-skills.mjs";
 import {
-  findSkillBySlug,
+  ensureActorSkillBySlug,
   declaredBonusSkills,
   bonusSkillsPickCount,
   needsBonusSkillChoice,
   resolveListedBonusSkillSlugs,
   promptBonusSkillChoiceDialog,
+  filterOpenBonusSkillSlugs,
 } from "./bonus-skills-shared.mjs";
 
 const FLAG = "wwn";
@@ -45,8 +46,12 @@ function flagKeys(item) {
  * @param {Item} item
  * @returns {boolean}
  */
+function isOpenBonusMode(mode) {
+  return mode === "any" || mode === "noncombat";
+}
+
 function usesOpenAnyChoice(item) {
-  return item.system.bonusSkillsMode === "any" && declaredBonusSkills(item).length === 0;
+  return isOpenBonusMode(item.system.bonusSkillsMode) && declaredBonusSkills(item).length === 0;
 }
 
 /**
@@ -57,9 +62,6 @@ export function powerNeedsBonusSkillChoice(item) {
   if (!BONUS_SKILL_ITEM_TYPES.has(item?.type)) return false;
   return needsBonusSkillChoice(item, { usesOpenChoice: usesOpenAnyChoice });
 }
-
-/** @deprecated Use powerNeedsBonusSkillChoice (works for power and classEdge). */
-export const classEdgeNeedsBonusSkillChoice = powerNeedsBonusSkillChoice;
 
 /**
  * @param {Item} item
@@ -72,14 +74,11 @@ export function resolvePowerBonusSkillSlugs(item) {
     emptyPickReturnsDeclared: true,
   });
 }
-
-export const resolveClassEdgeBonusSkillSlugs = resolvePowerBonusSkillSlugs;
-
-/**
- * @returns {string[]}
- */
-function openAnySlugs() {
-  return [...(getSkillSetCache().primarySlugs ?? [])];
+function openAnySlugs(item) {
+  return filterOpenBonusSkillSlugs(
+    getSkillSetCache().primarySlugs ?? [],
+    item?.system?.bonusSkillsMode ?? "any",
+  );
 }
 
 /**
@@ -90,7 +89,7 @@ function openAnySlugs() {
 async function promptBonusSkillChoice(item, _actor) {
   const declared = declaredBonusSkills(item);
   const pick = bonusSkillsPickCount(item);
-  const options = declared.length ? declared : openAnySlugs();
+  const options = declared.length ? declared : openAnySlugs(item);
   const titleKey = item.type === "classEdge"
     ? "WWN.ClassEdge.BonusSkillDialogTitle"
     : "WWN.Power.BonusSkillDialogTitle";
@@ -154,7 +153,7 @@ export async function syncPowerBonusSkills(item, actor, { prompt = false } = {})
   const hasBonusConfig =
     declaredBonusSkills(item).length > 0
     || bonusSkillsPickCount(item) > 0
-    || item.system.bonusSkillsMode === "any";
+    || isOpenBonusMode(item.system.bonusSkillsMode);
   if (!hasBonusConfig) return;
 
   let slugs = resolvePowerBonusSkillSlugs(item);
@@ -167,17 +166,10 @@ export async function syncPowerBonusSkills(item, actor, { prompt = false } = {})
   if (!slugs?.length) return;
 
   for (const slug of slugs) {
-    const skill = findSkillBySlug(actor, slug);
+    const skill = await ensureActorSkillBySlug(actor, slug);
     if (skill) await grantBonusSkill(item, skill);
   }
 }
-
-export const syncClassEdgeBonusSkills = syncPowerBonusSkills;
-
-/**
- * @param {Item} item
- * @param {Actor} actor
- */
 export async function revokePowerBonusSkills(item, actor) {
   if (!BONUS_SKILL_ITEM_TYPES.has(item?.type) || !isPc(actor)) return;
 
@@ -205,12 +197,6 @@ export async function revokePowerBonusSkills(item, actor) {
     await skill.update(updates);
   }
 }
-
-export const revokeClassEdgeBonusSkills = revokePowerBonusSkills;
-
-/**
- * @param {Actor} actor
- */
 export async function syncActorPowerBonusSkills(actor) {
   for (const item of actor.items.filter((i) => BONUS_SKILL_ITEM_TYPES.has(i.type))) {
     await syncPowerBonusSkills(item, actor, { prompt: false });

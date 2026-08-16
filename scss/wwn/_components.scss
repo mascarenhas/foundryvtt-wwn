@@ -688,15 +688,105 @@
     overflow: auto;
   }
 
-  /* Description / notes ProseMirror height band */
+  /* Shared prose field ({{> wwnSheetEditor}}). Foundry's active editor uses
+     flex + absolutely positioned .editor-content; without a definite height
+     the surface collapses to 0 when Edit is toggled. */
   .wwn-sheet-editor {
-    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 12rem;
 
+    prose-mirror,
     .editor {
-      min-height: 5rem;
-      max-height: 10rem;
-      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 12rem;
+      height: auto;
     }
+
+    .editor-container {
+      flex: 1 1 auto;
+      min-height: 10rem;
+    }
+
+    .editor-content,
+    .ProseMirror {
+      min-height: 10rem;
+    }
+
+    &.wwn-sheet-editor--compact {
+      flex: 0 1 auto;
+      min-height: 3.5rem;
+
+      prose-mirror,
+      .editor {
+        min-height: 3.5rem;
+      }
+
+      .editor-container,
+      .editor-content,
+      .ProseMirror {
+        min-height: 3.5rem;
+      }
+    }
+
+    /* Stretch into leftover sheet height (view and edit). Foundry's
+       .editor-content is absolute inset:0, so the host must be the box. */
+    &.wwn-sheet-editor--fill {
+      flex: 1 1 0;
+      min-height: 6rem;
+      height: auto;
+
+      prose-mirror,
+      .editor {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: 100%;
+      }
+
+      .editor-container {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+
+      .editor-content,
+      .ProseMirror {
+        min-height: 0;
+      }
+    }
+  }
+
+  /* Notes / description tabs: claim leftover window height, then let
+     --fill editors (or a shared pair) consume it. */
+  .notes-tab.active,
+  .tab.active:has(.wwn-item-description) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .notes-tab .wwn-form-stack,
+  .wwn-attributes-body:has(> .wwn-item-description) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wwn-sheet-editors {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    gap: 0.5rem;
+  }
+
+  .wwn-form-panel:has(> .wwn-sheet-editor--fill) {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* Stat chips (Main combat / NPC combat stats) */

@@ -60,16 +60,6 @@
     }
   }
 
-  /* Goals are short catalog blurbs — keep the editor compact */
-  .wwn-faction-editor--goal {
-    min-height: 0;
-
-    .editor {
-      min-height: 3.5rem;
-      max-height: 5.5rem;
-      overflow: auto;
-    }
-  }
 
   .wwn-faction-goal .form-fields input {
     text-align: left;

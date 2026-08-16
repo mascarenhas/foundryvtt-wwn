@@ -20,10 +20,6 @@ $actor-main: ":is(.wwn.sheet.actor.pc, .wwn.sheet.actor.power-armor)";
     }
 
     .wwn-form-panel {
-      .editor {
-        min-height: 8rem;
-      }
-
       .item-list .item-entry {
         margin: 0;
 
@@ -98,13 +94,6 @@ $actor-main: ":is(.wwn.sheet.actor.pc, .wwn.sheet.actor.power-armor)";
   }
 }
 
-.wwn.wwn-sheet.actor.pc .notes-tab .editor {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 8rem;
-}
 
 #{$actor-main} {
   .attributes-tab.active {
@@ -230,16 +219,16 @@ $actor-main: ":is(.wwn.sheet.actor.pc, .wwn.sheet.actor.power-armor)";
       min-height: 0;
       overflow-x: hidden;
       overflow-y: auto;
-      columns: 2;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       column-gap: 0.75rem;
-      display: block;
+      align-content: start;
       list-style: none;
       margin: 0;
       padding: 0;
     }
 
     .item-entry {
-      break-inside: avoid;
       width: 100%;
 
       &:nth-child(even) .item {
@@ -278,6 +267,7 @@ $actor-main: ":is(.wwn.sheet.actor.pc, .wwn.sheet.actor.power-armor)";
     flex-direction: column;
     gap: 0.5rem;
     min-height: 0;
+    overflow: hidden;
 
     .wwn-favorites-dock {
       flex: 1 1 auto;

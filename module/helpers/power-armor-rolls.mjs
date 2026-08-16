@@ -2,9 +2,12 @@
  * Power armor roll pipeline: live pilot stats + suit overlays (exo, mounts, training).
  */
 import { WwnDice } from "../dice/dice.mjs";
+import { skillRollAbilityChoices } from "../dice/roll-prompt.mjs";
 import { RollParts, resolveSkillDiceFormula } from "../dice/roll-parts.mjs";
 import { WwnRoll, WwnAttackRoll, WwnSkillRoll, WwnDamageRoll } from "../dice/rolls.mjs";
 import { createRollMessage } from "../chat/chat-card.mjs";
+import { enrichItemDescription } from "../chat/item-description.mjs";
+import { formatShockAcDetail, formatAttackAcDetail, buildNoShockRollRow } from "../chat/roll-rows.mjs";
 import { resolvePilot, isPilotTrained } from "./power-armor-pilot.mjs";
 import { resolveCamoStealthBonus, weaponMountBonuses, isShockImmuneTarget } from "./power-armor-derive.mjs";
 import {
@@ -17,6 +20,11 @@ import {
   naturalAttackDie,
   applyShockFloor,
   buildAttackApplyRows,
+  effectiveShockCompareAc,
+  shouldShowShockRow,
+  shouldEmitNoShockPlaceholder,
+  hasBaseShockDamage,
+  resolveChatAttackTarget,
 } from "./attack-outcome.mjs";
 import { resolveTargetAcForAttack } from "./attack-ac.mjs";
 import { resolveWeaponTlGate } from "./weapon-tl.mjs";
@@ -30,12 +38,8 @@ function applyRowLabels() {
     damageFloored: game.i18n.localize("WWN.Roll.DamageFloored"),
     missDamage: game.i18n.localize("WWN.Roll.MissDamage"),
     straight: (value) => game.i18n.format("WWN.Roll.Straight", { value }),
-    shockVs: (value, ac) => game.i18n.format("WWN.Roll.ShockVs", { value, ac }),
-    shockVsTarget: (value, threshold, targetAcVal) => game.i18n.format("WWN.Roll.ShockVsTarget", {
-      value,
-      threshold,
-      targetAc: targetAcVal,
-    }),
+    shock: game.i18n.localize("WWN.Roll.ShockBase"),
+    shockSuffix: (ac) => game.i18n.format("WWN.Roll.ShockApplySuffix", { ac }),
     trauma: (rating) => game.i18n.format("WWN.Roll.TraumaDamage", { rating }),
   };
 }
@@ -57,22 +61,27 @@ export function resolveSuitWeaponOutcome({
   attackRoll,
   damageTotal,
   shockTotal = null,
+  attacker = null,
 }) {
-  const target = game.user?.targets?.first?.() ?? [...(game.user?.targets ?? [])][0] ?? null;
+  const shockAttacker = attacker ?? suit;
+  const { target, untargeted } = resolveChatAttackTarget(game.user?.targets);
   let hit = true;
   let blockedByTl = false;
   let targetAc = null;
   let shockAppliesOnMiss = false;
   let shockLabelAc = weapon.system?.shockAcValue ?? weapon.system?.shock?.ac;
-  let shockTargetAc = null;
   let badge = null;
+  let acKind = "melee";
+  let separateRanged = false;
 
   if (target?.actor) {
     const gate = resolveWeaponTlGate(suit, target.actor, weapon, attackKind);
     blockedByTl = gate.blocked;
-    const separateRanged = game.settings.get("wwn", "separateRangedAC");
-    const acResult = resolveTargetAcForAttack(suit, target.actor, weapon, attackKind, { separateRanged });
+    const separateRangedSetting = game.settings.get("wwn", "separateRangedAC");
+    separateRanged = separateRangedSetting;
+    const acResult = resolveTargetAcForAttack(suit, target.actor, weapon, attackKind, { separateRanged: separateRangedSetting });
     targetAc = acResult.ac;
+    acKind = acResult.acKind ?? (attackKind === "ranged" ? "ranged" : "melee");
     const hitResult = resolveAttackHit({
       attackTotal: attackRoll.total,
       naturalDie: naturalAttackDie(attackRoll),
@@ -86,11 +95,10 @@ export function resolveSuitWeaponOutcome({
     };
 
     if (shockTotal != null && !blockedByTl) {
-      const shockCheck = WwnDice.shockAppliesOnMiss(suit, target.actor, weapon, attackKind, {
+      const shockCheck = WwnDice.shockAppliesOnMiss(shockAttacker, target.actor, weapon, attackKind, {
         effectiveTargetAc: Number.isFinite(targetAc) ? targetAc : null,
       });
       shockLabelAc = shockCheck.threshold;
-      shockTargetAc = shockCheck.effectiveTargetAc;
       shockAppliesOnMiss = shockCheck.applies;
     }
   } else if (shockTotal != null) {
@@ -101,6 +109,7 @@ export function resolveSuitWeaponOutcome({
   const floorInfo = applyShockFloor(damageTotal, hit ? shockForFloor : null);
   const applyRows = buildAttackApplyRows({
     hit,
+    untargeted,
     blockedByTl,
     damageValue: floorInfo.value,
     damageFloored: floorInfo.floored,
@@ -108,13 +117,25 @@ export function resolveSuitWeaponOutcome({
     shockTotal: shockForFloor,
     shockAppliesOnMiss,
     shockLabelAc,
-    shockTargetAc,
     trauma: null,
     missDamageValue: null,
     labels: applyRowLabels(),
   });
 
-  return { hit, applyRows, badge, targetName: target?.name ?? null };
+  return {
+    hit,
+    untargeted,
+    applyRows,
+    badge,
+    targetAc,
+    acKind,
+    separateRanged,
+    targetName: target?.name ?? null,
+    outcome: untargeted ? null : {
+      type: hit ? "hit" : "miss",
+      label: game.i18n.localize(hit ? "WWN.Roll.HitHeader" : "WWN.Roll.MissHeader"),
+    },
+  };
 }
 
 async function resolvePilotLive(suit) {
@@ -178,8 +199,11 @@ export async function rollSuitCheck(suit, abilityKey, { skipDialog = false } = {
       type: success ? "hit" : "miss",
     },
     bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
-    context: {
+    rollMeta: [{
+      label: game.i18n.localize("WWN.Roll.Formula"),
       breakdown: rollParts.breakdown(),
+    }],
+    context: {
       pilotName: pilot.name,
       untrained,
     },
@@ -230,8 +254,11 @@ export async function rollSuitSave(suit, saveId, { skipDialog = false } = {}) {
       type: success ? "hit" : "miss",
     },
     bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
-    context: {
+    rollMeta: [{
+      label: game.i18n.localize("WWN.Roll.Formula"),
       breakdown: parts.breakdown(),
+    }],
+    context: {
       pilotName: emptySuit ? game.i18n.localize("WWN.PowerArmor.EmptySuit") : pilot.name,
       untrained,
     },
@@ -244,17 +271,23 @@ export async function rollSuitSkill(suit, skill, { skipDialog = false, abilityKe
     return ui.notifications.warn(game.i18n.localize("WWN.PowerArmor.NoPilot"));
   }
   const pilot = resolved.actor;
-  abilityKey ??= skill.system.score ?? "int";
+  const defaultKey = abilityKey ?? skill.system.score ?? "int";
   const derived = suit.system.derived ?? {};
+
+  const title = suitTitle(suit, game.i18n.format("WWN.Roll.SkillTitle", { skill: skill.name }));
+  const prompt = await WwnDice.promptModifier({
+    title,
+    skipDialog,
+    abilities: skillRollAbilityChoices(pilot, defaultKey),
+    defaultAbilityKey: defaultKey,
+  });
+  if (!prompt) return;
+  abilityKey = prompt.abilityKey ?? defaultKey;
 
   let abilityMod = pilot.system.abilities?.[abilityKey]?.mod ?? 0;
   if (abilityKey === "str" && derived.effectiveStrengthMod != null) {
     abilityMod = derived.effectiveStrengthMod;
   }
-
-  const title = suitTitle(suit, game.i18n.format("WWN.Roll.SkillTitle", { skill: skill.name }));
-  const prompt = await WwnDice.promptModifier({ title, skipDialog });
-  if (!prompt) return;
 
   const untrained = !isPilotTrained(resolved.uuid, suit.system.trainedPilots);
   const slug = skill.system.slug || "";
@@ -298,7 +331,11 @@ export async function rollSuitSkill(suit, skill, { skipDialog = false, abilityKe
     img: skill.img,
     title,
     bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
-    context: { breakdown: parts.breakdown(), pilotName: pilot.name, untrained },
+    rollMeta: [{
+      label: game.i18n.localize("WWN.Roll.Formula"),
+      breakdown: parts.breakdown(),
+    }],
+    context: { pilotName: pilot.name, untrained },
   });
 }
 
@@ -359,8 +396,8 @@ export async function rollSuitWeapon(suit, weapon, { skipDialog = false } = {}) 
     attack.add(skillLevel, skill?.name ?? game.i18n.localize("WWN.Roll.Unskilled"));
   }
   attack.add(mount.attackBonus ?? 0, game.i18n.localize("WWN.PowerArmor.MountBonus"));
-  const lockTarget = [...(game.user?.targets ?? [])][0]?.actor ?? null;
-  const lockBonus = targetLockAttackBonus(suit, lockTarget);
+  const { target: lockToken } = resolveChatAttackTarget(game.user?.targets);
+  const lockBonus = targetLockAttackBonus(suit, lockToken?.actor ?? null);
   if (lockBonus) attack.add(lockBonus, game.i18n.localize("WWN.PowerArmor.TargetLockBonus"));
   const lightPen = floodlightsAttackPenalty(suit);
   if (lightPen) attack.add(lightPen, game.i18n.localize("WWN.PowerArmor.FloodlightsPenalty"));
@@ -375,29 +412,80 @@ export async function rollSuitWeapon(suit, weapon, { skipDialog = false } = {}) 
   const attackRoll = await new WwnAttackRoll(attack.formula(), rollData, { kind: "attack" }).evaluate();
   const damageRoll = await new WwnDamageRoll(damage.formula(), rollData, { kind: "damage" }).evaluate();
   const attackKind = suitAttackKind(weapon);
+
+  let shockTotal = null;
+  let shock = null;
+  let shockRoll = null;
+  if (hasBaseShockDamage(weapon.system?.shock?.damage)) {
+    shock = new RollParts().add(weapon.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
+    shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
+    shockTotal = shockRoll.total;
+  }
+
+  const shockAttacker = emptySuit ? suit : pilot;
   const outcome = resolveSuitWeaponOutcome({
     suit,
     weapon,
     attackKind,
     attackRoll,
     damageTotal: damageRoll.total,
-    shockTotal: null,
+    shockTotal,
+    attacker: shockAttacker,
   });
 
+  const compareAcs = [];
+  if (!outcome.untargeted && Number.isFinite(outcome.targetAc)) {
+    compareAcs.push(effectiveShockCompareAc(shockAttacker, lockToken?.actor, outcome.targetAc));
+  }
+  const shockThreshold = weapon.system?.shockAcValue ?? weapon.system?.shock?.ac;
+  const showShockRow = shouldShowShockRow(shockThreshold, compareAcs);
+  const rolls = [attackRoll, damageRoll];
+  const rollMeta = [
+    {
+      label: game.i18n.localize("WWN.Roll.Attack"),
+      detail: formatAttackAcDetail(outcome.targetAc, {
+        separateRanged: outcome.separateRanged,
+        acKind: outcome.acKind,
+      }),
+      breakdown: attack.breakdown(),
+    },
+    { label: game.i18n.localize("WWN.Roll.Damage"), breakdown: damage.breakdown() },
+  ];
+  if (shockRoll && (outcome.hit || showShockRow)) {
+    rolls.push(shockRoll);
+    rollMeta.push({
+      label: game.i18n.localize("WWN.Roll.ShockBase"),
+      detail: formatShockAcDetail(shockThreshold),
+      breakdown: shock.breakdown(),
+    });
+  }
+  const extraRollRows = shouldEmitNoShockPlaceholder({
+    hit: outcome.hit,
+    showShockRow,
+    canUseShock: !!shockRoll,
+    hasCompareAcs: compareAcs.length > 0,
+  })
+    ? [buildNoShockRollRow(shockThreshold)]
+    : [];
+
   const msg = await createRollMessage({
-    rolls: [attackRoll, damageRoll],
+    rolls,
+    extraRollRows,
+    rollMeta,
     kind: "attack",
     actor: suit,
     img: weapon.img,
     title,
+    subtitle: outcome.targetName
+      ? game.i18n.format("WWN.Roll.VsTarget", { target: outcome.targetName })
+      : null,
+    badge: outcome.badge,
     bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+    description: await enrichItemDescription(weapon),
     context: {
-      attackBreakdown: attack.breakdown(),
-      damageBreakdown: damage.breakdown(),
       applyRows: outcome.applyRows,
       hit: outcome.hit,
-      badge: outcome.badge,
-      targetName: outcome.targetName,
+      outcome: outcome.outcome,
       pilotName: emptySuit ? game.i18n.localize("WWN.PowerArmor.EmptySuit") : pilot.name,
       untrained,
     },
@@ -515,14 +603,16 @@ export async function rollSuitArmorFitting(suit, fitting, { skipDialog = false }
     rolls.push(attackRoll, damageRollEval);
 
     let shockTotal = null;
-    if (synthetic.system.shock?.damage) {
-      const shock = new RollParts().add(synthetic.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
-      const shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
+    let shock = null;
+    let shockRoll = null;
+    if (hasBaseShockDamage(synthetic.system.shock?.damage)) {
+      shock = new RollParts().add(synthetic.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
+      shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
       shockTotal = shockRoll.total;
-      rolls.push(shockRoll);
     }
 
     const attackKind = suitAttackKind(synthetic);
+    const shockAttacker = emptySuit ? suit : pilot;
     const outcome = resolveSuitWeaponOutcome({
       suit,
       weapon: synthetic,
@@ -530,22 +620,68 @@ export async function rollSuitArmorFitting(suit, fitting, { skipDialog = false }
       attackRoll,
       damageTotal: damageRollEval.total,
       shockTotal,
+      attacker: shockAttacker,
     });
+
+    const compareAcs = [];
+    if (!outcome.untargeted) {
+      const { target: shockTarget } = resolveChatAttackTarget(game.user.targets);
+      if (shockTarget?.actor) {
+        const ac = resolveTargetAcForAttack(shockAttacker, shockTarget.actor, synthetic, attackKind, {
+          separateRanged: game.settings.get("wwn", "separateRangedAC"),
+        }).ac;
+        compareAcs.push(effectiveShockCompareAc(shockAttacker, shockTarget.actor, ac));
+      }
+    }
+    const shockThreshold = synthetic.system?.shockAcValue ?? synthetic.system?.shock?.ac;
+    const showShockRow = shouldShowShockRow(shockThreshold, compareAcs);
+    if (shockRoll && (outcome.hit || showShockRow)) rolls.push(shockRoll);
+    const extraRollRows = shouldEmitNoShockPlaceholder({
+      hit: outcome.hit,
+      showShockRow,
+      canUseShock: !!shockRoll,
+      hasCompareAcs: compareAcs.length > 0,
+    })
+      ? [buildNoShockRollRow(shockThreshold)]
+      : [];
+
+    const rollMeta = [
+      {
+        label: game.i18n.localize("WWN.Roll.Attack"),
+        detail: formatAttackAcDetail(outcome.targetAc, {
+          separateRanged: outcome.separateRanged,
+          acKind: outcome.acKind,
+        }),
+        breakdown: attack.breakdown(),
+      },
+      { label: game.i18n.localize("WWN.Roll.Damage"), breakdown: damage.breakdown() },
+    ];
+    if (shockRoll && (outcome.hit || showShockRow)) {
+      rollMeta.push({
+        label: game.i18n.localize("WWN.Roll.ShockBase"),
+        detail: formatShockAcDetail(shockThreshold),
+        breakdown: shock.breakdown(),
+      });
+    }
 
     return createRollMessage({
       rolls,
+      extraRollRows,
+      description: await enrichItemDescription(fitting),
+      rollMeta,
       kind: "attack",
       actor: suit,
       img: fitting.img,
       title,
+      subtitle: outcome.targetName
+        ? game.i18n.format("WWN.Roll.VsTarget", { target: outcome.targetName })
+        : null,
+      badge: outcome.badge,
       bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
       context: {
-        attackBreakdown: attack.breakdown(),
-        damageBreakdown: damage.breakdown(),
         applyRows: outcome.applyRows,
         hit: outcome.hit,
-        badge: outcome.badge,
-        targetName: outcome.targetName,
+        outcome: outcome.outcome,
         pilotName: emptySuit ? game.i18n.localize("WWN.PowerArmor.EmptySuit") : pilot.name,
         untrained,
       },
@@ -581,24 +717,24 @@ export async function rollSuitArmorFitting(suit, fitting, { skipDialog = false }
     : [];
 
   // attack-card exposes applyRows + save; power-card only has save / power buttons.
-  const bodyTemplate = applyRows.length
+  const useAttackCard = applyRows.length > 0;
+  const description = await enrichItemDescription(fitting);
+  const bodyTemplate = useAttackCard
     ? "systems/wwn/templates/chat/attack-card.hbs"
     : "systems/wwn/templates/chat/power-card.hbs";
 
   return createRollMessage({
     rolls,
+    rollMeta: [{ label: game.i18n.localize("WWN.Roll.Damage"), breakdown: system.damageRoll || "" }],
     kind: "damage",
     actor: suit,
     img: fitting.img,
     title,
     defaultHealing: !!system.healing,
     bodyTemplate,
+    description: useAttackCard ? description : "",
     context: {
-      description: await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-        system.description ?? "",
-        { relativeTo: fitting, secrets: false },
-      ),
-      damageBreakdown: system.damageRoll || null,
+      description: useAttackCard ? "" : description,
       save: system.save || null,
       hasDamage: false,
       healing: !!system.healing,

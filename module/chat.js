@@ -81,17 +81,11 @@ export async function applyChatCardDamage(amount, multiplier) {
     return ui.notifications.warn(game.i18n.localize("WWN.Chat.ApplyDenied"));
   }
 
-  const title =
-    multiplier > 0
-      ? `Applied ${Math.floor(amount * multiplier)} damage`
-      : `Applied ${Math.floor(amount * multiplier * -1)} healing`;
-  const image = multiplier > 0 ? "icons/svg/blood.svg" : "icons/svg/heal.svg";
-
+  const { buildApplyDamageNotice } = await import("./chat/apply-damage-notice.mjs");
   const { createNoticeMessage } = await import("./chat/chat-card.mjs");
+  const notice = buildApplyDamageNotice(amount, multiplier, targets.map((t) => t.name));
   await createNoticeMessage({
-    title,
-    img: image,
-    list: targets.map((t) => t.name),
+    ...notice,
     flags: { kind: "apply-damage" },
   });
   return Promise.all(

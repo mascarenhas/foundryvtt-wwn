@@ -3,6 +3,7 @@ import { getSkillSetCache } from "./skill-set.mjs";
 import { applySkillPoints, FOCUS_BONUS_SKILL_POINTS } from "./skill-points.mjs";
 import {
   findSkillBySlug,
+  ensureActorSkillBySlug,
   declaredBonusSkills,
   bonusSkillsPickCount,
   needsBonusSkillChoice,
@@ -304,7 +305,7 @@ export async function syncFocusBonusSkills(focus, actor, { prompt = false } = {}
 
   const always = alwaysBonusSkills(focus);
   for (const slug of always) {
-    const skill = findSkillBySlug(actor, slug);
+    const skill = await ensureActorSkillBySlug(actor, slug);
     if (skill) await grantBonusSkill(focus, actor, skill);
   }
 
@@ -321,7 +322,7 @@ export async function syncFocusBonusSkills(focus, actor, { prompt = false } = {}
   }
 
   for (const slug of choice) {
-    const skill = findSkillBySlug(actor, slug);
+    const skill = await ensureActorSkillBySlug(actor, slug);
     if (skill) await grantBonusSkill(focus, actor, skill);
   }
   await syncSpecialistSkillBonus(focus, choice);

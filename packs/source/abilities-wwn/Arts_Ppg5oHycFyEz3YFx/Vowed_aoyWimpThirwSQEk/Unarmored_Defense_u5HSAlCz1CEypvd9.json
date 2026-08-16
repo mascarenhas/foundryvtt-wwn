@@ -3,7 +3,28 @@
   "name": "Unarmored Defense",
   "type": "power",
   "img": "systems/wwn/assets/icons/powers/vowed-art.png",
-  "effects": [],
+  "effects": [
+    {
+      "_id": "u5HSacInnate0001",
+      "type": "base",
+      "name": "Unarmored Defense",
+      "img": "systems/wwn/assets/icons/powers/vowed-art.png",
+      "transfer": true,
+      "disabled": false,
+      "system": {
+        "changes": [
+          {
+            "key": "system.combat.innateAc.min",
+            "type": "upgrade",
+            "value": "13 + floor(@level / 2)",
+            "phase": "final"
+          }
+        ]
+      },
+      "flags": {},
+      "_key": "!items.effects!u5HSAlCz1CEypvd9.u5HSacInnate0001"
+    }
+  ],
   "folder": "aoyWimpThirwSQEk",
   "sort": 0,
   "flags": {

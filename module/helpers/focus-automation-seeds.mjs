@@ -211,8 +211,12 @@ export function seedFocusAutomationEffects(focusName, seed) {
       );
       break;
     case "Origin Focus: Lizardman":
-      seed([{ key: "system.combat.innateAc.min", type: "upgrade", value: 13, phase: "final" }], {
+      seed([{ key: "system.combat.innateAc.min", type: "upgrade", value: 12, phase: "final" }], {
         effectName: "Lizardman (Level 1)",
+        focusLevel: 1,
+      });
+      seed([{ key: "system.combat.ac.mod", type: "add", value: 1, phase: "initial" }], {
+        effectName: "Lizardman (AC +1)",
         focusLevel: 1,
       });
       choice("Lizardman +1", [
@@ -312,6 +316,20 @@ export function seedFocusAutomationEffects(focusName, seed) {
         ["wis", "Wisdom −1", -1],
         ["cha", "Charisma −1", -1],
       ]);
+      break;
+    case "Origin Focus: Elf, Gyre":
+      choice("Elf, Gyre L2", [
+        ["int", "Intelligence +1", 1],
+        ["wis", "Wisdom +1", 1],
+        ["cha", "Charisma +1", 1],
+      ]);
+      break;
+    case "Origin Focus: Elf, Half-Elf":
+      seed([attr("dex", 1), attr("con", -1)], {
+        effectName: "Elf, Half-Elf (Dexterity +1 / Constitution −1)",
+        skipFocusLevelSync: true,
+        disabled: true,
+      });
       break;
     case "Xenoblooded":
       seed([attr("str", 1), attr("dex", -1)], {

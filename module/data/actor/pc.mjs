@@ -8,8 +8,9 @@ import { deriveInitiative } from "../../derivations/initiative.mjs";
 import { deriveHitDice } from "../../derivations/hit-dice.mjs";
 import { deriveResourcePools } from "../../derivations/resource-pools.mjs";
 import { applyInstalledPermanentStrain } from "../../derivations/strain-max.mjs";
-import { deriveAttackBonus } from "../../derivations/attack-bonus.mjs";
+import { deriveAttackBonus, isSpuriousExpertAbResidual } from "../../derivations/attack-bonus.mjs";
 import { derivePreparedMax } from "../../derivations/prepared-spells.mjs";
+import { skillSlugOf } from "../../helpers/skill-set.mjs";
 
 const fields = foundry.data.fields;
 
@@ -107,15 +108,26 @@ export default class WwnPc extends WwnActorBase {
     } else if (typeof source.details.renown === "object" && source.details.renown.value === undefined) {
       source.details.renown.value = 0;
     }
+    if (isSpuriousExpertAbResidual(source.combat?.abMod, source.details.level)) {
+      source.combat ??= {};
+      source.combat.abMod = 0;
+    }
     return source;
   }
 
   prepareBaseData() {
     super.prepareBaseData();
-    // AE-only targets
+    // AE-only / AE-add targets: restore persisted source each prepare so
+    // add-mode AEs do not stack across prepareData() calls.
+    const src = this.parent?._source?.system ?? {};
+    for (const key of Object.keys(this.abilities ?? {})) {
+      this.abilities[key].baseMod = Number(src.abilities?.[key]?.baseMod) || 0;
+    }
+    this.hitDice.perLevelMod = Number(src.hitDice?.perLevelMod) || 0;
     this.hitDice.staticMod = 0;
     this.hitDice.fromEdges = false;
     this.skills.floor = -1;
+    this.combat.abMod = Number(src.combat?.abMod) || 0;
     this.combat.abBase = 0;
     this.combat.ab = 0;
   }
@@ -217,7 +229,7 @@ export default class WwnPc extends WwnActorBase {
       data[slug] = -1;
     }
     for (const skill of this.parent.items.filter((i) => i.type === "skill")) {
-      const slug = skill.system.slug || skill.name.slugify({ strict: true }).replace(/-/g, "");
+      const slug = skillSlugOf(skill);
       data[slug] = skill.system.ownedLevel ?? -1;
     }
 

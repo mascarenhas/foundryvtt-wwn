@@ -80,7 +80,7 @@ function buildTokenDetectionTargets() {
   return targets;
 }
 
-/** Static groups (saves and token groups are appended in getAeTargetGroups). */
+/** Static groups. Saves and token groups are inserted in getAeTargetGroups. */
 function staticGroups() {
   const abilities = {};
   for (const key of ABILITY_KEYS) {
@@ -133,6 +133,7 @@ function staticGroups() {
         "system.combat.rangeDamage": { label: "WWN.Effects.DamageRanged", modes: ["add"], valueType: "formula", phase: "final" },
         "system.combat.allShock": { label: "WWN.Effects.ShockAll", modes: ["add"], valueType: "formula", phase: "final" },
         "system.combat.meleeShock": { label: "WWN.Effects.ShockMelee", modes: ["add"], valueType: "formula", phase: "final" },
+        "system.combat.unarmedShock": { label: "WWN.Effects.ShockUnarmed", modes: ["add"], valueType: "formula", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.rangeShock": { label: "WWN.Effects.ShockRanged", modes: ["add"], valueType: "formula", phase: "final" },
         "system.combat.initiative.individual.roll": {
           label: "WWN.Effects.InitiativeIndividualDie",
@@ -160,24 +161,23 @@ function staticGroups() {
         },
         "system.hitDice.staticMod": { label: "WWN.Effects.MaxHpOneTime", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
         "system.hitDice.perLevelMod": { label: "WWN.Effects.MaxHpPerLevel", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
-        "system.skills.floor": { label: "WWN.Effects.SkillFloor", modes: ["upgrade"], valueType: "formula", phase: "final", actorTypes: ["character", "pc"] },
+      },
+    },
+    combatTraits: {
+      label: "WWN.Effects.Groups.CombatTraits",
+      targets: {
+        "system.combat.innateAc.min": { label: "WWN.Effects.InnateAcMin", modes: ["upgrade"], valueType: "formula", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.immuneToSurprise": { label: "WWN.Effects.ImmuneToSurprise", modes: ["override"], valueType: "string", phase: "initial", actorTypes: ["character", "pc"] },
         "system.combat.treatAllMeleeAsAcTen": { label: "WWN.Effects.TreatAllMeleeAsAcTen", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.immuneToShock": { label: "WWN.Effects.ImmuneToShock", modes: ["override"], valueType: "string", phase: "final" },
-        "system.combat.innateAc.min": { label: "WWN.Effects.InnateAcMin", modes: ["upgrade"], valueType: "formula", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.autoStabilize": { label: "WWN.Effects.AutoStabilize", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.meleeCountsAsTl4": { label: "WWN.Effects.MeleeCountsAsTl4", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
+        "system.combat.immuneToPrimitiveWeapons": { label: "WWN.Effects.ImmuneToPrimitiveWeapons", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.meleeMissDamage": { label: "WWN.Effects.MeleeMissDamage", modes: ["override"], valueType: "dice", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.rangeMissDamage": { label: "WWN.Effects.RangeMissDamage", modes: ["override"], valueType: "dice", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.punchMissDamage": { label: "WWN.Effects.PunchMissDamage", modes: ["override"], valueType: "dice", phase: "final", actorTypes: ["character", "pc"] },
-        "system.combat.immuneToPrimitiveWeapons": { label: "WWN.Effects.ImmuneToPrimitiveWeapons", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.endOfTurnAdjacentShock": { label: "WWN.Effects.EndOfTurnAdjacentShock", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
         "system.combat.missAfterFirstMeleeHit": { label: "WWN.Effects.MissAfterFirstMeleeHit", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
-        "system.starship.commandPointsBonus": { label: "WWN.Effects.StarshipCommandPointsBonus", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
-        "system.starship.combatBonusHpPercent": { label: "WWN.Effects.StarshipCombatBonusHpPercent", modes: ["add", "override"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
-        "system.starship.spikeDrillAutoSucceedDiff": { label: "WWN.Effects.SpikeDrillAutoSucceedDiff", modes: ["upgrade", "override"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
-        "system.starship.spikeDrillDoublePilot": { label: "WWN.Effects.SpikeDrillDoublePilot", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
-        "system.starship.spikeDriveLevelBonus": { label: "WWN.Effects.SpikeDriveLevelBonus", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
       },
     },
     abilities: {
@@ -212,6 +212,17 @@ function staticGroups() {
           phase: "initial",
           setting: "useTrauma",
         },
+        "system.skills.floor": { label: "WWN.Effects.SkillFloor", modes: ["upgrade"], valueType: "formula", phase: "final", actorTypes: ["character", "pc"] },
+      },
+    },
+    starship: {
+      label: "WWN.Effects.Groups.Starship",
+      targets: {
+        "system.starship.commandPointsBonus": { label: "WWN.Effects.StarshipCommandPointsBonus", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
+        "system.starship.combatBonusHpPercent": { label: "WWN.Effects.StarshipCombatBonusHpPercent", modes: ["add", "override"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
+        "system.starship.spikeDrillAutoSucceedDiff": { label: "WWN.Effects.SpikeDrillAutoSucceedDiff", modes: ["upgrade", "override"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
+        "system.starship.spikeDrillDoublePilot": { label: "WWN.Effects.SpikeDrillDoublePilot", modes: ["override"], valueType: "string", phase: "final", actorTypes: ["character", "pc"] },
+        "system.starship.spikeDriveLevelBonus": { label: "WWN.Effects.SpikeDriveLevelBonus", modes: ["add"], valueType: "number", phase: "final", actorTypes: ["character", "pc"] },
       },
     },
   };
@@ -223,7 +234,7 @@ function staticGroups() {
  * @returns {Record<string, {label: string, targets: Record<string, object>}>}
  */
 export function getAeTargetGroups() {
-  const groups = staticGroups();
+  const { combat, combatTraits, abilities, movement, trackers, starship } = staticGroups();
   const saveSetKey = game.settings?.get("wwn", "saveSet") ?? "wwn";
   const saveSet = CONFIG.WWN.saveSets[saveSetKey] ?? CONFIG.WWN.saveSets.wwn;
   const saveTargets = {
@@ -238,9 +249,17 @@ export function getAeTargetGroups() {
       phase: "initial",
     };
   }
-  groups.saves = { label: "WWN.Effects.Groups.Saves", targets: saveTargets };
-  groups.tokenSight = { label: "WWN.Effects.Groups.TokenSight", targets: buildTokenSightTargets() };
-  groups.tokenLight = { label: "WWN.Effects.Groups.TokenLight", targets: buildTokenLightTargets() };
+  const groups = {
+    combat,
+    combatTraits,
+    saves: { label: "WWN.Effects.Groups.Saves", targets: saveTargets },
+    abilities,
+    movement,
+    trackers,
+    starship,
+    tokenSight: { label: "WWN.Effects.Groups.TokenSight", targets: buildTokenSightTargets() },
+    tokenLight: { label: "WWN.Effects.Groups.TokenLight", targets: buildTokenLightTargets() },
+  };
   const detectionTargets = buildTokenDetectionTargets();
   if (Object.keys(detectionTargets).length) {
     groups.tokenDetection = { label: "WWN.Effects.Groups.TokenDetection", targets: detectionTargets };

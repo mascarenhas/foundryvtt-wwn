@@ -8,6 +8,8 @@ import {
   powerNeedsBonusSkillChoice,
   resolvePowerBonusSkillSlugs,
 } from "../module/helpers/power-bonus-skills.mjs";
+import { findSkillBySlug, planBonusSkillGrant } from "../module/helpers/bonus-skills-shared.mjs";
+import { skillCreateDataFromPackDocs } from "../module/helpers/skill-set.mjs";
 import {
   attributeGrantChanges,
   classEdgeNeedsAttributeChoice,
@@ -38,12 +40,91 @@ describe("classEdge bonus skill resolution", () => {
     assert.equal(resolvePowerBonusSkillSlugs(edge), null);
   });
 
+  it("plans to create a secondary skill that is not on the actor", () => {
+    const actor = {
+      items: [
+        { type: "skill", name: "Sneak", system: { slug: "sneak", ownedLevel: -1 } },
+      ],
+    };
+    assert.equal(findSkillBySlug(actor, "sneak")?.system.slug, "sneak");
+    assert.equal(findSkillBySlug(actor, "biopsionics"), undefined);
+    assert.deepEqual(planBonusSkillGrant(actor, "sneak"), {
+      action: "grant",
+      slug: "sneak",
+      skill: actor.items[0],
+    });
+    assert.deepEqual(planBonusSkillGrant(actor, "biopsionics"), {
+      action: "create",
+      slug: "biopsionics",
+    });
+  });
+
+  it("builds create data for a missing pack skill without keeping pack ids", () => {
+    const docs = [
+      {
+        name: "Sneak",
+        type: "skill",
+        _id: "packSneak",
+        folder: "skillsFolder",
+        _key: "!items!packSneak",
+        system: { slug: "sneak", secondary: false, ownedLevel: -1 },
+      },
+      {
+        name: "Biopsionics",
+        type: "skill",
+        _id: "sGRJCGdERZt1iQHK",
+        folder: "K5CjewzS46t4IezS",
+        _key: "!items!sGRJCGdERZt1iQHK",
+        system: { slug: "biopsionics", secondary: true, ownedLevel: -1, score: "int" },
+      },
+    ];
+    const data = skillCreateDataFromPackDocs(docs, "biopsionics");
+    assert.equal(data.name, "Biopsionics");
+    assert.equal(data.type, "skill");
+    assert.equal(data.system.slug, "biopsionics");
+    assert.equal(data.system.secondary, true);
+    assert.equal(data.system.ownedLevel, -1);
+    assert.equal(data._id, undefined);
+    assert.equal(data.folder, undefined);
+    assert.equal(data._key, undefined);
+    assert.equal(skillCreateDataFromPackDocs(docs, "missing"), null);
+  });
+
   it("Educated any-mode needs choice", () => {
     const edge = {
       type: "classEdge",
       system: { bonusSkills: [], bonusSkillsPick: 1, bonusSkillsChosen: [], bonusSkillsMode: "any" },
     };
     assert.equal(powerNeedsBonusSkillChoice(edge), true);
+  });
+
+  it("resolves a listed Magic grant without a prompt", () => {
+    const edge = {
+      type: "classEdge",
+      system: { bonusSkills: ["magic"], bonusSkillsPick: 1, bonusSkillsChosen: [], bonusSkillsMode: "" },
+    };
+    assert.equal(powerNeedsBonusSkillChoice(edge), false);
+    assert.deepEqual(resolvePowerBonusSkillSlugs(edge), ["magic"]);
+  });
+
+  it("Vowed noncombat mode needs a pick and excludes Punch/Stab/Shoot", async () => {
+    const { filterOpenBonusSkillSlugs } = await import("../module/helpers/bonus-skills-shared.mjs");
+    const edge = {
+      type: "classEdge",
+      system: { bonusSkills: [], bonusSkillsPick: 1, bonusSkillsChosen: [], bonusSkillsMode: "noncombat" },
+    };
+    assert.equal(powerNeedsBonusSkillChoice(edge), true);
+    assert.equal(resolvePowerBonusSkillSlugs(edge), null);
+    assert.deepEqual(
+      filterOpenBonusSkillSlugs(
+        ["administer", "exert", "magic", "punch", "shoot", "stab", "survive"],
+        "noncombat",
+      ),
+      ["administer", "exert", "magic", "survive"],
+    );
+    edge.system.bonusSkillsChosen = ["exert"];
+    assert.equal(powerNeedsBonusSkillChoice(edge), false);
+    assert.deepEqual(resolvePowerBonusSkillSlugs(edge), ["exert"]);
   });
 });
 
@@ -126,6 +207,39 @@ describe("attack bonus with edges", () => {
     ]);
     deriveAttackBonus(actor);
     assert.equal(actor.system.combat.abBase, 1);
+  });
+
+  it("ignores a spurious -half-level residual left by live actor migration", () => {
+    const mage = mockPc(
+      [{ type: "classEdge", system: { attackProgression: "mage" } }],
+      6,
+    );
+    mage.system.combat.abMod = -3;
+    deriveAttackBonus(mage);
+    assert.equal(mage.system.combat.abBase, 1);
+    assert.equal(mage.system.combat.abMod, -3);
+    assert.equal(mage.system.combat.ab, 1);
+
+    const warrior = mockPc(
+      [{ type: "classEdge", system: { attackProgression: "warrior" } }],
+      8,
+    );
+    warrior.system.combat.abMod = -4;
+    deriveAttackBonus(warrior);
+    assert.equal(warrior.system.combat.abBase, 8);
+    assert.equal(warrior.system.combat.abMod, -4);
+    assert.equal(warrior.system.combat.ab, 8);
+  });
+
+  it("still applies a real attack-bonus modifier", () => {
+    const actor = mockPc(
+      [{ type: "classEdge", system: { attackProgression: "warrior" } }],
+      8,
+    );
+    actor.system.combat.abMod = 2;
+    deriveAttackBonus(actor);
+    assert.equal(actor.system.combat.ab, 10);
+    assert.equal(actor.system.combat.abMod, 2);
   });
 });
 
