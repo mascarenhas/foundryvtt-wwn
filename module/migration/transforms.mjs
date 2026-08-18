@@ -14,7 +14,6 @@ import {
 import { remapAssetPath } from "./asset-map.mjs";
 import { normalizeInternalResourceLength } from "../config/power-subtypes.mjs";
 import { mapWeaponAmmoMigration, ammoNameMatches } from "../helpers/ammo.mjs";
-import { skillSlugOf } from "../helpers/skill-set.mjs";
 import { isSpuriousExpertAbResidual } from "../derivations/attack-bonus.mjs";
 
 const MODE_TO_TYPE = { 0: "custom", 1: "multiply", 2: "add", 3: "downgrade", 4: "upgrade", 5: "override" };
@@ -959,25 +958,11 @@ export function repairWwnWeaponAmmo(system) {
   };
 }
 
+/** Drop leftover stored skill slugs; formula keys come from the item name. */
 export function migrateSkill(item) {
   const s = item.system ?? {};
-  return {
-    _id: item._id,
-    name: item.name,
-    type: "skill",
-    img: item.img,
-    sort: item.sort,
-    flags: item.flags ?? {},
-    effects: (item.effects ?? []).map(migrateEffectData),
-    system: {
-      description: s.description ?? "",
-      ownedLevel: Number.isFinite(Number(s.ownedLevel)) ? Number(s.ownedLevel) : -1,
-      score: s.score ?? "int",
-      skillDice: s.skillDice ?? "2d6",
-      secondary: !!s.secondary,
-      slug: skillSlugOf(item),
-    },
-  };
+  if (s.slug === undefined) return null;
+  return { _id: item._id, system: { "-=slug": null } };
 }
 
 /**
@@ -1076,7 +1061,7 @@ export function migrateItemData(item) {
     case "ammo":
       result = null;
       break;
-    case "skill": result = s.slug !== undefined ? null : migrateSkill(item); break;
+    case "skill": result = migrateSkill(item); break;
     default: return null; // asset etc. — out of scope
   }
   if (result?.img) result.img = remapAssetPath(result.img);
@@ -1104,12 +1089,25 @@ export function applyEmbeddedItemMigration(item) {
   // Partial patch (e.g. `{ system: { … } }`) — shallow-merge system.
   const out = { ...item, ...migrated };
   if (migrated.system && item.system) {
-    out.system = { ...item.system, ...migrated.system };
+    out.system = applyMinusKeys({ ...item.system, ...migrated.system }, migrated.system);
     if (migrated.system.shock && item.system.shock) {
-      out.system.shock = { ...item.system.shock, ...migrated.system.shock };
+      out.system.shock = applyMinusKeys(
+        { ...item.system.shock, ...migrated.system.shock },
+        migrated.system.shock,
+      );
     }
   }
   return out;
+}
+
+/** Apply Foundry `-=field` deletions from a patch onto a merged object. */
+function applyMinusKeys(merged, patch) {
+  for (const key of Object.keys(patch ?? {})) {
+    if (!key.startsWith("-=")) continue;
+    delete merged[key];
+    delete merged[key.slice(2)];
+  }
+  return merged;
 }
 
 /* -------------------------------------------- */

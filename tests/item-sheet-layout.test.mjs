@@ -27,6 +27,13 @@ describe("item sheet field columns", () => {
     assert.match(shared, /\.wwn-form-panel-fields[\s\S]*?grid-template-columns:\s*1fr\s+1fr/);
   });
 
+  it("does not persist a skill slug field", () => {
+    const src = read("module/data/item/skill.mjs");
+    assert.doesNotMatch(src, /schema\.slug/);
+    const tpl = read("templates/item/attributes/skill.hbs");
+    assert.doesNotMatch(tpl, /system\.slug/);
+  });
+
   it("does not expose a per-weapon skill-to-damage toggle", () => {
     const src = read("templates/item/attributes/weapon.hbs");
     assert.doesNotMatch(src, /system\.skillDamage/);

@@ -92,8 +92,12 @@ export function registerSettings() {
     hint: "WWN.Setting.MovementRateHint",
     scope: "world",
     type: String,
-    default: "movewwn",
-    choices: { movewwn: "WWN.Setting.MoveWWN", movebx: "WWN.Setting.MoveBX" },
+    default: "feet",
+    choices: {
+      feet: "WWN.Setting.MoveFeet",
+      meters: "WWN.Setting.MoveMeters",
+      bx: "WWN.Setting.MoveBX",
+    },
   });
 
   registerWwnSetting("showMovement", {

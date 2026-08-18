@@ -9,8 +9,7 @@
     "ownedLevel": -1,
     "score": "int",
     "skillDice": "2d6",
-    "secondary": true,
-    "slug": "metapsionics"
+    "secondary": true
   },
   "_stats": {
     "systemId": "wwn",

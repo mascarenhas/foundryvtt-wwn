@@ -10,6 +10,7 @@ import {
   computeSkillPurchaseCost,
   evaluateSkillLevelRequirement,
 } from "../../helpers/skill-points.mjs";
+import { usesDailyTravel } from "../../derivations/movement.mjs";
 
 const TPL = "systems/wwn/templates/actor/pc";
 
@@ -81,6 +82,7 @@ export class WwnPcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBaseA
     context.xpBar = prepareXpBar(actor);
     context.isNew = actor.isNew?.() ?? false;
     context.showMovement = game.settings.get("wwn", "showMovement");
+    context.showDailyMovement = usesDailyTravel();
     context.replaceStrainWithWounds = game.settings.get("wwn", "replaceStrainWithWounds");
     context.xpPerChar = game.settings.get("wwn", "xpPerChar");
     context.useTrauma = game.settings.get("wwn", "useTrauma");

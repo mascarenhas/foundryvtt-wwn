@@ -59,7 +59,7 @@ export const WWN_SETTING_MENUS = {
       },
       {
         legend: "WWN.Setting.Section.Movement",
-        settings: ["showMovement"],
+        settings: ["showMovement", "movementRate"],
       },
       {
         legend: "WWN.Setting.Section.Equipment",
@@ -85,10 +85,6 @@ export const WWN_SETTING_MENUS = {
       {
         legend: "WWN.Setting.Section.AttributesSaves",
         settings: ["attributeModType"],
-      },
-      {
-        legend: "WWN.Setting.Section.Movement",
-        settings: ["movementRate"],
       },
       {
         legend: "WWN.Setting.Section.Combat",

@@ -43,10 +43,10 @@ describe("classEdge bonus skill resolution", () => {
   it("plans to create a secondary skill that is not on the actor", () => {
     const actor = {
       items: [
-        { type: "skill", name: "Sneak", system: { slug: "sneak", ownedLevel: -1 } },
+        { type: "skill", name: "Sneak", system: { ownedLevel: -1 } },
       ],
     };
-    assert.equal(findSkillBySlug(actor, "sneak")?.system.slug, "sneak");
+    assert.equal(findSkillBySlug(actor, "sneak")?.name, "Sneak");
     assert.equal(findSkillBySlug(actor, "biopsionics"), undefined);
     assert.deepEqual(planBonusSkillGrant(actor, "sneak"), {
       action: "grant",
@@ -67,7 +67,7 @@ describe("classEdge bonus skill resolution", () => {
         _id: "packSneak",
         folder: "skillsFolder",
         _key: "!items!packSneak",
-        system: { slug: "sneak", secondary: false, ownedLevel: -1 },
+        system: { secondary: false, ownedLevel: -1 },
       },
       {
         name: "Biopsionics",
@@ -75,13 +75,12 @@ describe("classEdge bonus skill resolution", () => {
         _id: "sGRJCGdERZt1iQHK",
         folder: "K5CjewzS46t4IezS",
         _key: "!items!sGRJCGdERZt1iQHK",
-        system: { slug: "biopsionics", secondary: true, ownedLevel: -1, score: "int" },
+        system: { secondary: true, ownedLevel: -1, score: "int" },
       },
     ];
     const data = skillCreateDataFromPackDocs(docs, "biopsionics");
     assert.equal(data.name, "Biopsionics");
     assert.equal(data.type, "skill");
-    assert.equal(data.system.slug, "biopsionics");
     assert.equal(data.system.secondary, true);
     assert.equal(data.system.ownedLevel, -1);
     assert.equal(data._id, undefined);

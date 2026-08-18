@@ -11,6 +11,7 @@ import { migrateActorData, migrateActorItems } from "../migration/transforms.mjs
 import { splitSoakDamage } from "../helpers/power-armor-damage.mjs";
 import { getPrimarySkillData } from "../helpers/skill-set.mjs";
 import { isDuplicateOfItemTransfer } from "../helpers/effect-transfer-dedup.mjs";
+import { caseInsensitiveRollData } from "../helpers/roll-data.mjs";
 
 export class WwnActor extends Actor {
   /**
@@ -66,10 +67,10 @@ export class WwnActor extends Actor {
 
   /** @override */
   getRollData() {
-    if (typeof this.system.getRollData === "function") {
-      return this.system.getRollData();
-    }
-    return foundry.utils.deepClone(this.system);
+    const data = typeof this.system.getRollData === "function"
+      ? this.system.getRollData()
+      : foundry.utils.deepClone(this.system);
+    return caseInsensitiveRollData(data);
   }
 
   /**

@@ -2,6 +2,7 @@
  * Weapon tech level vs powered armor / Ironhide immunity, and armor-ignore thresholds.
  */
 import { isTruthyAeFlag } from "./combat-ae-flags.mjs";
+import { skillSlugOf } from "./skill-set.mjs";
 
 /** Ironhide / powered armor / plating: block weapons with effective TL ≤ this (and unarmed). */
 export const PRIMITIVE_IMMUNE_TL = 3;
@@ -16,7 +17,7 @@ export const IGNORABLE_ARMOR_TL = 2;
  */
 export function isUnarmedWeapon(weapon) {
   const skill = weapon?.system?.linkedSkill;
-  const skillSlug = skill?.system?.slug || String(skill?.name ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  const skillSlug = skillSlugOf(skill);
   if (skillSlug === "punch") return true;
   return /unarmed|fist|punch/i.test(weapon?.name ?? "");
 }

@@ -29,6 +29,7 @@ import {
 import { resolveTargetAcForAttack } from "./attack-ac.mjs";
 import { resolveWeaponTlGate } from "./weapon-tl.mjs";
 import { resolvePilotWeaponSkill } from "./power-armor-pilot-skill.mjs";
+import { skillSlugOf } from "./skill-set.mjs";
 
 export { resolvePilotWeaponSkill } from "./power-armor-pilot-skill.mjs";
 
@@ -290,7 +291,7 @@ export async function rollSuitSkill(suit, skill, { skipDialog = false, abilityKe
   }
 
   const untrained = !isPilotTrained(resolved.uuid, suit.system.trainedPilots);
-  const slug = skill.system.slug || "";
+  const slug = skillSlugOf(skill);
   const baseDice = resolveSkillDiceFormula(skill.system.skillDice);
 
   const buildParts = () => {
@@ -403,12 +404,12 @@ export async function rollSuitWeapon(suit, weapon, { skipDialog = false } = {}) 
   if (lightPen) attack.add(lightPen, game.i18n.localize("WWN.PowerArmor.FloodlightsPenalty"));
   attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
 
+  const rollData = emptySuit ? suit.getRollData() : pilot.getRollData();
   const damageFormula = weapon.system.damage || "1d6";
-  const damage = new RollParts().add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
+  const damage = new RollParts(rollData).add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
   if (attrMod) damage.add(attrMod, game.i18n.localize(CONFIG.WWN.abilityAbbreviations[attrKey] ?? attrKey));
   damage.add(mount.damageBonus ?? 0, game.i18n.localize("WWN.PowerArmor.MountBonus"));
 
-  const rollData = emptySuit ? suit.getRollData() : pilot.getRollData();
   const attackRoll = await new WwnAttackRoll(attack.formula(), rollData, { kind: "attack" }).evaluate();
   const damageRoll = await new WwnDamageRoll(damage.formula(), rollData, { kind: "damage" }).evaluate();
   const attackKind = suitAttackKind(weapon);
@@ -417,7 +418,7 @@ export async function rollSuitWeapon(suit, weapon, { skipDialog = false } = {}) 
   let shock = null;
   let shockRoll = null;
   if (hasBaseShockDamage(weapon.system?.shock?.damage)) {
-    shock = new RollParts().add(weapon.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
+    shock = new RollParts(rollData).add(weapon.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
     shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
     shockTotal = shockRoll.total;
   }
@@ -593,10 +594,10 @@ export async function rollSuitArmorFitting(suit, fitting, { skipDialog = false }
     attack.add(synthetic.system.bonus ?? 0, game.i18n.localize("WWN.Roll.WeaponBonus"));
     attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
 
-    const damage = new RollParts().add(synthetic.system.damage, game.i18n.localize("WWN.Roll.WeaponDamage"));
+    const rollData = emptySuit ? suit.getRollData() : pilot.getRollData();
+    const damage = new RollParts(rollData).add(synthetic.system.damage, game.i18n.localize("WWN.Roll.WeaponDamage"));
     if (attrMod) damage.add(attrMod, game.i18n.localize(CONFIG.WWN.abilityAbbreviations[attrKey] ?? attrKey));
 
-    const rollData = emptySuit ? suit.getRollData() : pilot.getRollData();
     const rolls = [];
     const attackRoll = await new WwnAttackRoll(attack.formula(), rollData, { kind: "attack" }).evaluate();
     const damageRollEval = await new WwnDamageRoll(damage.formula(), rollData, { kind: "damage" }).evaluate();
@@ -606,7 +607,7 @@ export async function rollSuitArmorFitting(suit, fitting, { skipDialog = false }
     let shock = null;
     let shockRoll = null;
     if (hasBaseShockDamage(synthetic.system.shock?.damage)) {
-      shock = new RollParts().add(synthetic.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
+      shock = new RollParts(rollData).add(synthetic.system.shock.damage, game.i18n.localize("WWN.Roll.ShockBase"));
       shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
       shockTotal = shockRoll.total;
     }

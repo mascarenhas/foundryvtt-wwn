@@ -236,7 +236,7 @@ export class WwnItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
     context.ammoChoices = choices;
   }
 
-  /** Primary skill slugs/names from the configured skill pack. */
+  /** Primary skill names from the configured skill pack. */
   #prepareFocusContext(context) {
     context.skillBonusChoices = { ...(CONFIG.WWN.skillSetCache?.labels ?? {}) };
   }

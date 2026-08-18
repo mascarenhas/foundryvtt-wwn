@@ -8,6 +8,7 @@
  * effects transferred from items.
  */
 import { BOOLEAN_COMBAT_AE_KEYS, coerceAeBoolean } from "../helpers/combat-ae-flags.mjs";
+import { isPhysicalTransferSuppressed } from "../helpers/effect-suppress.mjs";
 
 export class WwnActiveEffect extends foundry.documents.ActiveEffect {
   /**
@@ -16,19 +17,13 @@ export class WwnActiveEffect extends foundry.documents.ActiveEffect {
    */
   get isSuppressed() {
     if (super.isSuppressed) return true;
+    if (isPhysicalTransferSuppressed(this)) return true;
     const item = this.parent;
-    if (item?.documentName !== "Item") return false;
-    if (!this.transfer) return false;
-    if (["weapon", "armor"].includes(item.type)) {
-      return !item.system?.equipped;
-    }
-    // Armor fittings: off when disabled, depowered, or over-budget (inert).
-    if (item.type === "armorFitting") {
-      if (item.system?.disabled) return true;
-      const actor = item.parent;
-      if (actor?.type === "powerArmor") {
-        if (!actor.system?.powered || actor.system?.overBudget) return true;
-      }
+    if (item?.documentName !== "Item" || item.type !== "armorFitting") return false;
+    if (item.system?.disabled) return true;
+    const actor = item.parent;
+    if (actor?.type === "powerArmor") {
+      if (!actor.system?.powered || actor.system?.overBudget) return true;
     }
     return false;
   }

@@ -3,7 +3,7 @@ import WwnItemBase from "./base.mjs";
 const fields = foundry.data.fields;
 
 /**
- * Skill item. `slug` exposes the skill in roll data (@exert, @know, ...).
+ * Skill item. Roll data keys (@exert, @know, …) come from the item name.
  */
 export default class WwnSkill extends WwnItemBase {
   static defineSchema() {
@@ -14,16 +14,8 @@ export default class WwnSkill extends WwnItemBase {
     schema.score = new fields.StringField({ required: true, initial: "int" });
     schema.skillDice = new fields.StringField({ required: true, initial: "2d6" });
     schema.secondary = new fields.BooleanField({ initial: false });
-    schema.slug = new fields.StringField({ required: true, blank: true });
     schema.pointsInvested = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
     return schema;
-  }
-
-  prepareDerivedData() {
-    super.prepareDerivedData();
-    if (!this.slug) {
-      this.slug = this.parent.name.slugify({ strict: true }).replace(/-/g, "");
-    }
   }
 }
