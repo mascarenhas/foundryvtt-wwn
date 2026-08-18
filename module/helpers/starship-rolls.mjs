@@ -196,7 +196,7 @@ export async function rollShipWeapon(starship, weapon, {
     attack.add(npcStationSkillBonus(resolved.formula), stationLabel);
     attack.add(weapon.system.attackBonus ?? 0, game.i18n.localize("WWN.Starship.AttackBonus"));
     attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
-    const damage = new RollParts().add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
+    const damage = new RollParts(starship.getRollData()).add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
     return postShipWeaponCard({
       starship,
       weapon,
@@ -226,7 +226,7 @@ export async function rollShipWeapon(starship, weapon, {
   attack.add(skillLevel, skill?.name ?? skillName);
   attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
 
-  const damage = new RollParts().add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
+  const damage = new RollParts(actor.getRollData()).add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
   damage.add(attrMod, game.i18n.localize("WWN.Starship.IntDex"));
 
   return postShipWeaponCard({

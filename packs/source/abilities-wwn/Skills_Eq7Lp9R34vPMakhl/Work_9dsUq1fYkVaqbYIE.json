@@ -13,8 +13,7 @@
     "ownedLevel": -1,
     "score": "con",
     "skillDice": "2d6",
-    "secondary": false,
-    "slug": "work"
+    "secondary": false
   },
   "_stats": {
     "systemId": "wwn",

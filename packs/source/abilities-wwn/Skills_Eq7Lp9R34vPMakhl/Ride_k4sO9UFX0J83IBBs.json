@@ -13,8 +13,7 @@
     "ownedLevel": -1,
     "score": "dex",
     "skillDice": "2d6",
-    "secondary": false,
-    "slug": "ride"
+    "secondary": false
   },
   "_stats": {
     "systemId": "wwn",

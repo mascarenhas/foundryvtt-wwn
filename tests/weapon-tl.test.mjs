@@ -32,7 +32,7 @@ describe("effectiveWeaponTl", () => {
     const attacker = { system: { combat: { meleeCountsAsTl4: true } } };
     const weapon = {
       name: "Fist",
-      system: { tl: 0, linkedSkill: { name: "Punch", system: { slug: "punch" } } },
+      system: { tl: 0, linkedSkill: { name: "Punch" } },
     };
     assert.equal(effectiveWeaponTl(attacker, weapon, "melee"), 0);
     assert.equal(isUnarmedWeapon(weapon), true);
@@ -85,7 +85,7 @@ describe("isThrownWeapon / meleeCombatAeApplies", () => {
   };
   const punch = {
     name: "Unarmed Attack",
-    system: { melee: true, missile: false, tags: [], linkedSkill: { name: "Punch", system: { slug: "punch" } } },
+    system: { melee: true, missile: false, tags: [], linkedSkill: { name: "Punch" } },
   };
   const sword = {
     name: "Sword",

@@ -13,8 +13,7 @@
     "ownedLevel": -1,
     "score": "int",
     "skillDice": "2d6",
-    "secondary": false,
-    "slug": "sail"
+    "secondary": false
   },
   "_stats": {
     "systemId": "wwn",

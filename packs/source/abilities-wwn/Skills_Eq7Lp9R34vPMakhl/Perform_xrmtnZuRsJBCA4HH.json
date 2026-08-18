@@ -13,8 +13,7 @@
     "ownedLevel": -1,
     "score": "cha",
     "skillDice": "2d6",
-    "secondary": false,
-    "slug": "perform"
+    "secondary": false
   },
   "_stats": {
     "systemId": "wwn",

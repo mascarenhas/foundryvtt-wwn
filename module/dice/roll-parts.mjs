@@ -50,6 +50,11 @@ export class RollParts {
   /** @type {Array<{value: number|string, label: string}>} */
   parts = [];
 
+  /** @param {object|null} [rollData] Actor roll data used to resolve `@skill` in part values. */
+  constructor(rollData = null) {
+    this.rollData = rollData;
+  }
+
   /**
    * Add a part. Zero numeric values and blank strings are skipped.
    * @param {number|string} value
@@ -59,10 +64,20 @@ export class RollParts {
   add(value, label) {
     if (value === null || value === undefined) return this;
     value = normalizeRollPart(value);
+    value = this.#resolveAtRefs(value);
     if (typeof value === "number" && value === 0) return this;
     if (typeof value === "string" && !value.trim()) return this;
     this.parts.push({ value, label });
     return this;
+  }
+
+  /** Substitute `@attr` from roll data so tooltips show numbers, not `@stab`. */
+  #resolveAtRefs(value) {
+    if (typeof value !== "string" || !value.includes("@") || !this.rollData) return value;
+    const Roll = foundry.dice?.Roll;
+    if (typeof Roll?.replaceFormulaData !== "function") return value;
+    const replaced = Roll.replaceFormulaData(value, this.rollData, { missing: "0" });
+    return normalizeRollPart(replaced);
   }
 
   /** Wrap formula fragments that already contain operators. */

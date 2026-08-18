@@ -13,8 +13,7 @@
     "ownedLevel": -1,
     "score": "str",
     "skillDice": "2d6",
-    "secondary": false,
-    "slug": "punch"
+    "secondary": false
   },
   "_stats": {
     "systemId": "wwn",

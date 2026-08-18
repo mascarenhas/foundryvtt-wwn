@@ -48,6 +48,7 @@ describe("abilities pack source layout", () => {
       assert.ok(skills.length > 0, `${pack}: no skills`);
       for (const s of skills) {
         assert.equal(s.folder, skillsFolder._id, `${s.name} not in Skills folder`);
+        assert.equal(s.system?.slug, undefined, `${s.name} should not store a slug`);
       }
     });
   }
@@ -61,15 +62,15 @@ describe("abilities pack source layout", () => {
         else if (e.name.endsWith(".json")) yield p;
       }
     }
-    const bySlug = new Map();
+    const byName = new Map();
     for (const file of walk(dir)) {
       const doc = JSON.parse(fs.readFileSync(file, "utf8"));
-      if (doc.type === "skill") bySlug.set(doc.system.slug, doc);
+      if (doc.type === "skill") byName.set(doc.name.toLowerCase(), doc);
     }
-    assert.equal(bySlug.get("cast")?.system.secondary, true);
-    assert.equal(bySlug.get("summon")?.system.secondary, true);
-    assert.equal(bySlug.get("drive")?.system.secondary, false);
-    const primary = [...bySlug.values()].filter((s) => !s.system.secondary);
+    assert.equal(byName.get("cast")?.system.secondary, true);
+    assert.equal(byName.get("summon")?.system.secondary, true);
+    assert.equal(byName.get("drive")?.system.secondary, false);
+    const primary = [...byName.values()].filter((s) => !s.system.secondary);
     assert.equal(primary.length, 19);
   });
 

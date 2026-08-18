@@ -162,7 +162,7 @@ export class WwnDice {
     abilityKey = prompt.abilityKey ?? defaultKey;
     const ability = actor.system.abilities?.[abilityKey];
 
-    const slug = skill.system.slug || "";
+    const slug = skillSlugOf(skill);
     const parts = new RollParts();
     const { extraDice, dropLowest } = getFocusSkillDiceBonus(actor, slug);
     if (extraDice > 0) {
@@ -264,7 +264,7 @@ export class WwnDice {
   static #focusMissDamageFormula(actor, weapon, attackKind) {
     const combat = actor.system.combat ?? {};
     const skill = weapon.system.linkedSkill;
-    const skillSlug = skill?.system?.slug || String(skill?.name ?? "").toLowerCase().replace(/[^a-z]/g, "");
+    const skillSlug = skillSlugOf(skill);
     const isPunch = skillSlug === "punch" || /unarmed|fist|punch/i.test(weapon.name ?? "");
     if (isPunch && combat.punchMissDamage) return String(combat.punchMissDamage);
     if (attackKind === "melee" && combat.meleeMissDamage) return String(combat.meleeMissDamage);
@@ -323,6 +323,7 @@ export class WwnDice {
     const abilityKey = weapon.system.score ?? "str";
     const abilityMod = system.abilities?.[abilityKey]?.mod ?? 0;
     const abilityLabel = game.i18n.localize(CONFIG.WWN.abilityAbbreviations[abilityKey] ?? abilityKey);
+    const rollData = actor.getRollData?.() ?? {};
 
     const attack = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
     attack.add(combat.ab ?? 0, game.i18n.localize("WWN.Roll.AttackBonus"));
@@ -351,7 +352,7 @@ export class WwnDice {
     if (burst) attack.add(2, game.i18n.localize("WWN.Roll.Burst"));
     attack.add(modifier, game.i18n.localize("WWN.Roll.Situational"));
 
-    const damage = new RollParts().add(
+    const damage = new RollParts(rollData).add(
       weapon.system.damage || "1d6",
       game.i18n.localize("WWN.Roll.WeaponDamage")
     );
@@ -366,13 +367,13 @@ export class WwnDice {
     if (npcBonus) damage.add(npcBonus, game.i18n.localize("WWN.Npc.DamageBonus"));
     if (combat.allDamage) {
       damage.add(
-        this.#resolveCombatFormula(combat.allDamage, actor.getRollData()),
+        this.#resolveCombatFormula(combat.allDamage, rollData),
         game.i18n.localize("WWN.Effects.DamageAll")
       );
     }
     if (modeDamage) {
       damage.add(
-        this.#resolveCombatFormula(modeDamage, actor.getRollData()),
+        this.#resolveCombatFormula(modeDamage, rollData),
         game.i18n.localize(applyMeleeCombatAe ? "WWN.Effects.DamageMelee" : "WWN.Effects.DamageRanged")
       );
     }
@@ -380,9 +381,8 @@ export class WwnDice {
 
     let shock = null;
     const shockBase = weapon.system.shock?.damage;
-    const rollData = actor.getRollData?.() ?? {};
     if (hasBaseShockDamage(shockBase)) {
-      shock = new RollParts().add(shockBase, game.i18n.localize("WWN.Roll.ShockBase"));
+      shock = new RollParts(rollData).add(shockBase, game.i18n.localize("WWN.Roll.ShockBase"));
       const shockDamageMod = weapon.system.shock?.damageMod;
       if (shockDamageMod !== null && shockDamageMod !== undefined && shockDamageMod !== "" && shockDamageMod !== 0) {
         shock.add(shockDamageMod, game.i18n.localize("WWN.Effects.Item.ShockDamageMod"));
@@ -402,7 +402,7 @@ export class WwnDice {
         );
       }
     } else if (unarmedMeleeShockFromAe(weapon, attackKind, combat)) {
-      shock = new RollParts().add(
+      shock = new RollParts(rollData).add(
         this.#resolveCombatFormula(combat.unarmedShock, rollData),
         game.i18n.localize("WWN.Effects.ShockUnarmed"),
       );

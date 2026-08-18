@@ -144,7 +144,7 @@
               </div>
             </div>
 
-            <div class="wwn-combat-stat" title="{{localize 'WWN.Movement.TitleHint'}}">
+            <div class="wwn-combat-stat" title="{{#if showDailyMovement}}{{localize 'WWN.Movement.TitleHintBx'}}{{else}}{{localize 'WWN.Movement.TitleHint'}}{{/if}}">
               <span class="wwn-section-header">
                 <i class="fas fa-running"></i>
                 <span>{{localize "WWN.Movement.LabelShort"}}</span>
@@ -154,8 +154,10 @@
                 <span title="{{localize 'WWN.movement.round'}}">{{system.movement.combat}}</span>
                 <span class="wwn-combat-sep">/</span>
                 <span title="{{localize 'WWN.movement.turn'}}">{{system.movement.exploration}}</span>
+                {{#if showDailyMovement}}
                 <span class="wwn-combat-sep">/</span>
-                <span title="{{localize 'WWN.Movement.TitleHint'}}">{{system.movement.daily}}</span>
+                <span title="{{localize 'WWN.Movement.TitleHintBx'}}">{{system.movement.daily}}</span>
+                {{/if}}
                 {{else}}
                 <input name="system.movement.base.value" type="number" value="{{system.movement.base.value}}"
                   data-dtype="Number" placeholder="30" title="{{localize 'WWN.movement.base'}}"

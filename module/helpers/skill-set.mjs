@@ -89,15 +89,17 @@ export async function loadSkillSetDocuments({ notify = true } = {}) {
 }
 
 /**
- * @param {{ type?: string, name?: string, system?: { slug?: string } }} item
+ * Formula / pack key from the skill's current name (`@sunblade`, bonus-skill lists).
+ * @param {{ type?: string, name?: string }} item
  * @returns {string}
  */
 export function skillSlugOf(item) {
-  const fromSystem = String(item?.system?.slug ?? "").trim().toLowerCase();
-  if (fromSystem) return fromSystem;
   const name = String(item?.name ?? "").trim();
   if (!name) return "";
-  return name.slugify({ strict: true }).replace(/-/g, "");
+  if (typeof name.slugify === "function") {
+    return name.slugify({ strict: true }).replace(/-/g, "");
+  }
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 /**

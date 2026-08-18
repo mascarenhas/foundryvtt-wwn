@@ -1,3 +1,4 @@
+import "../build/foundry-shim.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -6,6 +7,7 @@ import {
   resolveSkillDiceFormula,
   skillDiceCount,
 } from "../module/dice/roll-parts.mjs";
+import { caseInsensitiveRollData } from "../module/helpers/roll-data.mjs";
 
 describe("resolveSkillDiceFormula", () => {
   it("keeps real dice formulas", () => {
@@ -65,5 +67,19 @@ describe("RollParts + skill dice", () => {
     parts.add(1, "DEX");
     assert.equal(parts.breakdown(), "1d20 (Die) - 2 (Armor Penalty) + 1 (DEX)");
     assert.equal(parts.formula(), "1d20 - 2 + 1");
+  });
+
+  it("resolves @skill in the breakdown tooltip to the numeric skill level", () => {
+    const parts = new RollParts({ sunblade: 2, stab: 1 });
+    parts.add("3d8 + @sunblade", "Weapon Damage");
+    parts.add(1, "DEX");
+    assert.equal(parts.formula(), "3d8 + 2 + 1");
+    assert.equal(parts.breakdown(), "3d8 + 2 (Weapon Damage) + 1 (DEX)");
+  });
+
+  it("resolves mixed-case @Skill the same as the lowercase skill key", () => {
+    const parts = new RollParts(caseInsensitiveRollData({ stab: 3 }));
+    parts.add("1d6 + @Stab", "Weapon Damage");
+    assert.equal(parts.breakdown(), "1d6 + 3 (Weapon Damage)");
   });
 });

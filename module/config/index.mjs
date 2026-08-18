@@ -229,8 +229,9 @@ WWN.currencySets = {
 /* -------------------------------------------- */
 
 WWN.movementRates = {
-  movewwn: [30, 20, 15],
-  movebx: [40, 30, 20],
+  feet: [30, 20, 15],
+  meters: [10, 7, 5],
+  bx: [40, 30, 20],
 };
 
 WWN.xpRates = {

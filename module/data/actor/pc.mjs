@@ -223,7 +223,7 @@ export default class WwnPc extends WwnActorBase {
     data.groupInit = this.combat.initiative.group.value;
     data.groupInitiativeRoll = this.combat.initiative.group.roll;
 
-    // Owned skill levels by slug (@exert, @know, ...); missing skill = -1
+    // Owned skill levels by name (@exert, @know, ...); missing skill = -1
     const cachedSlugs = CONFIG.WWN.skillSetCache?.allSlugs ?? [];
     for (const slug of cachedSlugs) {
       data[slug] = -1;
