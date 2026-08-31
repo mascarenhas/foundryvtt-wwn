@@ -893,7 +893,7 @@
   "WWN.Migration.Started": "Migrating Worlds Without Number world to version {version}. Please be patient and do not close the window.",
   "WWN.Migration.StillRunning": "Still migrating Worlds Without Number… please keep this window open.",
   "WWN.Migration.Complete": "Worlds Without Number migration to version {version} complete.",
-  "WWN.Migration.Failed": "Worlds Without Number migration finished with {count} failure(s). The version stamp was not updated — reload or run game.wwn.migrateWorld() after fixing errors.",
+  "WWN.Migration.Failed": "Worlds Without Number migration finished with {count} failure(s). The version stamp was not updated. Do not keep using or retry this partially migrated world; update the system, restore the pre-migration backup, and load the restored world again.",
   "WWN.Migration.ItemSyncComplete": "Updated {count} focus/class feature/power(s) on {actors} character(s) from the system compendium. Old copies are under Items → Migration Backups.",
   "WWN.Migration.ItemSyncFailed": "Failed to sync character foci from the system compendium. See the console (F12) for details.",
   "WWN.Migration.ClassAbilityCleanupComplete": "Archived {count} retired Class Ability item(s) on {actors} character(s). Open each character sheet to choose Full/Partial classes. Backups are under Items → Migration Backups.",

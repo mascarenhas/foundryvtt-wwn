@@ -7,9 +7,16 @@ import {
   clearEmbeddedItems,
   migrateActorDocument,
   migrateWorldItem,
+  replaceEmbeddedItemsSafely,
 } from "../module/migration/migrate.mjs";
 import { embeddedItemsNeedReplace } from "../module/migration/embedded-items.mjs";
 import { migrateActorData } from "../module/migration/transforms.mjs";
+
+foundry.data ??= {};
+foundry.data.operators ??= {};
+foundry.data.operators.ForcedReplacement = {
+  create: (value) => ({ operator: "replace", value }),
+};
 
 function legacyDarkSunActor() {
   return {
@@ -103,6 +110,77 @@ describe("forced release migration persistence", () => {
     assert.equal(art.system.subType, "art");
     assert.equal(weapon.system.artId, "art-1");
     assert.equal(weapon.system.artFallback, "Sorcerous Blast");
+  });
+
+  it("persists currency Items synthesized during the pre-ready migration", async () => {
+    const legacy = legacyDarkSunActor();
+    const loaded = migrateActorData(legacy);
+    const transientIds = ["transient-bits", "transient-ceramics"];
+    let transientIndex = 0;
+    let liveItems = loaded.items.map((item) => {
+      if (item._id) return structuredClone(item);
+      return {
+        ...structuredClone(item),
+        _id: transientIds[transientIndex++],
+        _stats: { createdTime: null },
+      };
+    });
+    // Only the v13 inventory is actually stored. The currency Documents above
+    // exist solely in the v14 client's pre-ready collection.
+    let databaseItems = structuredClone(legacy.items);
+    const actor = {
+      id: "actor-1",
+      name: "Loaded PC",
+      isToken: false,
+      get items() {
+        return {
+          size: liveItems.length,
+          invalidDocumentIds: new Set(),
+        };
+      },
+      toObject: () => ({ items: structuredClone(liveItems) }),
+      update: async (changes) => {
+        assert.deepEqual(changes.items, { operator: "replace", value: [] });
+        liveItems = [];
+      },
+      deleteEmbeddedDocuments: async (_name, _ids, options) => {
+        assert.equal(options.deleteAll, true);
+        assert.equal(liveItems.length, 0, "deleteAll must not inspect transient IDs");
+        databaseItems = [];
+      },
+      createEmbeddedDocuments: async (_name, items, options) => {
+        assert.equal(options.keepId, true);
+        databaseItems = structuredClone(items);
+        liveItems = structuredClone(items);
+        return items;
+      },
+    };
+
+    await replaceEmbeddedItemsSafely(actor, liveItems);
+
+    assert.deepEqual(
+      databaseItems
+        .filter((item) => item.type === "currency")
+        .map((item) => ({ id: item._id, name: item.name, ...item.system })),
+      [
+        {
+          id: "transient-bits",
+          name: "Bits",
+          multiplier: 1,
+          perSlot: 100,
+          carried: 9,
+          banked: 5,
+        },
+        {
+          id: "transient-ceramics",
+          name: "Ceramic Pieces",
+          multiplier: 10,
+          perSlot: 100,
+          carried: 2,
+          banked: 0,
+        },
+      ]
+    );
   });
 
   it("uses ForcedReplacement without also requesting a non-recursive actor update", async () => {
@@ -319,20 +397,37 @@ describe("forced release migration persistence", () => {
     assert.equal(created.length, 0);
   });
 
-  it("clears embedded items through the database delete-all operation", async () => {
-    let deletion;
+  it("clears transient live items before the database delete-all operation", async () => {
+    const events = [];
     const actor = {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
-      toObject: () => ({ items: [{ _id: "item-1" }] }),
+      toObject: () => ({
+        items: [
+          {
+            _id: "transient-currency",
+            type: "currency",
+            _stats: { createdTime: null },
+          },
+        ],
+      }),
+      update: async (changes, options) => {
+        events.push({ kind: "update", changes, options });
+      },
       deleteEmbeddedDocuments: async (name, ids, options) => {
-        deletion = { name, ids, options };
+        events.push({ kind: "delete", name, ids, options });
       },
     };
 
     await clearEmbeddedItems(actor);
 
-    assert.deepEqual(deletion, {
+    assert.deepEqual(events[0], {
+      kind: "update",
+      changes: { items: { operator: "replace", value: [] } },
+      options: { enforceTypes: false, diff: false, wwnMigrating: true },
+    });
+    assert.deepEqual(events[1], {
+      kind: "delete",
       name: "Item",
       ids: [],
       options: { deleteAll: true, wwnMigrating: true },

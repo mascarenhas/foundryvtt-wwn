@@ -1,5 +1,15 @@
 # Changelog
 
+## New in 2.0.0-alpha2.4
+
+### Fixes
+
+- Fixed pre-ready Dark Sun currency Items causing real-Actor inventory deletion to fail with missing Item IDs; migrated denominations now persist and appear on character sheets.
+- Fixed unlinked-token legacy Abilities failing with `Unexpected Error Class` when their ActorDelta Items change to Powers.
+- Skipped unchanged token-delta rewrites and post-item synchronization during the forced release pass, substantially reducing migration work.
+- Prevented compendium/class cleanup and ready-time synchronization from modifying a world after structural migration failures.
+- Limited automatic migration to Foundry's active GM, shared concurrent same-client calls, and removed per-Actor/Token console spam.
+
 ## New in 2.0.0-alpha2.3
 
 ### Fixes

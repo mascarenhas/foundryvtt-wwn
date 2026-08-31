@@ -339,18 +339,22 @@ Hooks.once("ready", async function () {
     return macros.createWwnMacro(data, slot);
   });
 
-  await checkMigration();
+  const migrationReady = await checkMigration();
 
   const { onActorZeroHpAutoStabilize } = await import("./helpers/auto-stabilize.mjs");
   Hooks.on("wwn.actorZeroHp", (actor, ctx) => {
     void onActorZeroHpAutoStabilize(actor, ctx);
   });
 
-  for (const actor of game.actors) {
-    await syncActorFocusEffects(actor);
-    if (isPc(actor)) {
-      await syncActorFocusBonusSkills(actor);
-      await syncActorPowerBonusSkills(actor);
+  // Do not mutate a world whose structural migration failed. Only the active
+  // GM performs these persistence-oriented ready synchronizations.
+  if (migrationReady !== false && game.user.isActiveGM) {
+    for (const actor of game.actors) {
+      await syncActorFocusEffects(actor);
+      if (isPc(actor)) {
+        await syncActorFocusBonusSkills(actor);
+        await syncActorPowerBonusSkills(actor);
+      }
     }
   }
 

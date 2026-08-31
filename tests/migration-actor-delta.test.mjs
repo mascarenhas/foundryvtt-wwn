@@ -9,26 +9,63 @@ import {
   replaceEmbeddedItemsSafely,
 } from "../module/migration/migrate.mjs";
 
+foundry.data ??= {};
+foundry.data.operators ??= {};
+foundry.data.operators.ForcedReplacement = {
+  create: (value) => ({ operator: "replace", value }),
+};
+
 describe("Foundry v14 embedded-item migration persistence", () => {
-  it("clears a real Actor through deleteAll rather than an Actor update", async () => {
+  it("clears the live collection before deleting all persisted Actor items", async () => {
     const calls = [];
     const actor = {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [{ _id: "item-1" }] }),
-      update: async () => assert.fail("clearEmbeddedItems must not update Actor.items"),
+      update: async (changes, options) => {
+        calls.push({ kind: "update", changes, options });
+      },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
-        calls.push({ documentName, ids, options });
+        calls.push({ kind: "delete", documentName, ids, options });
       },
     };
 
     await clearEmbeddedItems(actor);
 
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0].documentName, "Item");
-    assert.deepEqual(calls[0].ids, []);
-    assert.equal(calls[0].options.deleteAll, true);
-    assert.equal(calls[0].options.wwnMigrating, true);
+    assert.equal(calls.length, 2);
+    assert.deepEqual(calls[0], {
+      kind: "update",
+      changes: { items: { operator: "replace", value: [] } },
+      options: { enforceTypes: false, diff: false, wwnMigrating: true },
+    });
+    assert.deepEqual(calls[1], {
+      kind: "delete",
+      documentName: "Item",
+      ids: [],
+      options: { deleteAll: true, wwnMigrating: true },
+    });
+  });
+
+  it("removes pre-ready transient currency before deleteAll inspects live items", async () => {
+    const liveItems = [
+      { _id: "persisted-weapon", type: "weapon", _stats: { createdTime: 1 } },
+      { _id: "transient-currency", type: "currency", _stats: { createdTime: null } },
+    ];
+    const actor = {
+      isToken: false,
+      items: liveItems,
+      toObject: () => ({ items: structuredClone(liveItems) }),
+      update: async (changes) => {
+        assert.deepEqual(changes.items, { operator: "replace", value: [] });
+        liveItems.length = 0;
+      },
+      deleteEmbeddedDocuments: async (_documentName, _ids, options) => {
+        assert.equal(liveItems.length, 0, "transient items must be gone before deleteAll");
+        assert.equal(options.deleteAll, true);
+      },
+    };
+
+    await clearEmbeddedItems(actor);
   });
 
   it("rejects attempts to clear an unlinked Token's synthetic Actor", async () => {
@@ -47,24 +84,35 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(deleted, false);
   });
 
-  it("still issues deleteAll when the local Actor collection appears empty", async () => {
+  it("still clears and issues deleteAll when the local Actor collection appears empty", async () => {
     const calls = [];
     const actor = {
       isToken: false,
       items: { size: 0, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [] }),
+      update: async (changes, options) => {
+        calls.push({ kind: "update", changes, options });
+      },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
-        calls.push({ documentName, ids, options });
+        calls.push({ kind: "delete", documentName, ids, options });
       },
     };
 
     await clearEmbeddedItems(actor);
 
-    assert.deepEqual(calls, [{
-      documentName: "Item",
-      ids: [],
-      options: { deleteAll: true, wwnMigrating: true },
-    }]);
+    assert.deepEqual(calls, [
+      {
+        kind: "update",
+        changes: { items: { operator: "replace", value: [] } },
+        options: { enforceTypes: false, diff: false, wwnMigrating: true },
+      },
+      {
+        kind: "delete",
+        documentName: "Item",
+        ids: [],
+        options: { deleteAll: true, wwnMigrating: true },
+      },
+    ]);
   });
 
   it("omits delta-owned Items that the migration intentionally retires", () => {
@@ -115,13 +163,30 @@ describe("Foundry v14 embedded-item migration persistence", () => {
         damage: "1d6",
       },
     };
+    const legacyDeltaAbility = {
+      _id: "delta-ability",
+      name: "Slime Spray",
+      type: "ability",
+      effects: [],
+      system: {
+        description: "Spray corrosive slime.",
+        roll: "1d20",
+        rollType: "result",
+        rollTarget: 12,
+      },
+    };
     const tombstone = {
       _id: "removed-base-item",
       _tombstone: true,
       _key: "ActorDelta.token-delta.items.removed-base-item",
       flags: { wwn: { reason: "removed" } },
     };
-    const effectiveItems = [inheritedBaseItem, legacyDeltaArt, linkedDeltaWeapon];
+    const effectiveItems = [
+      inheritedBaseItem,
+      legacyDeltaArt,
+      linkedDeltaWeapon,
+      legacyDeltaAbility,
+    ];
     // Use an Array with the collection properties touched by actor migration.
     effectiveItems.size = effectiveItems.length;
     effectiveItems.invalidDocumentIds = new Set();
@@ -163,9 +228,16 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       actor,
       delta: {
         _source: {
+          _id: "token-delta",
+          name: "Delta Beast Override",
+          img: "icons/svg/mystery-man.svg",
+          system: { hp: { value: 3 } },
+          effects: [{ _id: "delta-effect", disabled: true }],
+          flags: { wwn: { preserve: true } },
           items: [
             structuredClone(legacyDeltaArt),
             structuredClone(linkedDeltaWeapon),
+            structuredClone(legacyDeltaAbility),
             structuredClone(tombstone),
           ],
         },
@@ -178,10 +250,31 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(updates.length, 1);
     assert.deepEqual(actorUpdates, [{ "system.favorites": ["delta-weapon"] }]);
     assert.deepEqual(Object.keys(updates[0].changes), ["delta"]);
-    const persisted = updates[0].changes.delta.items;
+    assert.equal(updates[0].changes.delta.operator, "replace");
+    const replacementDelta = updates[0].changes.delta.value;
+    assert.deepEqual(
+      {
+        _id: replacementDelta._id,
+        name: replacementDelta.name,
+        img: replacementDelta.img,
+        system: replacementDelta.system,
+        effects: replacementDelta.effects,
+        flags: replacementDelta.flags,
+      },
+      {
+        _id: "token-delta",
+        name: "Delta Beast Override",
+        img: "icons/svg/mystery-man.svg",
+        system: { hp: { value: 3 } },
+        effects: [{ _id: "delta-effect", disabled: true }],
+        flags: { wwn: { preserve: true } },
+      },
+      "replacing the ActorDelta must preserve all non-item delta fields",
+    );
+    const persisted = replacementDelta.items;
     assert.deepEqual(
       persisted.map((item) => item._id),
-      ["delta-art", "delta-weapon", "removed-base-item"],
+      ["delta-art", "delta-weapon", "delta-ability", "removed-base-item"],
       "inherited base-only items must not be copied into the delta",
     );
     assert.equal(persisted[0].type, "power");
@@ -189,9 +282,69 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(persisted[0].system.source, "Elementalist");
     assert.equal(persisted[1].system.artId, "delta-art");
     assert.equal(persisted[1].system.artFallback, "Sorcerous Blast");
-    assert.deepEqual(persisted[2], tombstone);
+    assert.equal(persisted[2].type, "power");
+    assert.equal(persisted[2].system.subType, "ability");
+    assert.deepEqual(persisted[3], tombstone);
     assert.equal(updates[0].options.diff, false);
     assert.equal(updates[0].options.wwnMigrating, true);
+  });
+
+  it("does not rewrite or finalize unchanged delta items during a forced release pass", async () => {
+    const effectiveItems = [];
+    effectiveItems.size = 0;
+    effectiveItems.invalidDocumentIds = new Set();
+
+    let finalizerItemScans = 0;
+    effectiveItems.filter = () => {
+      finalizerItemScans += 1;
+      return [];
+    };
+
+    const actorSource = {
+      _id: "synthetic-unchanged",
+      name: "Unchanged Delta Beast",
+      type: "monster",
+      system: {
+        hp: { value: 8, max: 8 },
+        hd: "1d8",
+        favorites: [],
+      },
+      items: [],
+      effects: [],
+    };
+    const actorUpdates = [];
+    const actor = {
+      id: actorSource._id,
+      name: actorSource.name,
+      type: actorSource.type,
+      isToken: true,
+      img: undefined,
+      system: actorSource.system,
+      items: effectiveItems,
+      effects: { size: 0 },
+      toObject: () => structuredClone(actorSource),
+      update: async (changes, options) => actorUpdates.push({ changes, options }),
+    };
+
+    const tokenUpdates = [];
+    const token = {
+      actor,
+      delta: {
+        _source: {
+          _id: "unchanged-delta",
+          flags: { wwn: { preserve: true } },
+          items: [],
+        },
+      },
+      update: async (changes, options) => tokenUpdates.push({ changes, options }),
+    };
+
+    await migrateUnlinkedToken(token, { forcePersist: true });
+
+    assert.equal(actorUpdates.length, 1, "the forced synthetic actor system pass must still run");
+    assert.equal(actorUpdates[0].changes.system.operator, "replace");
+    assert.equal(tokenUpdates.length, 0, "unchanged delta items must not rewrite the Token");
+    assert.equal(finalizerItemScans, 0, "unchanged delta items must not run post-item hooks");
   });
 
   it("clears again before restoring the original items after recreate fails", async () => {
@@ -221,6 +374,9 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: structuredClone(backup) }),
+      update: async (changes, options) => {
+        events.push({ kind: "update", changes, options });
+      },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
         events.push({ kind: "delete", documentName, ids, options });
       },
@@ -238,15 +394,19 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     );
 
     assert.deepEqual(events.map((event) => event.kind), [
+      "update",
       "delete",
       "create",
+      "update",
       "delete",
       "create",
     ]);
-    assert.equal(events[0].options.deleteAll, true);
-    assert.deepEqual(events[1].items, migrated);
-    assert.equal(events[2].options.deleteAll, true);
-    assert.deepEqual(events[3].items, backup);
-    assert.equal(events[3].options.keepId, true);
+    assert.deepEqual(events[0].changes.items, { operator: "replace", value: [] });
+    assert.equal(events[1].options.deleteAll, true);
+    assert.deepEqual(events[2].items, migrated);
+    assert.deepEqual(events[3].changes.items, { operator: "replace", value: [] });
+    assert.equal(events[4].options.deleteAll, true);
+    assert.deepEqual(events[5].items, backup);
+    assert.equal(events[5].options.keepId, true);
   });
 });

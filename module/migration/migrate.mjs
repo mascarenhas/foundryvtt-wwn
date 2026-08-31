@@ -23,10 +23,13 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.3";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.4";
 
 /** Marks the one Actor-level effect synthesized while loading legacy tweak fields. */
 const LEGACY_TWEAK_EFFECT_MIGRATION = "legacyTweaks";
+
+/** Share one migration run among automatic/manual callers on this client. */
+let migrationInFlight = null;
 
 /**
  * Plain-ish item source from a world/embedded Item document.
@@ -63,6 +66,11 @@ function forcedReplace(value) {
  */
 export async function checkMigration() {
   if (!game.user.isGM) return;
+  // Foundry designates one active GM for workflows which every client loads.
+  // Other connected GMs must not race the same world migration.
+  if (game.users?.activeGM && !game.user.isActiveGM) return true;
+
+  let migrationRan = false;
   const current = game.settings.get(NS, "systemMigrationVersion");
   const needsVersionMigrate =
     !current || foundry.utils.isNewerVersion(NEEDS_MIGRATION_BELOW, current);
@@ -99,18 +107,24 @@ export async function checkMigration() {
     if (!needsWork && !forceReleasePass) {
       await game.settings.set(NS, "systemMigrationVersion", game.system.version);
     } else {
-      await migrateWorld({ forcePersist: forceReleasePass });
+      migrationRan = true;
+      const result = await migrateWorld({ forcePersist: forceReleasePass });
+      if (result.failures > 0) return false;
     }
   }
 
-  // Refresh stale PC foci/classEdges/powers from system packs when sync generation is behind.
-  await maybeSyncPcCompendiumItems();
+  // migrateWorld owns these post-steps when it runs. Avoid doing them twice.
+  if (!migrationRan) {
+    // Refresh stale PC foci/classEdges/powers from system packs when sync generation is behind.
+    await maybeSyncPcCompendiumItems();
 
-  // One-shot: archive retired Class Ability foci, strip Full Warrior AE, flag class assignment.
-  await maybeCleanupClassAbilities();
+    // One-shot: archive retired Class Ability foci, strip Full Warrior AE, flag class assignment.
+    await maybeCleanupClassAbilities();
+  }
 
   // Drop corrupt embedded items left without name/type (blocks actor load otherwise).
   await repairInvalidEmbeddedItems();
+  return true;
 }
 
 /**
@@ -118,7 +132,17 @@ export async function checkMigration() {
  * world Actor/Item packs. Linked tokens use their world Actor (already covered).
  * Idempotent: documents already in WWN shape pass through unchanged.
  */
-export async function migrateWorld({ forcePersist = false } = {}) {
+export function migrateWorld(options = {}) {
+  if (migrationInFlight) return migrationInFlight;
+  const run = migrateWorldOnce(options);
+  migrationInFlight = run.finally(() => {
+    migrationInFlight = null;
+  });
+  return migrationInFlight;
+}
+
+/** @param {{ forcePersist?: boolean }} options */
+async function migrateWorldOnce({ forcePersist = false } = {}) {
   ui.notifications.info(
     game.i18n.format("WWN.Migration.Started", { version: game.system.version }),
     { permanent: false }
@@ -153,9 +177,7 @@ export async function migrateWorld({ forcePersist = false } = {}) {
 
     for (const actor of allDocuments(game.actors)) {
       try {
-        console.info(`WWN | Migration: starting actor ${actor.name}`);
         await migrateActorDocument(actor, { forcePersist });
-        console.info(`${actor.name}-- Migration Complete`);
       } catch (err) {
         failures++;
         console.error(`WWN | Actor migration failed for ${actor.name}:`, err);
@@ -168,9 +190,7 @@ export async function migrateWorld({ forcePersist = false } = {}) {
         const actor = token.actor;
         if (!actor) continue;
         try {
-          console.info(`WWN | Migration: starting token actor ${actor.name} on scene ${scene.name}`);
           await migrateUnlinkedToken(token, { forcePersist });
-          console.info(`${actor.name}-- Token Migration Complete`);
         } catch (err) {
           failures++;
           console.error(
@@ -193,9 +213,7 @@ export async function migrateWorld({ forcePersist = false } = {}) {
           if (pack.documentName === "Item") {
             await migrateWorldItem(doc);
           } else {
-            console.info(`WWN | Migration: starting pack actor ${doc.name}`);
             await migrateActorDocument(doc, { forcePersist });
-            console.info(`${doc.name}-- Migration Complete`);
           }
         } catch (err) {
           failures++;
@@ -204,14 +222,14 @@ export async function migrateWorld({ forcePersist = false } = {}) {
       }
     }
 
-    console.info("WWN | Migration: post-steps (compendium sync, class cleanup)…");
     if (failures === 0) {
       await game.settings.set(NS, "systemMigrationVersion", game.system.version);
+      console.info("WWN | Migration: post-steps (compendium sync, class cleanup)…");
+      await maybeSyncPcCompendiumItems();
+      await maybeCleanupClassAbilities();
     } else {
       console.warn(`WWN | Migration finished with ${failures} failure(s); version stamp skipped.`);
     }
-    await maybeSyncPcCompendiumItems();
-    await maybeCleanupClassAbilities();
     console.info("WWN | Migration: all steps finished.");
   } finally {
     game.wwn.migrating = false;
@@ -236,6 +254,8 @@ export async function migrateWorld({ forcePersist = false } = {}) {
       permanent: true,
     });
   }
+
+  return { failures };
 }
 
 /**
@@ -443,17 +463,25 @@ export async function migrateUnlinkedToken(token, { forcePersist = false } = {})
   const itemsChanged =
     JSON.stringify(deltaItems) !== JSON.stringify(canonicalDeltaItems);
 
-  if (forcePersist || itemsChanged) {
-    // Arrays are full replacements under Foundry update semantics. Do not use
-    // ForcedReplacement here: ActorDelta.items is an EmbeddedCollectionDelta
-    // whose tombstones and base-relative ownership must remain intact.
+  if (itemsChanged) {
+    // EmbeddedCollectionDeltaField normally treats rows with matching IDs as
+    // updates. That cannot change an Item's document class (for example the
+    // legacy ability type becoming power). Replace the refreshed ActorDelta as
+    // one field so Foundry never attempts that per-row update. Starting from
+    // its source preserves every non-Item override, while canonicalDeltaItems
+    // retains the delta's base-relative ownership and deletion tombstones.
+    const refreshedDelta = token.delta ?? delta;
+    const replacementDelta = foundry.utils.deepClone(
+      refreshedDelta?._source ?? delta?._source ?? {}
+    );
+    replacementDelta.items = canonicalDeltaItems;
     await token.update(
-      { delta: { items: canonicalDeltaItems } },
+      { delta: forcedReplace(replacementDelta) },
       { enforceTypes: false, diff: false, wwnMigrating: true }
     );
   }
 
-  if (forcePersist || itemsChanged) {
+  if (itemsChanged) {
     const refreshedActor = token.actor ?? migratedActor;
     await finalizeActorMigrationHooks(refreshedActor);
   }
@@ -513,7 +541,6 @@ export function buildActorDeltaItemMigration(deltaItems, effectiveItems) {
  * @param {Actor} actor
  */
 async function finalizeActorMigrationHooks(actor) {
-  console.info(`WWN | ${actor.name}: post-item focus/power sync…`);
   const { syncPowerTransferEffects } = await import("../helpers/power-effects.mjs");
   for (const power of actor.items.filter((i) => i.type === "power")) {
     await syncPowerTransferEffects(power);
@@ -543,7 +570,6 @@ async function finalizeActorMigrationHooks(actor) {
  * }} data
  */
 async function persistActorMigration(actor, data) {
-  const label = actor.name ?? actor.id;
   const update = {};
   if (data.system != null) update.system = forcedReplace(data.system);
   if (data.img) update.img = data.img;
@@ -551,7 +577,6 @@ async function persistActorMigration(actor, data) {
   if (data.legacyWounds) update[`flags.${NS}.legacyWounds`] = data.legacyWounds;
 
   if (data.effects?.length && !data.bare) {
-    console.info(`WWN | ${label}: persisting effects…`);
     // A pre-ready migration effect is synthesized from fields that the system
     // replacement removes. Store it first so a failed create remains safely
     // retryable from the still-legacy actor source.
@@ -559,7 +584,6 @@ async function persistActorMigration(actor, data) {
   }
 
   if (Object.keys(update).length) {
-    console.info(`WWN | ${label}: persisting system…`);
     // ForcedReplacement already expresses exact replacement. Combining it
     // with recursive:false makes Foundry wrap top-level values in a second
     // operator, which breaks TypeDataField and synthetic Token actors.
@@ -694,12 +718,9 @@ async function replaceEmbeddedItemsIfNeeded(actor, itemSources) {
 export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
   const label = actor.name ?? actor.id;
   const backup = foundry.utils.deepClone(collectEmbeddedItemSources(actor, actor.toObject()));
-  console.info(`WWN | ${label}: clearing ${actor.items?.size ?? 0} embedded items…`);
   await clearEmbeddedItems(actor);
   try {
-    console.info(`WWN | ${label}: recreating ${migratedItems.length} embedded items…`);
     await recreateEmbeddedItems(actor, migratedItems);
-    console.info(`WWN | ${label}: embedded items done.`);
   } catch (err) {
     console.error(
       `WWN | ${label}: recreate failed; restoring ${backup.length} embedded items…`,
@@ -718,18 +739,34 @@ export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
 }
 
 /**
- * Wipe a real Actor's Item collection through Foundry's database API. A parent
- * update of the EmbeddedCollection field does not delete its server-side rows.
- * Synthetic Token actors must instead persist their base-relative ActorDelta.
+ * Wipe a real Actor's Item collection through Foundry's database API. Foundry
+ * runs Actor.migrateData before ready, so the live collection can contain
+ * migration-generated Items (notably legacy currency) whose assigned IDs do
+ * not exist in the database. A deleteAll operation would try to run the
+ * per-document workflow for those transient IDs and fail before reaching the
+ * persisted rows.
+ *
+ * First replace the live EmbeddedCollection with an empty one. A parent update
+ * does not delete the hierarchical server-side rows, but it does remove those
+ * transient Documents from the requesting client. The following deleteAll can
+ * then clear every persisted row, including rows left by a partially failed
+ * create batch. Synthetic Token actors must instead persist their
+ * base-relative ActorDelta.
  * @param {Actor} actor
  */
 export async function clearEmbeddedItems(actor) {
   if (actor?.isToken) {
     throw new Error("Cannot bulk-replace Items on a synthetic Token actor; update Token.delta instead.");
   }
-  // Always ask the server to clear the persisted collection. In particular,
-  // do not trust a client collection after a failed create batch: the server
-  // may contain rows which never reached this client's in-memory Actor.
+
+  await actor.update(
+    { items: forcedReplace([]) },
+    { enforceTypes: false, diff: false, wwnMigrating: true }
+  );
+
+  // Always ask the server to clear the persisted collection, even when the
+  // now-empty client collection reports no rows. The server may contain rows
+  // which never reached this client after a failed create batch.
   await actor.deleteEmbeddedDocuments("Item", [], {
     deleteAll: true,
     wwnMigrating: true,
