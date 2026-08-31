@@ -23,7 +23,7 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.1";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.2";
 
 /**
  * Plain-ish item source from a world/embedded Item document.
@@ -240,7 +240,7 @@ export async function migrateWorld({ forcePersist = false } = {}) {
  * updateSource on a document whose stored type is no longer in system.json.
  * @param {Item} item
  */
-async function migrateWorldItem(item) {
+export async function migrateWorldItem(item) {
   const raw = item.toObject();
   const pending = !!item.getFlag?.(NS, "pendingTypeMigration");
   const migrated = applyEmbeddedItemMigration(raw);
@@ -279,7 +279,16 @@ async function migrateWorldItem(item) {
 
   const data = migrateItemData(raw);
   if (!data) return;
-  await item.update(data, { enforceTypes: false, diff: false, recursive: false });
+  const fullReplacement = data.type != null && data.system != null && data.name != null;
+  // Partial system patches must merge recursively so unrelated fields survive.
+  // Full legacy transforms deliberately replace their supplied top-level data
+  // so omitted legacy system/effect fields are removed.
+  await item.update(data, {
+    enforceTypes: false,
+    diff: false,
+    ...(fullReplacement ? { recursive: false } : {}),
+    wwnMigrating: true,
+  });
 }
 
 /**
@@ -444,7 +453,10 @@ async function persistActorMigration(actor, data) {
 
   if (Object.keys(update).length) {
     console.info(`WWN | ${label}: persisting system…`);
-    await actor.update(update, { enforceTypes: false, diff: false, recursive: false });
+    // ForcedReplacement already expresses exact replacement. Combining it
+    // with recursive:false makes Foundry wrap top-level values in a second
+    // operator, which breaks TypeDataField and synthetic Token actors.
+    await actor.update(update, { enforceTypes: false, diff: false, wwnMigrating: true });
   }
 
   if (data.effects?.length && !data.bare) {
@@ -579,7 +591,7 @@ async function replaceEmbeddedItemsSafely(actor, migratedItems) {
  * match — an empty replacement avoids that path entirely.
  * @param {Actor} actor
  */
-async function clearEmbeddedItems(actor) {
+export async function clearEmbeddedItems(actor) {
   const hasItems =
     actor.items?.size > 0
     || (actor.items?.invalidDocumentIds?.size ?? 0) > 0
@@ -587,7 +599,7 @@ async function clearEmbeddedItems(actor) {
   if (!hasItems) return;
   await actor.update(
     { items: forcedReplace([]) },
-    { enforceTypes: false, diff: false, recursive: false, wwnMigrating: true }
+    { enforceTypes: false, diff: false, wwnMigrating: true }
   );
 }
 

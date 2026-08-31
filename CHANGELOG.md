@@ -1,5 +1,12 @@
 # Changelog
 
+## New in 2.0.0-alpha2.2
+
+### Fixes
+
+- Fixed the Foundry v14 world migration failing on actor inventories and unlinked token actors when exact replacements were combined with non-recursive updates.
+- Fixed partial world-item migration patches replacing the rest of an item's system data.
+
 ## New in 2.0.0
 
 ### Before you update
