@@ -1,0 +1,129 @@
+{
+  "_id": "MTsapzQB7yIc4fnm",
+  "name": "Anak King",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "srwHDDAhoVwC8dvN",
+      "name": "Plate Armor",
+      "type": "armor",
+      "img": "systems/wwn/assets/icons/items/armor.png",
+      "sort": 100000,
+      "flags": {
+        "core": {
+          "sourceId": "Compendium.wwn.gear.HTW8ih7ZUiudz5ls"
+        }
+      },
+      "effects": [],
+      "system": {
+        "description": "<p><em><strong>Plate armor</strong></em> is an extremely expensive suit of tailored metal pieces that cover both the vitals and the limbs of the wearer.</p>\n<p><em><strong>Heavy armor&nbsp;</strong></em>is the thickest, toughest panoply available on the market, and its bulk and noise make its encumbrance apply as a penalty to Sneak or Exert checks made by the wearer.</p>",
+        "ac": 17,
+        "acRanged": 17,
+        "mod": 0,
+        "type": "heavy",
+        "soak": 0,
+        "traumaTarget": 6,
+        "ashesHeavy": false,
+        "price": 2000,
+        "weight": 2,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": ""
+      },
+      "_key": "!actors.items!MTsapzQB7yIc4fnm.srwHDDAhoVwC8dvN"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!MTsapzQB7yIc4fnm",
+  "system": {
+    "hp": {
+      "value": 45,
+      "max": 45
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "10d8",
+    "skill": 3,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 11,
+      "instinct": 2,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 12,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 20,
+        "ranged": 20
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p><span style=\"color: #191813;\">Two attacks per round. Shock ignores AC value.</span></p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Anak Warrior, Lesser",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "MTsapzQB7yIc4fnm",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

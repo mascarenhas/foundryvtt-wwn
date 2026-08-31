@@ -1,0 +1,10 @@
+{{!-- Description tab. --}}
+<section class="tab {{tab.cssClass}}" data-group="{{tab.group}}" data-tab="{{tab.id}}">
+  <div class="wwn-attributes-body">
+    <div class="wwn-form-panel wwn-item-description">
+      <div class="wwn-section-header">{{localize "WWN.Tabs.Description"}}</div>
+      {{> wwnSheetEditor name="system.description" value=source.description
+        documentUuid=item.uuid enriched=enrichedDescription fill=true}}
+    </div>
+  </div>
+</section>

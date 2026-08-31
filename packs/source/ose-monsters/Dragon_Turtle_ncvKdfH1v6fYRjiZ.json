@@ -1,0 +1,417 @@
+{
+  "name": "Dragon Turtle",
+  "type": "monster",
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "ew3z5QuCGIwnHl6O",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d6*10",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "10",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.ew3z5QuCGIwnHl6O"
+    },
+    {
+      "_id": "s55ZPF9cqm5d07hH",
+      "name": "Claw",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "1",
+          "ac": 20
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 2,
+          "max": 2
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.s55ZPF9cqm5d07hH"
+    },
+    {
+      "_id": "uilZ5boEBJvf7MW2",
+      "name": "Breath Weapon",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>90&rsquo; long, 30&rsquo; wide cloud of steam. Can be used up to three times per day. All caught in the area suffer damage equal to the dragon turtle&rsquo;s current hit points (save for half).</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "evasion",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.uilZ5boEBJvf7MW2"
+    },
+    {
+      "_id": "yMpl4edZc91av70s",
+      "name": "Mistaken For Island",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>When floating, can be mistaken for a small island.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.yMpl4edZc91av70s"
+    },
+    {
+      "_id": "vfoUyOxLwAqcBflO",
+      "name": "Attack Ships",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Sometimes try to destroy ships and eat the crew by surfacing below.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.vfoUyOxLwAqcBflO"
+    },
+    {
+      "_id": "oBI4BUfDXNEH0XcL",
+      "name": "Treasure",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>From sunken ships.</p>\n<p><em>Treasure Type H from OSE.</em></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!ncvKdfH1v6fYRjiZ.oBI4BUfDXNEH0XcL"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.C7RpN2viTj1thiWy"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 135,
+      "max": 135
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "30d8",
+    "skill": 4,
+    "details": {
+      "alignment": "Chaotic",
+      "xp": 9000,
+      "morale": 10,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "1"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "ew3z5QuCGIwnHl6O",
+      "s55ZPF9cqm5d07hH"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 15,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 22,
+        "ranged": 22
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Gargantuan sea monsters with the body and hard shell of a turtle and the head, tail, and legs of a dragon. Lurk in huge caves in the depths of the ocean, only rarely coming to the surface.</p>"
+  },
+  "prototypeToken": {
+    "name": "Dragon Turtle",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false,
+        "type": null
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "attenuation": 0.5,
+      "color": null
+    },
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {},
+    "randomImg": false,
+    "texture": {
+      "src": "icons/svg/mystery-man.svg",
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0,
+      "tint": null
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330963,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "ncvKdfH1v6fYRjiZ",
+  "_key": "!actors!ncvKdfH1v6fYRjiZ"
+}

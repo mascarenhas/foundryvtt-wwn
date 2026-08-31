@@ -1,0 +1,97 @@
+{
+  "_id": "yOppO57hje2Q8AgO",
+  "name": "Petty Mage",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [],
+  "effects": [],
+  "_key": "!actors!yOppO57hje2Q8AgO",
+  "system": {
+    "hp": {
+      "value": 9,
+      "max": 9
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 8,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": ""
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 10,
+        "ranged": 10
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": ""
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Petty Mage",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "yOppO57hje2Q8AgO",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "_id": "h5O1LeuBpEBPRW7u",
+  "name": "Betrayer Bird",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "EAOH0NxuC6sxYdKO",
+      "name": "Beak",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d6",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!h5O1LeuBpEBPRW7u.EAOH0NxuC6sxYdKO"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!h5O1LeuBpEBPRW7u",
+  "system": {
+    "hp": {
+      "value": 4,
+      "max": 4
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d8",
+    "skill": 0,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 8,
+      "instinct": 5,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1d6+1",
+        "w": "1d6+1"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "EAOH0NxuC6sxYdKO"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 2,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p>Resembling a vulture with a six-foot wingspan and razor-sharp claws, betrayer birds are encountered in small flocks of 1d6+1 birds. They seek out small or wounded parties in their territory and then try to lead predators and enemies to them in order to feast on the eventual leavings. They seem&nbsp;to have a positively human ability to identify suitable predators, though they fight with no more than bestial intelligence if directly attacked.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Betrayer Bird",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "h5O1LeuBpEBPRW7u",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

@@ -1,0 +1,966 @@
+import { RollParts, resolveSkillDiceFormula, skillDiceCount } from "./roll-parts.mjs";
+import { WwnRoll, WwnAttackRoll, WwnSkillRoll, WwnDamageRoll } from "./rolls.mjs";
+import { showWwnDialog, rollButton, cancelButton } from "../applications/wwn-dialog.mjs";
+import { skillRollAbilityChoices, parseRollDialogResult } from "./roll-prompt.mjs";
+import { createRollMessage, createCardMessage } from "../chat/chat-card.mjs";
+import { enrichItemDescription } from "../chat/item-description.mjs";
+import { formatShockAcDetail, formatAttackAcDetail, formatTraumaDetail, buildNoShockRollRow } from "../chat/roll-rows.mjs";
+import { hitDiceRollFormula } from "../derivations/hit-dice.mjs";
+import { getFocusSkillDiceBonus } from "../helpers/focus-skill-dice.mjs";
+import { skillSlugOf } from "../helpers/skill-set.mjs";
+import { spendAttackAmmo } from "../helpers/ammo.mjs";
+import { spendWeaponCounter, tracksWeaponCounter } from "../helpers/weapon-counter.mjs";
+import { isPc, isNpc } from "../helpers/actor-types.mjs";
+import { isTruthyAeFlag } from "../helpers/combat-ae-flags.mjs";
+import { resolveWeaponTlGate, traumaDieFormula, isUnarmedWeapon, combatModeMods, unarmedMeleeShockFromAe } from "../helpers/weapon-tl.mjs";
+import {
+  isShockImmuneTarget,
+  resolvePowerArmorTraumaGate,
+} from "../helpers/power-armor-derive.mjs";
+import { resolveTargetAcForAttack } from "../helpers/attack-ac.mjs";
+import {
+  naturalAttackDie,
+  resolveAttackHit,
+  resolveAttackPresentation,
+  buildAttackNotices,
+  buildAttackApplyRows,
+  applyShockFloor,
+  skillLevelWithCb,
+  traumaticDamage,
+  effectiveShockCompareAc,
+  shouldShowShockRow,
+  shouldEmitNoShockPlaceholder,
+  hasBaseShockDamage,
+  resolveChatAttackTarget,
+} from "../helpers/attack-outcome.mjs";
+import {
+  shouldMissAfterFirstMeleeHit,
+  appendAttackedThisTurn,
+} from "../helpers/savage-fray.mjs";
+
+/**
+ * WwnDice: the roll pipeline.
+ *
+ * Every roll flows through: assemble (pure) -> prompt (dialog factory,
+ * optional) -> evaluate (typed Roll) -> consume -> message (chat factory).
+ * Roll kinds are explicit; Godbound conversion only ever touches
+ * kind "damage" rolls.
+ */
+export class WwnDice {
+  /* -------------------------------------------- */
+  /*  Prompt step                                 */
+  /* -------------------------------------------- */
+
+  /**
+   * Standard situational-modifier prompt.
+   * @returns {Promise<{modifier: number}|null>} null = cancelled
+   */
+  static async promptModifier({ title, skipDialog = false, abilities = null, defaultAbilityKey = null } = {}) {
+    if (skipDialog) return { modifier: 0, abilityKey: defaultAbilityKey };
+    const result = await showWwnDialog({
+      modifier: "roll-options",
+      title,
+      template: "systems/wwn/templates/dialog/roll-options.hbs",
+      context: { abilities },
+      buttons: [rollButton(), cancelButton()],
+    });
+    return parseRollDialogResult(result, { defaultAbilityKey });
+  }
+
+  /* -------------------------------------------- */
+  /*  Attribute check (roll-under)                */
+  /* -------------------------------------------- */
+
+  static async rollCheck(actor, abilityKey, { skipDialog = false } = {}) {
+    const ability = actor.system.abilities?.[abilityKey];
+    if (!ability) return;
+    const label = game.i18n.localize(CONFIG.WWN.abilities[abilityKey]);
+    const prompt = await this.promptModifier({
+      title: game.i18n.format("WWN.Roll.CheckTitle", { ability: label }),
+      skipDialog,
+    });
+    if (!prompt) return;
+
+    const parts = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
+    parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+    const roll = await new WwnRoll(parts.formula(), actor.getRollData(), { kind: "check" }).evaluate();
+    const success = roll.total <= ability.value;
+
+    return createRollMessage({
+      rolls: [roll],
+      kind: "check",
+      actor,
+      title: game.i18n.format("WWN.Roll.CheckTitle", { ability: label }),
+      subtitle: game.i18n.format("WWN.Roll.CheckTarget", { target: ability.value }),
+      badge: {
+        label: game.i18n.localize(success ? "WWN.Roll.Success" : "WWN.Roll.Failure"),
+        type: success ? "hit" : "miss",
+      },
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Saving throws                               */
+  /* -------------------------------------------- */
+
+  static async rollSave(actor, saveId, { skipDialog = false } = {}) {
+    const save = actor.system.saves?.[saveId];
+    if (!save) return;
+    const label = game.i18n.localize(save.label ?? saveId);
+    const prompt = await this.promptModifier({
+      title: game.i18n.format("WWN.Roll.SaveTitle", { save: label }),
+      skipDialog,
+    });
+    if (!prompt) return;
+
+    const parts = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
+    parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+    const roll = await new WwnRoll(parts.formula(), actor.getRollData(), { kind: "save" }).evaluate();
+    const success = roll.total >= save.value;
+
+    return createRollMessage({
+      rolls: [roll],
+      kind: "save",
+      actor,
+      title: game.i18n.format("WWN.Roll.SaveTitle", { save: label }),
+      subtitle: game.i18n.format("WWN.Roll.SaveTarget", { target: save.value }),
+      badge: {
+        label: game.i18n.localize(success ? "WWN.Roll.Success" : "WWN.Roll.Failure"),
+        type: success ? "hit" : "miss",
+      },
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
+    });
+  }
+
+  /** Effective skill level honoring the AE skill floor (non-combat only). */
+  static effectiveSkillLevel(actor, skill) {
+    const owned = skill.system.ownedLevel ?? -1;
+    const slug = skillSlugOf(skill);
+    if (CONFIG.WWN.combatSkills.includes(slug)) return owned;
+    const floor = actor.system.skills?.floor ?? -1;
+    return Math.max(owned, floor);
+  }
+
+  static async rollSkill(actor, skill, { skipDialog = false, abilityKey = null, title = null } = {}) {
+    const defaultKey = abilityKey ?? skill.system.score ?? "int";
+    const rollTitle = title ?? game.i18n.format("WWN.Roll.SkillTitle", { skill: skill.name });
+    const prompt = await this.promptModifier({
+      title: rollTitle,
+      skipDialog,
+      abilities: skillRollAbilityChoices(actor, defaultKey),
+      defaultAbilityKey: defaultKey,
+    });
+    if (!prompt) return;
+    abilityKey = prompt.abilityKey ?? defaultKey;
+    const ability = actor.system.abilities?.[abilityKey];
+
+    const slug = skillSlugOf(skill);
+    const parts = new RollParts();
+    const { extraDice, dropLowest } = getFocusSkillDiceBonus(actor, slug);
+    if (extraDice > 0) {
+      const totalDice = skillDiceCount(skill.system.skillDice) + extraDice;
+      parts.add(`${totalDice}d6dl${dropLowest}`, game.i18n.localize("WWN.Roll.SkillDice"));
+    } else {
+      parts.add(resolveSkillDiceFormula(skill.system.skillDice), game.i18n.localize("WWN.Roll.SkillDice"));
+    }
+    parts.add(this.effectiveSkillLevel(actor, skill), skill.name);
+    parts.add(ability?.mod ?? 0, game.i18n.localize(CONFIG.WWN.abilityAbbreviations[abilityKey] ?? abilityKey));
+
+    // Armor penalties
+    if (slug === "sneak") parts.add(-(actor.system.skills?.sneakPenalty ?? 0), game.i18n.localize("WWN.Roll.ArmorPenalty"));
+    if (slug === "exert") parts.add(-(actor.system.skills?.exertPenalty ?? 0), game.i18n.localize("WWN.Roll.ArmorPenalty"));
+    parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+
+    const roll = await new WwnSkillRoll(parts.formula(), actor.getRollData(), { kind: "skill" }).evaluate();
+
+    return createRollMessage({
+      rolls: [roll],
+      kind: "skill",
+      actor,
+      img: skill.img,
+      title: rollTitle,
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Attacks                                     */
+  /* -------------------------------------------- */
+
+  /** NPC damage bonus (fixed + optional half-HD); not AE-derived. */
+  static #npcDamageBonus(actor) {
+    if (!isNpc(actor)) return 0;
+    const { damageBonus = 0, damageBonusHalfLevel = false } = actor.system.combat ?? {};
+    return damageBonus + (damageBonusHalfLevel ? (actor.getRollData().halfLevel ?? 0) : 0);
+  }
+
+  /**
+   * Whether shock damage applies on a miss against the given target (WWN melee shock rule).
+   * Prefer `options.effectiveTargetAc` when the attack already resolved AC with armor ignore.
+   * @param {Actor} attacker
+   * @param {Actor} targetActor
+   * @param {Item} weapon
+   * @param {string} attackKind
+   * @param {{ effectiveTargetAc?: number|null }} [options]
+   * @returns {{ applies: boolean, effectiveTargetAc: number, threshold: number }}
+   */
+  static shockAppliesOnMiss(attacker, targetActor, weapon, attackKind, options = {}) {
+    const threshold = weapon.system.shockAcValue ?? weapon.system.shock?.ac ?? 0;
+    if (attackKind !== "melee" || !hasBaseShockDamage(weapon.system.shock?.damage)) {
+      return { applies: false, effectiveTargetAc: 0, threshold };
+    }
+    if (isShockImmuneTarget(targetActor)) {
+      return { applies: false, effectiveTargetAc: 0, threshold };
+    }
+    const { blocked } = resolveWeaponTlGate(attacker, targetActor, weapon, attackKind);
+    if (blocked) {
+      return { applies: false, effectiveTargetAc: 0, threshold };
+    }
+    const effectiveTargetAc = effectiveShockCompareAc(attacker, targetActor, options.effectiveTargetAc);
+    return {
+      applies: effectiveTargetAc <= threshold,
+      effectiveTargetAc,
+      threshold,
+    };
+  }
+
+  /**
+   * Resolve a combat damage/shock modifier that may be a formula string.
+   * @param {number|string} value
+   * @param {object} rollData
+   * @returns {number|string}
+   */
+  static #resolveCombatFormula(value, rollData) {
+    if (typeof value !== "string" || !value.includes("@")) return value;
+    try {
+      const replaced = foundry.dice.Roll.replaceFormulaData(value, rollData, { missing: "0" });
+      const evaluated = foundry.dice.Roll.safeEval(replaced);
+      if (Number.isFinite(evaluated)) return evaluated;
+    } catch (_err) {
+      // Fall through to raw formula for Roll evaluation.
+    }
+    return value;
+  }
+
+  /**
+   * Focus-driven flat miss damage (Armsman / Gunslinger / Unarmed L2).
+   * @param {Actor} actor
+   * @param {Item} weapon
+   * @param {"melee"|"ranged"} attackKind
+   * @returns {string|null}
+   */
+  static #focusMissDamageFormula(actor, weapon, attackKind) {
+    const combat = actor.system.combat ?? {};
+    const skill = weapon.system.linkedSkill;
+    const skillSlug = skillSlugOf(skill);
+    const isPunch = skillSlug === "punch" || /unarmed|fist|punch/i.test(weapon.name ?? "");
+    if (isPunch && combat.punchMissDamage) return String(combat.punchMissDamage);
+    if (attackKind === "melee" && combat.meleeMissDamage) return String(combat.meleeMissDamage);
+    if (attackKind === "ranged" && combat.rangeMissDamage) return String(combat.rangeMissDamage);
+    return null;
+  }
+
+  /**
+   * Track attacks for Savage Fray L1 (EOT shock) and L2 (first melee hit).
+   * @param {Actor} attacker
+   * @param {Actor} defender
+   * @param {string} attackKind
+   * @param {boolean} hit
+   */
+  static async #recordCombatAttackFlags(attacker, defender, attackKind, hit) {
+    const combat = game.combat;
+    if (!combat) return;
+    try {
+      const attackerC =
+        combat.getCombatantsByActor?.(attacker.id)?.[0] ??
+        combat.combatants?.find((c) => c.actorId === attacker.id);
+      if (attackerC) {
+        const prev = attackerC.getFlag("wwn", "attackedThisTurn") ?? [];
+        const next = appendAttackedThisTurn(prev, defender.id);
+        await attackerC.setFlag("wwn", "attackedThisTurn", next);
+      }
+      if (attackKind === "melee" && hit && isTruthyAeFlag(defender.system.combat?.missAfterFirstMeleeHit)) {
+        const defenderC =
+          combat.getCombatantsByActor?.(defender.id)?.[0] ??
+          combat.combatants?.find((c) => c.actorId === defender.id);
+        if (defenderC) {
+          const stored = defenderC.getFlag("wwn", "meleeHitThisRound");
+          if (!stored?.attackerId || Number(stored.round) !== Number(combat.round)) {
+            await defenderC.setFlag("wwn", "meleeHitThisRound", {
+              attackerId: attacker.id,
+              round: combat.round,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      // Combatant flag updates require ownership; never abort the attack chat card.
+      console.warn("WWN | Failed to record combat attack flags", err);
+    }
+  }
+
+  /**
+   * Pure assembly of attack/damage/shock parts.
+   * @returns {{attack: RollParts, damage: RollParts, shock: RollParts|null, attackKind: string}}
+   */
+  static assembleAttack(actor, weapon, { attackKind, modifier = 0, burst = false } = {}) {
+    const system = actor.system;
+    const combat = system.combat;
+    const isMelee = attackKind === "melee";
+    const skill = weapon.system.linkedSkill;
+    const abilityKey = weapon.system.score ?? "str";
+    const abilityMod = system.abilities?.[abilityKey]?.mod ?? 0;
+    const abilityLabel = game.i18n.localize(CONFIG.WWN.abilityAbbreviations[abilityKey] ?? abilityKey);
+    const rollData = actor.getRollData?.() ?? {};
+
+    const attack = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
+    attack.add(combat.ab ?? 0, game.i18n.localize("WWN.Roll.AttackBonus"));
+    attack.add(combat.allAttack ?? 0, game.i18n.localize("WWN.Effects.AttackAll"));
+    const { applyMeleeCombatAe, attack: modeAttack, damage: modeDamage, shock: modeShock } = combatModeMods(
+      combat,
+      weapon,
+      attackKind,
+    );
+    attack.add(
+      modeAttack,
+      game.i18n.localize(applyMeleeCombatAe ? "WWN.Effects.AttackMelee" : "WWN.Effects.AttackRanged"),
+    );
+    if (isPc(actor)) {
+      attack.add(abilityMod, abilityLabel);
+      const tags = weapon.system.tags ?? [];
+      const skillLevel = skillLevelWithCb(
+        skill ? this.effectiveSkillLevel(actor, skill) : -2,
+        tags,
+      );
+      attack.add(skillLevel, skill?.name ?? game.i18n.localize("WWN.Roll.Unskilled"));
+    } else {
+      attack.add(system.skill ?? 0, game.i18n.localize("WWN.Roll.NpcSkill"));
+    }
+    attack.add(weapon.system.bonusValue ?? weapon.system.bonus ?? 0, game.i18n.localize("WWN.Roll.WeaponBonus"));
+    if (burst) attack.add(2, game.i18n.localize("WWN.Roll.Burst"));
+    attack.add(modifier, game.i18n.localize("WWN.Roll.Situational"));
+
+    const damage = new RollParts(rollData).add(
+      weapon.system.damage || "1d6",
+      game.i18n.localize("WWN.Roll.WeaponDamage")
+    );
+    const damageMod = weapon.system.damageMod;
+    if (damageMod !== null && damageMod !== undefined && damageMod !== "" && damageMod !== 0) {
+      damage.add(damageMod, game.i18n.localize("WWN.Effects.Item.DamageMod"));
+    }
+    if (isPc(actor)) {
+      damage.add(abilityMod, abilityLabel);
+    }
+    const npcBonus = this.#npcDamageBonus(actor);
+    if (npcBonus) damage.add(npcBonus, game.i18n.localize("WWN.Npc.DamageBonus"));
+    if (combat.allDamage) {
+      damage.add(
+        this.#resolveCombatFormula(combat.allDamage, rollData),
+        game.i18n.localize("WWN.Effects.DamageAll")
+      );
+    }
+    if (modeDamage) {
+      damage.add(
+        this.#resolveCombatFormula(modeDamage, rollData),
+        game.i18n.localize(applyMeleeCombatAe ? "WWN.Effects.DamageMelee" : "WWN.Effects.DamageRanged")
+      );
+    }
+    if (burst) damage.add(2, game.i18n.localize("WWN.Roll.Burst"));
+
+    let shock = null;
+    const shockBase = weapon.system.shock?.damage;
+    if (hasBaseShockDamage(shockBase)) {
+      shock = new RollParts(rollData).add(shockBase, game.i18n.localize("WWN.Roll.ShockBase"));
+      const shockDamageMod = weapon.system.shock?.damageMod;
+      if (shockDamageMod !== null && shockDamageMod !== undefined && shockDamageMod !== "" && shockDamageMod !== 0) {
+        shock.add(shockDamageMod, game.i18n.localize("WWN.Effects.Item.ShockDamageMod"));
+      }
+      if (isPc(actor)) shock.add(abilityMod, abilityLabel);
+      if (npcBonus) shock.add(npcBonus, game.i18n.localize("WWN.Npc.DamageBonus"));
+      if (combat.allShock) {
+        shock.add(
+          this.#resolveCombatFormula(combat.allShock, rollData),
+          game.i18n.localize("WWN.Effects.ShockAll"),
+        );
+      }
+      if (modeShock) {
+        shock.add(
+          this.#resolveCombatFormula(modeShock, rollData),
+          game.i18n.localize(applyMeleeCombatAe ? "WWN.Effects.ShockMelee" : "WWN.Effects.ShockRanged"),
+        );
+      }
+    } else if (unarmedMeleeShockFromAe(weapon, attackKind, combat)) {
+      shock = new RollParts(rollData).add(
+        this.#resolveCombatFormula(combat.unarmedShock, rollData),
+        game.i18n.localize("WWN.Effects.ShockUnarmed"),
+      );
+      if (combat.allShock) {
+        shock.add(
+          this.#resolveCombatFormula(combat.allShock, rollData),
+          game.i18n.localize("WWN.Effects.ShockAll"),
+        );
+      }
+    }
+
+    return { attack, damage, shock, attackKind };
+  }
+
+  /**
+   * Full attack flow: options dialog, rolls, target comparison, ammo
+   * consumption, sectioned attack card.
+   */
+  static async rollAttack(actor, weapon, { skipDialog = false } = {}) {
+    // Determine melee/ranged
+    let attackKind = weapon.system.melee ? "melee" : "ranged";
+    const canChoose = weapon.system.melee && weapon.system.missile;
+
+    let options = { modifier: 0, burst: false, charge: false, attackKind };
+    if (!skipDialog || canChoose) {
+      const result = await showWwnDialog({
+        modifier: "attack-options",
+        title: game.i18n.format("WWN.Roll.AttackTitle", { weapon: weapon.name }),
+        template: "systems/wwn/templates/dialog/attack-options.hbs",
+        context: {
+          canChoose,
+          attackKind,
+          canBurst: weapon.system.burst,
+          isPc: isPc(actor),
+        },
+        buttons: [rollButton(), cancelButton()],
+      });
+      if (!result || result === "cancel") return;
+      options = {
+        modifier: Number(result.modifier) || 0,
+        burst: !!result.burst,
+        charge: !!result.charge,
+        attackKind: result.attackKind ?? attackKind,
+      };
+    }
+    attackKind = options.attackKind;
+
+    // Ammo / charges / NPC attack counter — only after dialog succeeds
+    if (!(await spendAttackAmmo(weapon, { burst: options.burst }))) return;
+    if (tracksWeaponCounter(actor)) await spendWeaponCounter(weapon);
+    // Charge AE only after spend succeeds so empty mag does not leave a stuck effect
+    if (options.charge) await actor.applyChargeEffect();
+
+    const rollData = actor.getRollData();
+    const { attack, damage, shock } = this.assembleAttack(actor, weapon, options);
+
+    const attackRoll = await new WwnAttackRoll(attack.formula(), rollData, { kind: "attack" }).evaluate();
+    const damageRoll = await new WwnDamageRoll(damage.formula(), rollData, { kind: "damage" }).evaluate();
+    const rolls = [attackRoll, damageRoll];
+    const rollMeta = [
+      { label: game.i18n.localize("WWN.Roll.Attack"), breakdown: attack.breakdown() },
+      { label: game.i18n.localize("WWN.Roll.Damage"), breakdown: damage.breakdown() },
+    ];
+
+    const { target, untargeted } = resolveChatAttackTarget(game.user.targets);
+    const naturalDie = naturalAttackDie(attackRoll);
+    const initialHitResult = resolveAttackHit({
+      attackTotal: attackRoll.total,
+      naturalDie,
+      targetAc: null,
+      blockedByTl: false,
+    });
+    let targetName = null;
+    let hit = initialHitResult.hit;
+    let blockedByTl = false;
+    let hitReason = initialHitResult.reason;
+    let ignored = [];
+    let targetAc = null;
+    let acKind = "melee";
+    let shockTotal = null;
+    let shockLabelAc = weapon.system.shockAcValue ?? weapon.system.shock?.ac;
+    let shockAppliesOnMiss = false;
+    let shockSuppressedReason = null;
+    const extraRollRows = [];
+
+    if (target?.actor) {
+      targetName = target.name;
+      const gate = resolveWeaponTlGate(actor, target.actor, weapon, attackKind);
+      blockedByTl = gate.blocked;
+
+      const separateRanged = game.settings.get("wwn", "separateRangedAC");
+      const acResult = resolveTargetAcForAttack(actor, target.actor, weapon, attackKind, { separateRanged });
+      ignored = acResult.ignored;
+      targetAc = acResult.ac;
+      acKind = acResult.acKind;
+
+      const hitResult = resolveAttackHit({
+        attackTotal: attackRoll.total,
+        naturalDie,
+        targetAc,
+        blockedByTl,
+      });
+      hit = hitResult.hit;
+      hitReason = hitResult.reason;
+
+      // Savage Fray L2: after first melee hit this round, other assailants auto-miss
+      if (
+        attackKind === "melee" &&
+        !blockedByTl &&
+        hit &&
+        isTruthyAeFlag(target.actor.system.combat?.missAfterFirstMeleeHit)
+      ) {
+        const combat = game.combat;
+        const defenderC = combat?.getCombatantsByActor?.(target.actor.id)?.[0]
+          ?? combat?.combatants?.find((c) => c.actorId === target.actor.id);
+        const stored = defenderC?.getFlag?.("wwn", "meleeHitThisRound");
+        if (shouldMissAfterFirstMeleeHit(stored, actor.id, combat?.round)) {
+          hit = false;
+          hitReason = "miss";
+        }
+      }
+
+      rollMeta[0].detail = formatAttackAcDetail(targetAc, { separateRanged, acKind });
+    }
+
+    // Shock: roll when weapon has shock and not TL-blocked (needed for hit floor + miss apply)
+    if (shock && !blockedByTl) {
+      if (target?.actor) {
+        const shockCheck = this.shockAppliesOnMiss(actor, target.actor, weapon, attackKind, {
+          // Prefer attack-resolved AC (armor ignore) when available; fall back inside helper.
+          effectiveTargetAc: Number.isFinite(targetAc) ? targetAc : null,
+        });
+        shockLabelAc = shockCheck.threshold;
+        shockAppliesOnMiss = shockCheck.applies;
+        if (isShockImmuneTarget(target.actor)) {
+          shockSuppressedReason = "immune";
+        } else if (!shockCheck.applies && !hit) {
+          shockSuppressedReason = "ac";
+        }
+      } else {
+        shockAppliesOnMiss = true;
+      }
+
+      const compareAcs = untargeted || !target?.actor
+        ? []
+        : [effectiveShockCompareAc(actor, target.actor, targetAc)];
+      const showShockRow = shouldShowShockRow(shockLabelAc, compareAcs);
+      const canUseShock = !isShockImmuneTarget(target?.actor);
+      if (canUseShock && (hit || shockAppliesOnMiss || !target?.actor || showShockRow)) {
+        const shockRoll = await new WwnDamageRoll(shock.formula(), rollData, { kind: "damage" }).evaluate();
+        shockTotal = shockRoll.total;
+        if (hit || showShockRow) {
+          rolls.push(shockRoll);
+          rollMeta.push({
+            label: game.i18n.localize("WWN.Roll.ShockBase"),
+            detail: formatShockAcDetail(shockLabelAc),
+            breakdown: shock.breakdown(),
+          });
+        }
+      }
+      if (shouldEmitNoShockPlaceholder({
+        hit,
+        showShockRow,
+        canUseShock,
+        hasCompareAcs: compareAcs.length > 0,
+      })) {
+        extraRollRows.push(buildNoShockRollRow(shockLabelAc));
+      }
+    } else if (shock && blockedByTl) {
+      shockSuppressedReason = "tl";
+    }
+
+    // Trauma die (rating multiply applied after Godbound + Shock floor below)
+    const useTrauma = game.settings.get("wwn", "useTrauma");
+    let trauma = null;
+    if (useTrauma && weapon.system.trauma?.die && hit && !blockedByTl) {
+      const rating = weapon.system.traumaRatingValue ?? weapon.system.trauma?.rating ?? 2;
+      const dieMod = Number(actor.system.trauma?.dieMod) || 0;
+      const traumaFormula = traumaDieFormula(weapon.system.trauma.die, dieMod);
+      let traumaTarget = null;
+      let traumatic = false;
+      let skipTrauma = false;
+      if (target?.actor) {
+        const traumaGate = resolvePowerArmorTraumaGate(target.actor, weapon);
+        if (traumaGate.blocked) skipTrauma = true;
+        else traumaTarget = traumaGate.traumaTarget;
+      }
+      if (!skipTrauma) {
+        const traumaRoll = await new WwnRoll(traumaFormula, rollData, { kind: "formula" }).evaluate();
+        if (traumaTarget != null) traumatic = traumaRoll.total >= traumaTarget;
+        rolls.push(traumaRoll);
+        rollMeta.push({
+          label: game.i18n.localize("WWN.Roll.Trauma"),
+          detail: formatTraumaDetail(traumaTarget, rating),
+          breakdown: traumaFormula,
+        });
+        trauma = {
+          die: traumaFormula,
+          result: traumaRoll.total,
+          target: traumaTarget,
+          rating,
+          traumatic,
+          multiplied: null,
+        };
+      }
+    }
+
+    // Godbound conversion (damage rolls only)
+    const godbound = game.settings.get("wwn", "godboundDamage");
+    let damageValue = damageRoll.total;
+    let straightValue = null;
+    if (godbound) {
+      const conversion = damageRoll.godboundTotal;
+      straightValue = damageRoll.total;
+      damageValue = conversion.total;
+    }
+
+    // Shock-immune targets: do not floor hit damage to Shock
+    const shockForFloor = isShockImmuneTarget(target?.actor) ? null : shockTotal;
+    const floorInfo = applyShockFloor(damageValue, hit ? shockForFloor : null);
+    // Godbound straight apply must use the same Shock floor as converted damage.
+    if (straightValue != null && hit) {
+      straightValue = applyShockFloor(straightValue, shockForFloor).value;
+    }
+    if (trauma?.traumatic) {
+      trauma.multiplied = traumaticDamage(floorInfo.value, trauma.rating);
+    }
+
+    let missDamageValue = null;
+    if (!hit && isPc(actor) && !blockedByTl) {
+      const missFormula = this.#focusMissDamageFormula(actor, weapon, attackKind);
+      if (missFormula) {
+        const missRoll = await new WwnDamageRoll(missFormula, rollData, { kind: "damage" }).evaluate();
+        rolls.push(missRoll);
+        rollMeta.push({
+          label: game.i18n.localize("WWN.Roll.MissDamage"),
+        });
+        missDamageValue = missRoll.total;
+      }
+    }
+
+    const applyRows = buildAttackApplyRows({
+      hit,
+      untargeted,
+      blockedByTl,
+      damageValue: floorInfo.value,
+      damageFloored: floorInfo.floored,
+      straightValue,
+      shockTotal: shockForFloor,
+      shockAppliesOnMiss,
+      shockLabelAc,
+      trauma,
+      missDamageValue,
+      labels: {
+        damage: game.i18n.localize("WWN.Roll.Damage"),
+        damageFloored: game.i18n.localize("WWN.Roll.DamageFloored"),
+        missDamage: game.i18n.localize("WWN.Roll.MissDamage"),
+        straight: (value) => game.i18n.format("WWN.Roll.Straight", { value }),
+        shock: game.i18n.localize("WWN.Roll.ShockBase"),
+        shockSuffix: (ac) => game.i18n.format("WWN.Roll.ShockApplySuffix", { ac }),
+        trauma: (rating) => game.i18n.format("WWN.Roll.TraumaDamage", { rating }),
+      },
+    });
+
+    const notices = buildAttackNotices({
+      blockedByTl,
+      hitReason,
+      naturalDie,
+      ignored,
+      shockSuppressedReason: (!hit && shockTotal == null) ? shockSuppressedReason : (shockSuppressedReason === "tl" ? "tl" : null),
+      shockFloored: hit && floorInfo.floored,
+    }, (key, data) => (data ? game.i18n.format(key, data) : game.i18n.localize(key)));
+
+    // Savage Fray / attack tracking (active combat only)
+    if (target?.actor && game.combat) {
+      await this.#recordCombatAttackFlags(actor, target.actor, attackKind, hit);
+    }
+
+    // Power-armor automatic reactions (best-effort; sheet Trigger remains available).
+    if (target?.actor?.type === "powerArmor" && !blockedByTl) {
+      try {
+        const { onSuitAttacked } = await import("../helpers/power-armor-effects.mjs");
+        await onSuitAttacked(target.actor, {
+          unarmed: isUnarmedWeapon(weapon),
+          ballistic: attackKind === "ranged" && (!!weapon.system?.firearm || Number(weapon.system?.tl) >= 4),
+          distanceM: null,
+        });
+      } catch (err) {
+        console.warn("WWN | Power armor onSuitAttacked failed", err);
+      }
+    }
+
+    const presentation = resolveAttackPresentation({
+      hit,
+      hitReason,
+      naturalDie,
+      traumatic: !!trauma?.traumatic,
+      untargeted,
+    });
+    const localizePresentation = (entry) => entry
+      ? { type: entry.type, label: game.i18n.localize(entry.labelKey) }
+      : null;
+    const badge = localizePresentation(presentation.badge);
+
+    return createRollMessage({
+      rolls,
+      rollMeta,
+      extraRollRows,
+      description: await enrichItemDescription(weapon),
+      kind: "attack",
+      actor,
+      img: weapon.img,
+      title: game.i18n.format("WWN.Roll.AttackTitle", { weapon: weapon.name }),
+      subtitle: targetName ? game.i18n.format("WWN.Roll.VsTarget", { target: targetName }) : null,
+      badge,
+      bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+      context: {
+        applyRows,
+        notices,
+        save: weapon.system.save || null,
+        hit,
+        naturalOutcome: localizePresentation(presentation.naturalOutcome),
+        outcome: localizePresentation(presentation.outcome),
+      },
+      flags: { applyRows, save: weapon.system.save || null },
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Standalone damage                           */
+  /* -------------------------------------------- */
+
+  static async rollDamage(actor, formula, { title, img, defaultHealing = false } = {}) {
+    const npcBonus = WwnDice.#npcDamageBonus(actor);
+    const rollFormula = npcBonus ? `(${formula}) + ${npcBonus}` : formula;
+    const roll = await new WwnDamageRoll(rollFormula, actor.getRollData(), { kind: "damage" }).evaluate();
+    const godbound = game.settings.get("wwn", "godboundDamage");
+    let value = roll.total;
+    let altValue = null;
+    if (godbound) {
+      altValue = roll.total;
+      value = roll.godboundTotal.total;
+    }
+    return createRollMessage({
+      rolls: [roll],
+      kind: "damage",
+      actor,
+      img,
+      title: title ?? game.i18n.localize("WWN.Roll.Damage"),
+      defaultHealing,
+      bodyTemplate: "systems/wwn/templates/chat/attack-card.hbs",
+      context: {
+        applyRows: [{
+          id: "damage",
+          label: game.i18n.localize("WWN.Roll.Damage"),
+          value,
+          altValue,
+          altLabel: altValue !== null ? game.i18n.format("WWN.Roll.Straight", { value: altValue }) : null,
+        }],
+        hit: true,
+        defaultHealing,
+      },
+      flags: {
+        applyRows: [{ id: "damage", value, altValue }],
+      },
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Generic formula (never damage-converted)    */
+  /* -------------------------------------------- */
+
+  static async rollFormula(actor, formula, { title, img, kind = "formula" } = {}) {
+    const roll = await new WwnRoll(formula, actor.getRollData(), { kind }).evaluate();
+    return createRollMessage({
+      rolls: [roll],
+      kind,
+      actor,
+      img,
+      title: title ?? game.i18n.localize("WWN.Roll.Formula"),
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+
+  /**
+   * Power activation roll with optional above/below target comparison.
+   * @param {Actor} actor
+   * @param {Item} power
+   */
+  static async rollPowerActivation(actor, power) {
+    const activation = power.system.activation;
+    const formula = activation?.roll;
+    if (!formula?.trim()) return;
+
+    const roll = await new WwnRoll(formula, actor.getRollData(), { kind: "formula" }).evaluate();
+    const target = Number(activation.rollTarget) || 0;
+    const rollType = activation.rollType ?? "result";
+    let badge = null;
+    let subtitle = null;
+
+    if (target > 0 && rollType !== "result") {
+      const success = rollType === "above" ? roll.total > target : roll.total < target;
+      subtitle = game.i18n.format("WWN.Roll.VsTarget", { target });
+      badge = {
+        label: game.i18n.localize(success ? "WWN.Roll.Success" : "WWN.Roll.Failure"),
+        type: success ? "hit" : "miss",
+      };
+    }
+
+    return createRollMessage({
+      rolls: [roll],
+      kind: "formula",
+      actor,
+      img: power.img,
+      title: game.i18n.format("WWN.Power.RollTitle", { name: power.name }),
+      subtitle,
+      badge,
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  Hit dice (PC) and HP (NPC)                  */
+  /* -------------------------------------------- */
+
+  static async rollHitDice(actor) {
+    const formula = hitDiceRollFormula(actor);
+    const roll = await new WwnRoll(formula, actor.getRollData(), { kind: "formula" }).evaluate();
+    return createRollMessage({
+      rolls: [roll],
+      kind: "hitDice",
+      actor,
+      title: game.i18n.localize("WWN.Roll.HitDice"),
+      subtitle: actor.system.hitDice.display,
+      bodyTemplate: "systems/wwn/templates/chat/hit-dice-card.hbs",
+      context: { total: roll.total, currentMax: actor.system.hp.max },
+      flags: { hitDiceTotal: roll.total, actorUuid: actor.uuid },
+    });
+  }
+
+  static async rollNpcHp(actor) {
+    const formula = String(actor.system.hd || "1d8");
+    const roll = await new WwnRoll(formula, actor.getRollData(), { kind: "formula" }).evaluate();
+    await actor.update({ "system.hp.value": roll.total, "system.hp.max": roll.total });
+    return createRollMessage({
+      rolls: [roll],
+      kind: "npcHp",
+      actor,
+      title: game.i18n.localize("WWN.Roll.NpcHp"),
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+
+  /* -------------------------------------------- */
+  /*  NPC utility rolls                           */
+  /* -------------------------------------------- */
+
+  static async rollMorale(actor) {
+    const roll = await new WwnRoll("2d6", {}, { kind: "check" }).evaluate();
+    const morale = actor.system.details?.morale ?? 7;
+    const failed = roll.total > morale;
+    return createRollMessage({
+      rolls: [roll],
+      kind: "morale",
+      actor,
+      title: game.i18n.localize("WWN.Roll.Morale"),
+      subtitle: game.i18n.format("WWN.Roll.MoraleTarget", { target: morale }),
+      badge: {
+        label: game.i18n.localize(failed ? "WWN.Roll.MoraleFail" : "WWN.Roll.MoraleHold"),
+        type: failed ? "miss" : "hit",
+      },
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+
+  static async rollReaction(actor) {
+    const roll = await new WwnRoll("2d6", {}, { kind: "check" }).evaluate();
+    return createRollMessage({
+      rolls: [roll],
+      kind: "reaction",
+      actor,
+      title: game.i18n.localize("WWN.Roll.Reaction"),
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+
+  static async rollNpcSkill(actor, { skipDialog = false } = {}) {
+    const skill = actor.system.skill ?? 0;
+    const prompt = await this.promptModifier({
+      title: game.i18n.localize("WWN.Roll.NpcSkillTitle"),
+      skipDialog,
+    });
+    if (!prompt) return;
+
+    const parts = new RollParts().add("2d6", game.i18n.localize("WWN.Roll.SkillDice"));
+    parts.add(skill, game.i18n.localize("WWN.Roll.NpcSkill"));
+    parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+
+    const roll = await new WwnSkillRoll(parts.formula(), actor.getRollData(), { kind: "skill" }).evaluate();
+
+    return createRollMessage({
+      rolls: [roll],
+      kind: "skill",
+      actor,
+      title: game.i18n.localize("WWN.Roll.NpcSkillTitle"),
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
+    });
+  }
+
+  static async rollInstinct(actor) {
+    const instinct = actor.system.details?.instinct ?? 0;
+    const roll = await new WwnRoll("1d10", {}, { kind: "check" }).evaluate();
+    const triggered = roll.total <= instinct;
+    const message = await createRollMessage({
+      rolls: [roll],
+      kind: "instinct",
+      actor,
+      title: game.i18n.localize("WWN.Roll.Instinct"),
+      subtitle: game.i18n.format("WWN.Roll.InstinctTarget", { target: instinct }),
+      badge: {
+        label: game.i18n.localize(triggered ? "WWN.Roll.InstinctTriggered" : "WWN.Roll.InstinctSteady"),
+        type: triggered ? "miss" : "hit",
+      },
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+      messageMode: game.settings.get("wwn", "hideInstinct") ? "gm" : undefined,
+    });
+    // Explicit follow-up step (never a side effect of result formatting)
+    if (triggered && actor.system.details?.instinctTable) {
+      const table = await fromUuid(actor.system.details.instinctTable);
+      if (table) await table.draw();
+    }
+    return message;
+  }
+
+  static async rollAppearing(actor, which = "d") {
+    const formula = which === "w" ? actor.system.details?.appearing?.w : actor.system.details?.appearing?.d;
+    if (!formula) return;
+    const roll = await new WwnRoll(formula, {}, { kind: "formula" }).evaluate();
+    return createRollMessage({
+      rolls: [roll],
+      kind: "appearing",
+      actor,
+      title: game.i18n.localize(which === "w" ? "WWN.Roll.AppearingWilderness" : "WWN.Roll.AppearingDungeon"),
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      context: {},
+    });
+  }
+}
+
+export { createCardMessage };

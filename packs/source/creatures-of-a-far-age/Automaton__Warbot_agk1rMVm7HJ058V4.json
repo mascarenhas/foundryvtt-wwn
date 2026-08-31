@@ -1,0 +1,156 @@
+{
+  "_id": "agk1rMVm7HJ058V4",
+  "name": "Automaton, Warbot",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "vnYPn8WMaJ2NpDW4",
+      "name": "Attack",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 600000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d12+5",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "7",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 3,
+          "max": 3
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!agk1rMVm7HJ058V4.vnYPn8WMaJ2NpDW4"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!agk1rMVm7HJ058V4",
+  "system": {
+    "hp": {
+      "value": 4,
+      "max": 4
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "10d8",
+    "skill": 2,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 12,
+      "instinct": 2,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": ""
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "vnYPn8WMaJ2NpDW4"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 12,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 20,
+        "ranged": 20
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": ""
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Automaton, Warbot",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "agk1rMVm7HJ058V4",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

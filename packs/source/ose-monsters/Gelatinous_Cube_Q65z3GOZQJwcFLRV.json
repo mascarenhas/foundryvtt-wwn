@@ -1,0 +1,367 @@
+{
+  "name": "Gelatinous Cube",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "OQU9bS2XifU5kMme",
+      "name": "Touch",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><strong>P</strong><strong>aralysis: </strong>For [[/r 2d4]] turns (save to avoid).</p>",
+        "damage": "2d4",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "physical",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!Q65z3GOZQJwcFLRV.OQU9bS2XifU5kMme"
+    },
+    {
+      "_id": "fkMX5psHjDbV9lqI",
+      "name": "Paralysis",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>For [[/r 2d4]] turns (save to avoid).</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "2d4",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "physical",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!Q65z3GOZQJwcFLRV.fkMX5psHjDbV9lqI"
+    },
+    {
+      "_id": "MnWMMjVmgk2bsr3o",
+      "name": "Surprise",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>+5 on checks to surprise, due to near-invisibility.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!Q65z3GOZQJwcFLRV.MnWMMjVmgk2bsr3o"
+    },
+    {
+      "_id": "B3XLZ1DeC2dQLuOu",
+      "name": "Energy Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Unharmed by cold or lightning.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!Q65z3GOZQJwcFLRV.B3XLZ1DeC2dQLuOu"
+    },
+    {
+      "_id": "UAwBufNgvwwkfiIh",
+      "name": "Embedded Items",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Indigestible items (e.g. gems, coins) are carried around inside the cube.</p>\n<p><em>Treasure Type V from OSE.</em></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!Q65z3GOZQJwcFLRV.UAwBufNgvwwkfiIh"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.VfJjMLeunwQWDk51"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 18,
+      "max": 18
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "4d8",
+    "skill": 0,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 125,
+      "morale": 12,
+      "instinct": 7,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "OQU9bS2XifU5kMme"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 4,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 12,
+        "ranged": 12
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>10&rsquo; cubes of transparent jelly. Move through dungeons, absorbing debris and living creatures they come across.</p>"
+  },
+  "prototypeToken": {
+    "name": "Gelatinous Cube",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 2,
+    "height": 2,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false,
+        "type": null
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {
+      "wall-height": {
+        "tokenHeight": 0
+      },
+      "image-hover": {
+        "hideArt": false
+      }
+    },
+    "randomImg": true,
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 2,
+      "scaleY": 2,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331155,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "Q65z3GOZQJwcFLRV",
+  "_key": "!actors!Q65z3GOZQJwcFLRV"
+}

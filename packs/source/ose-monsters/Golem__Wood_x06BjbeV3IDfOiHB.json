@@ -1,0 +1,371 @@
+{
+  "name": "Golem, Wood",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "zE0TcOWnGRE0SpQp",
+      "name": "Fist",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "1",
+          "ac": 13
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!x06BjbeV3IDfOiHB.zE0TcOWnGRE0SpQp"
+    },
+    {
+      "_id": "psL7GruKs1WrlzBi",
+      "name": "Mundane Damage Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Can only be harmed by magical attacks.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!x06BjbeV3IDfOiHB.psL7GruKs1WrlzBi"
+    },
+    {
+      "_id": "Gk2VsqaKYVW12VGS",
+      "name": "Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {
+        "core": {
+          "sourceId": "Item.6XemchOYN2GUV4KG"
+        }
+      },
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Unharmed by gas; unaffected by charm, hold, and sleep spells.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!x06BjbeV3IDfOiHB.Gk2VsqaKYVW12VGS"
+    },
+    {
+      "_id": "fXFU7W2RB99H9tE8",
+      "name": "Initiative",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>-1 penalty due to stiff movement.</p>\n<p><em>Already reflected in monster statistics.</em></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!x06BjbeV3IDfOiHB.fXFU7W2RB99H9tE8"
+    },
+    {
+      "_id": "yWL33OQUvzDJgOva",
+      "name": "Flammable",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>-2 to saves against fire attacks; suffers one extra point of damage per die.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!x06BjbeV3IDfOiHB.yWL33OQUvzDJgOva"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Actor.48lKGoRrDuST91Z9"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 11,
+      "max": 11
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8+2",
+    "skill": 0,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 25,
+      "morale": 12,
+      "instinct": 5,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1",
+        "w": "1"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "zE0TcOWnGRE0SpQp"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 3,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Artificial beings constructed from different materials by mighty clerics or wizards.</p>\n<p>Amber golems are constructed in the form of giant cats (e.g. lions or tigers).</p>\n<ul>\n<li><strong>Other materials: </strong>Golems formed of other materials are also possible.</li>\n<li><strong style=\"font-family: var(--font-primary); font-size: var(--font-size-14);\">Constructing:</strong><span style=\"font-family: var(--font-primary); font-size: var(--font-size-14);\"> A very complex, expen</span>sive, and time-consuming process.</li>\n</ul>"
+  },
+  "prototypeToken": {
+    "name": "Wood Golem",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false,
+        "type": null
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {
+      "image-hover": {
+        "hideArt": false
+      },
+      "wall-height": {
+        "tokenHeight": 0
+      }
+    },
+    "randomImg": true,
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": "#ce8c46",
+      "scaleX": 0.6,
+      "scaleY": 0.6,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330842,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "x06BjbeV3IDfOiHB",
+  "_key": "!actors!x06BjbeV3IDfOiHB"
+}

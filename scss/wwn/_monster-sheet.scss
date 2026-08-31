@@ -1,0 +1,174 @@
+@use "../mixins" as *;
+
+/* NPC sheet — shared components + monster-specific layout */
+
+.wwn.actor.npc {
+  min-height: 565px;
+  min-width: 560px;
+
+  .wwn-npc-header {
+    .wwn-chip input[type="text"] {
+      width: 4rem;
+    }
+
+    .wwn-chip--grow {
+      flex: 1 1 auto;
+      min-width: 8rem;
+
+      input[type="text"] {
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 3rem;
+      }
+    }
+  }
+
+  .attributes-tab.active {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .wwn-npc-main {
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .wwn-npc-band--vitals {
+    display: grid;
+    grid-template-columns: 1fr min(16rem, 40%);
+    gap: 0.5rem;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .wwn-npc-saves {
+    min-width: 0;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .wwn-npc-combat-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .wwn-npc-stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 0.5rem;
+    align-items: start;
+
+    .wwn-save-value {
+      width: 100%;
+      min-width: 0;
+      text-align: center;
+    }
+  }
+
+  .wwn-npc-hp {
+    min-width: 0;
+
+    .wwn-resource-bars {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .wwn-resource-bar-box {
+      padding: 0.25rem 0.35rem;
+    }
+  }
+
+  .wwn-npc-main-lists {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+
+    @media (width < 48rem) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .wwn-npc-attacks,
+  .wwn-favorites-dock {
+    width: auto;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wwn-npc-attacks {
+    overflow: auto;
+
+    .wwn-collapsible,
+    .wwn-collapsible-body {
+      display: flex;
+      flex-direction: column;
+      min-height: min-content;
+    }
+
+    .item-list {
+      overflow: visible;
+    }
+  }
+
+  .wwn-favorites-dock .item-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .wwn-data-table .field-long.counter {
+    gap: 0.15rem;
+
+    input {
+      width: 1.75rem;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+  }
+
+  .notes-tab.active {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .notes-tab {
+    .wwn-form-stack {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .wwn-form-panel-fields {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Legacy attribute grid helpers (shared inventory lists) */
+  .header-details {
+    .summary {
+      @include wwn-check-field-reveal;
+
+      .treasure-table {
+        text-align: center;
+      }
+    }
+  }
+}

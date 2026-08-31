@@ -1,0 +1,200 @@
+{
+  "name": "Crocodile, Normal",
+  "type": "monster",
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.AcjPWCTaIJygcCUZ"
+    }
+  },
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "o1tkmagXG8R9xy0u",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 13
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!VyTF4bmZFzVkwSHn.o1tkmagXG8R9xy0u"
+    }
+  ],
+  "effects": [],
+  "system": {
+    "hp": {
+      "value": 9,
+      "max": 9
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8",
+    "skill": 1,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 20,
+      "morale": 7,
+      "instinct": 7,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "1d8"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "o1tkmagXG8R9xy0u"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 14,
+        "ranged": 14
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Large reptiles that are ungainly on land and live primarily in water, lurking just beneath the surface of subtropical swamps and lazy rivers. If hungry, attack any creatures that venture into the water.</p>"
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Crocodile",
+    "displayName": 30,
+    "width": 2,
+    "height": 2,
+    "lockRotation": false,
+    "rotation": 0,
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "randomImg": false,
+    "light": {
+      "dim": 0,
+      "bright": 0,
+      "angle": 360,
+      "color": null,
+      "alpha": 1,
+      "animation": {
+        "type": null,
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false
+      },
+      "coloration": 1,
+      "attenuation": 0.5,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "alpha": 1,
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330930,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "VyTF4bmZFzVkwSHn",
+  "_key": "!actors!VyTF4bmZFzVkwSHn"
+}

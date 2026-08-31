@@ -1,0 +1,156 @@
+{
+  "_id": "L1SCKdrApdr6UGkV",
+  "name": "Salt Devils",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "bz25n2ljUNZBAItn",
+      "name": "Limb Blades",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d10",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "4",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 2,
+          "max": 2
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!L1SCKdrApdr6UGkV.bz25n2ljUNZBAItn"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!L1SCKdrApdr6UGkV",
+  "system": {
+    "hp": {
+      "value": 23,
+      "max": 23
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "4d8",
+    "skill": 2,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 10,
+      "instinct": 5,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "bz25n2ljUNZBAItn"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 6,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 15,
+        "ranged": 15
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p>Found wherever brackish or befouled water is found, a salt devil resembles a pony-sized mantis shrimp with a rainbow shell. These voracious predators are almost transparent when submerged in water, but pounce to cleave prey with the huge blades of their two forelimbs.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Salt Devils",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "L1SCKdrApdr6UGkV",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

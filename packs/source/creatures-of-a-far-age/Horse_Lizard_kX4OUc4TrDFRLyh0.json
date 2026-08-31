@@ -1,0 +1,156 @@
+{
+  "_id": "kX4OUc4TrDFRLyh0",
+  "name": "Horse Lizard",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "WiQQzBMC32RZLg4M",
+      "name": "Bite/Claw",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d10",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!kX4OUc4TrDFRLyh0.WiQQzBMC32RZLg4M"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!kX4OUc4TrDFRLyh0",
+  "system": {
+    "hp": {
+      "value": 12,
+      "max": 12
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "3d8",
+    "skill": 2,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 8,
+      "instinct": 3,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1d4+1",
+        "w": "1d4+1"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "WiQQzBMC32RZLg4M"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 5,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 50
+      }
+    },
+    "biography": "<p>A feathered raptor named for its size, horse lizards hunt in packs of 1d4+1 creatures. They are unusually intelligent for animals and surprisingly disciplined in their hunts. Most are found in habitats of dense vegetation, though some have acclimated to arratu life.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Horse Lizard",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "kX4OUc4TrDFRLyh0",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

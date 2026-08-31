@@ -1,0 +1,97 @@
+{
+  "_id": "5iCg2YLnAF14tP7p",
+  "name": "Houri Concubine",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [],
+  "effects": [],
+  "_key": "!actors!5iCg2YLnAF14tP7p",
+  "system": {
+    "hp": {
+      "value": 4,
+      "max": 4
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d8",
+    "skill": 2,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 7,
+      "instinct": 8,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 0,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 10,
+        "ranged": 10
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": ""
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Houri Concubine",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "5iCg2YLnAF14tP7p",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

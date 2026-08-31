@@ -1,0 +1,156 @@
+{
+  "_id": "LYiwITy0SpHHU5qe",
+  "name": "Legion Hulk",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "W0UP1xTu6zRCcedO",
+      "name": "Fists",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "2d8+5",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "8",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 2,
+          "max": 2
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!LYiwITy0SpHHU5qe.W0UP1xTu6zRCcedO"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!LYiwITy0SpHHU5qe",
+  "system": {
+    "hp": {
+      "value": 45,
+      "max": 45
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "10d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 12,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "W0UP1xTu6zRCcedO"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 10,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 16,
+        "ranged": 16
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 20
+      }
+    },
+    "biography": "<p>Legion Hulks stand twelve feet tall, with spade-like hands and plowshare fingers fit to tear down walls, or build them up again if their handlers so instruct.</p>\n<p><strong>Note: </strong>All Brass Legion automatons are immune to damage from non-magical weapons or minor environmental hazards.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Scytheman",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "LYiwITy0SpHHU5qe",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

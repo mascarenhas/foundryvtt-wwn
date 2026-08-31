@@ -1,0 +1,46 @@
+{
+  "_id": "RGma6GCDJphOUbEI",
+  "name": "Truthspeaking",
+  "type": "item",
+  "img": "icons/tools/laboratory/vial-orange.webp",
+  "effects": [],
+  "folder": "ISFy2gTTPZEFeOUO",
+  "sort": 0,
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.magic-items.RGma6GCDJphOUbEI"
+    }
+  },
+  "system": {
+    "description": "<p>This potion is meant to be applied to a restrained, willing, or helpless sentient target. The user must envision a specific query before anointing the target with the potion. The subject may make a Mental saving throw to resist; on a failure, they tell the user a truthful, undeceptive answer to their question in no more than five sentences. On a success, the user&rsquo;s psychic impression has tainted the elixir, and the target will instead instinctively give the answer that the user thinks is most likely or plausible in the GM&rsquo;s estimation. The user cannot discern the result of the save except by their own good judgment of the answer.</p>",
+    "price": 0,
+    "weight": 1,
+    "quantity": 1,
+    "equipped": false,
+    "stowed": false,
+    "weightless": "whenStowed",
+    "containerId": "",
+    "treasure": false,
+    "charges": {
+      "value": 0,
+      "max": 0
+    },
+    "roll": "",
+    "container": {
+      "isContainer": false,
+      "isOpen": true
+    }
+  },
+  "ownership": {
+    "default": 0
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": null,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "_key": "!items!RGma6GCDJphOUbEI"
+}

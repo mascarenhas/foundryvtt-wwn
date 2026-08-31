@@ -1,0 +1,200 @@
+{
+  "name": "Rat, Giant",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "tmoOax43jFrftksb",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><strong>Disease:</strong> Bite has a 1-in-20 chance of infecting the target (Physical save). The disease has a 1-in-4 chance of being deadly (die in 1d6 days). Otherwise the victim is sick and bedridden for one month.</p>",
+        "damage": "1d3",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!BMYa1bhcj0J5P0el.tmoOax43jFrftksb"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.E43kBhr8Q7dgQNA1"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 4,
+      "max": 4
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d4",
+    "skill": 0,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 5,
+      "morale": 8,
+      "instinct": 7,
+      "instinctTable": null,
+      "appearing": {
+        "d": "2d6",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "tmoOax43jFrftksb"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p>3&rsquo; long (or larger), with black or grey fur. Often live in dark, dungeon areas and close to undead monsters.</p>\n<ul>\n<li><strong>Afraid of fire:</strong> Will flee fire, unless forced to fight by summoner.</li>\n<li><strong>Attacking in water: </strong>May attack without penalty; excellent swimmers.</li>\n</ul>"
+  },
+  "prototypeToken": {
+    "name": "Rat, Giant",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {},
+    "randomImg": false,
+    "light": {
+      "alpha": 0.25,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "attenuation": 0.5,
+      "color": null
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0,
+      "tint": null
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330974,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "BMYa1bhcj0J5P0el",
+  "_key": "!actors!BMYa1bhcj0J5P0el"
+}

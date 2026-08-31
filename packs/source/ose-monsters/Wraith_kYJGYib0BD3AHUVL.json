@@ -1,0 +1,332 @@
+{
+  "name": "Wraith",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "Cth3e7N5cn8UMqYw",
+      "name": "Touch",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><strong>Energy Drain:</strong> A successfully hit target gains system strain equal to the damage inflicted; Shock does not count as a successful hit. If this would take the target over their maximum, they instead permanently loses one experience level (or Hit Die). This incurs a loss of one Hit Die of hit points, as well as all other benefits due to the drained level (e.g. spells, saving throws, etc.). A character&rsquo;s XP is reduced to the lowest amount for the new level. A person drained of all levels becomes a wraith in one day, under the control of the wraith that killed them.</p>",
+        "damage": "1d6",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "physical",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!kYJGYib0BD3AHUVL.Cth3e7N5cn8UMqYw"
+    },
+    {
+      "_id": "deAI5tuSQGt6mwKs",
+      "name": "Energy Drain",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>A successfully hit target gains system strain equal to the damage inflicted; Shock does not count as a successful hit. If this would take the target over their maximum, they instead permanently loses one experience level (or Hit Die). This incurs a loss of one Hit Die of hit points, as well as all other benefits due to the drained level (e.g. spells, saving throws, etc.). A character&rsquo;s XP is reduced to the lowest amount for the new level. A person drained of all levels becomes a wraith in one day, under the control of the wraith that killed them.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "physical",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!kYJGYib0BD3AHUVL.deAI5tuSQGt6mwKs"
+    },
+    {
+      "_id": "pmuF8XG8z0rU3SH8",
+      "name": "Undead",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 600000,
+      "flags": {
+        "core": {
+          "sourceId": "Item.3kTnBNh8SrEqRuQy"
+        }
+      },
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Make no noise, until they attack. Immune to effects that affect living creatures (e.g. poison). Immune to mind-affecting or mind-reading spells (e.g. charm, hold, sleep).</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!kYJGYib0BD3AHUVL.pmuF8XG8z0rU3SH8"
+    },
+    {
+      "_id": "IiPTIwS7IuFLqkhH",
+      "name": "Mundane Damage Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {
+        "core": {
+          "sourceId": "Item.YMcGyb2HBZYMY1Hr"
+        }
+      },
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Only harmed by silver weapons or magic. Half damage from silver weapons.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!kYJGYib0BD3AHUVL.IiPTIwS7IuFLqkhH"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.N4oPBmBTuVhJhxJQ"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 18,
+      "max": 18
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "4d8",
+    "skill": 1,
+    "details": {
+      "alignment": "Chaotic",
+      "xp": 175,
+      "morale": 12,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1d4",
+        "w": "1d6"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "Cth3e7N5cn8UMqYw"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 4,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 17,
+        "ranged": 17
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Incorporeal, undead monsters that appear as pale, human-like forms of coalescing mist. Dwell in deserted regions or in the homes of former victims.</p>"
+  },
+  "prototypeToken": {
+    "name": "Wraith",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 0.7,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false,
+        "type": null
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {
+      "image-hover": {
+        "hideArt": false
+      }
+    },
+    "randomImg": false,
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331085,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "kYJGYib0BD3AHUVL",
+  "_key": "!actors!kYJGYib0BD3AHUVL"
+}

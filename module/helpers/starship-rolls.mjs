@@ -1,0 +1,346 @@
+/**
+ * Starship crew-station and weapon roll pipeline.
+ *
+ * Pure resolution/matching helpers (`resolveStation`, `findStationSkillItem`,
+ * `gunnerySkillName`, `bestAttributeMod`) live in `starship-crew.mjs` with no
+ * Foundry imports and are unit tested there. This module wires them to the
+ * live `WwnDice` / chat-card pipeline, so — like `module/dice/dice.mjs`
+ * itself — it isn't unit tested under plain Node; exercise it via manual QA.
+ */
+import { WwnDice } from "../dice/dice.mjs";
+import { RollParts, resolveSkillDiceFormula } from "../dice/roll-parts.mjs";
+import { WwnAttackRoll, WwnDamageRoll, WwnSkillRoll } from "../dice/rolls.mjs";
+import { createRollMessage, createNoticeMessage } from "../chat/chat-card.mjs";
+import { showWwnDialog, rollButton, cancelButton } from "../applications/wwn-dialog.mjs";
+import { isNpc } from "./actor-types.mjs";
+import { resolveChatAttackTarget } from "./attack-outcome.mjs";
+import {
+  DEFAULT_STATION_SKILL,
+  resolveStation,
+  findStationSkillItem,
+  gunnerySkillName,
+  bestAttributeMod,
+  npcStationSkillBonus,
+} from "./starship-crew.mjs";
+import { bridgeFocusBonusesForShip } from "./starship-focus-bonuses.mjs";
+import { postResolvedShipWeaponCard, combatantForStarship } from "../combat/starship/attack.mjs";
+
+/** Resolve a station against the live actor it points at (async `fromUuid`). */
+async function resolveStationLive(starship, stationKey) {
+  const stationData = starship.system.stations?.[stationKey] ?? {};
+  const actorUuid = stationData.actor ?? null;
+  const actor = actorUuid ? await fromUuid(actorUuid) : null;
+  return resolveStation(stationData, { getActor: () => actor });
+}
+
+/* -------------------------------------------- */
+/*  Department checks                           */
+/* -------------------------------------------- */
+
+/**
+ * Roll a crew department check: the assigned PC's default skill for that
+ * station (2d6 / 3d6kh2 from the skill item + level + attribute), an NPC's
+ * flat crew skill on 2d6, the station's NPC formula, or a warning if empty.
+ * @param {Actor} starship
+ * @param {string} stationKey
+ * @param {{skipDialog?: boolean}} [options]
+ */
+export async function rollStationCheck(starship, stationKey, { skipDialog = false } = {}) {
+  const resolved = await resolveStationLive(starship, stationKey);
+  const stationLabel = game.i18n.localize(`WWN.Starship.Station.${stationKey}`);
+  const title = `${starship.name}: ${stationLabel}`;
+
+  if (resolved.mode === "unassigned") {
+    return ui.notifications.warn(
+      game.i18n.format("WWN.Starship.StationUnassigned", { station: stationLabel })
+    );
+  }
+
+  if (resolved.mode === "formula") {
+    return WwnDice.rollFormula(starship, resolved.formula, { title });
+  }
+
+  const skillName = DEFAULT_STATION_SKILL[stationKey];
+  const skill = findStationSkillItem(resolved.actor.items, skillName);
+  if (skill) {
+    return WwnDice.rollSkill(resolved.actor, skill, { skipDialog, title });
+  }
+
+  // NPCs use a single crew-skill rating rather than per-skill items.
+  if (isNpc(resolved.actor)) {
+    return rollNpcStationCheck(resolved.actor, { title, skipDialog });
+  }
+
+  return ui.notifications.warn(
+    game.i18n.format("WWN.Starship.NoStationSkill", {
+      actor: resolved.actor.name,
+      skill: skillName,
+    })
+  );
+}
+
+/** 2d6 + NPC `system.skill` for department checks when no skill item exists. */
+async function rollNpcStationCheck(actor, { title, skipDialog = false } = {}) {
+  const prompt = await WwnDice.promptModifier({ title, skipDialog });
+  if (!prompt) return;
+
+  const parts = new RollParts().add(resolveSkillDiceFormula("2d6"), game.i18n.localize("WWN.Roll.SkillDice"));
+  parts.add(actor.system.skill ?? 0, game.i18n.localize("WWN.Roll.NpcSkill"));
+  parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+
+  const roll = await new WwnSkillRoll(parts.formula(), actor.getRollData(), { kind: "skill" }).evaluate();
+  return createRollMessage({
+    rolls: [roll],
+    kind: "skill",
+    actor,
+    title,
+    bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+    rollMeta: [{
+      label: game.i18n.localize("WWN.Roll.Formula"),
+      breakdown: parts.breakdown(),
+    }],
+  });
+}
+
+/* -------------------------------------------- */
+/*  Ship weapons                                */
+/* -------------------------------------------- */
+
+/**
+ * Evaluate ship weapon rolls; optionally post a hit/miss card.
+ * @returns {Promise<ChatMessage|object|undefined>}
+ */
+async function postShipWeaponCard({
+  starship,
+  weapon,
+  title,
+  attack,
+  damage,
+  rollData,
+  createMessage = true,
+  targetActor = null,
+}) {
+  const attackRoll = await new WwnAttackRoll(attack.formula(), rollData, { kind: "attack" }).evaluate();
+  const damageRoll = await new WwnDamageRoll(damage.formula(), rollData, { kind: "damage" }).evaluate();
+  const evaluated = {
+    attackRoll,
+    damageRoll,
+    attackTotal: attackRoll.total,
+    damageTotal: damageRoll.total,
+    attackBreakdown: attack.breakdown(),
+    damageBreakdown: damage.breakdown(),
+    title,
+  };
+  if (!createMessage) return evaluated;
+
+  const target = targetActor
+    ?? resolveChatAttackTarget(game.user?.targets).target?.actor
+    ?? null;
+  const combat = game.combat;
+  const attackerCombatant = combat ? combatantForStarship(combat, starship) : null;
+  const defenderCombatant = (combat && target)
+    ? combatantForStarship(combat, target)
+    : null;
+
+  return postResolvedShipWeaponCard({
+    starship,
+    weapon,
+    title,
+    attackRoll,
+    damageRoll,
+    attackBreakdown: attack.breakdown(),
+    damageBreakdown: damage.breakdown(),
+    targetActor: target,
+    attackerCombatant,
+    defenderCombatant,
+  });
+}
+
+/**
+ * Roll a ship weapon attack (always 1d20). Crewed by the gunnery station's
+ * linked PC (live AB / ability / skill) or by an NPC station formula, from
+ * which only the flat crew bonus is taken (e.g. `2d6+2` → +2 on the d20).
+ * @param {Actor} starship
+ * @param {Item} weapon
+ * @param {{skipDialog?: boolean, createMessage?: boolean, targetActor?: Actor|null}} [options]
+ */
+export async function rollShipWeapon(starship, weapon, {
+  skipDialog = false,
+  createMessage = true,
+  targetActor = null,
+} = {}) {
+  const resolved = await resolveStationLive(starship, "gunnery");
+  const stationLabel = game.i18n.localize("WWN.Starship.Station.gunnery");
+
+  if (resolved.mode === "unassigned") {
+    return ui.notifications.warn(
+      game.i18n.format("WWN.Starship.StationUnassigned", { station: stationLabel })
+    );
+  }
+
+  const crewLabel = resolved.mode === "actor"
+    ? resolved.actor.name
+    : game.i18n.localize("WWN.Starship.Npc");
+  const title = game.i18n.format("WWN.Starship.WeaponRollTitle", {
+    ship: starship.name,
+    station: stationLabel,
+    weapon: weapon.name,
+    crew: crewLabel,
+  });
+  const damageFormula = weapon.system.damage || "1d6";
+
+  if (resolved.mode === "formula") {
+    const prompt = await WwnDice.promptModifier({ title, skipDialog });
+    if (!prompt) return;
+    const attack = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
+    attack.add(npcStationSkillBonus(resolved.formula), stationLabel);
+    attack.add(weapon.system.attackBonus ?? 0, game.i18n.localize("WWN.Starship.AttackBonus"));
+    attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+    const damage = new RollParts(starship.getRollData()).add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
+    return postShipWeaponCard({
+      starship,
+      weapon,
+      title,
+      attack,
+      damage,
+      rollData: starship.getRollData(),
+      createMessage,
+      targetActor,
+    });
+  }
+
+  const actor = resolved.actor;
+  const skillName = gunnerySkillName(starship.system.hullClass);
+  const skill = findStationSkillItem(actor.items, skillName);
+  let skillLevel = -2;
+  if (skill) skillLevel = WwnDice.effectiveSkillLevel(actor, skill);
+  else if (isNpc(actor)) skillLevel = actor.system.skill ?? -2;
+  const attrMod = bestAttributeMod(actor.system.abilities);
+
+  const prompt = await WwnDice.promptModifier({ title, skipDialog });
+  if (!prompt) return;
+
+  const attack = new RollParts().add("1d20", game.i18n.localize("WWN.Roll.Die"));
+  attack.add(actor.system.combat?.ab ?? 0, game.i18n.localize("WWN.Roll.AttackBonus"));
+  attack.add(attrMod, game.i18n.localize("WWN.Starship.IntDex"));
+  attack.add(skillLevel, skill?.name ?? skillName);
+  attack.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+
+  const damage = new RollParts(actor.getRollData()).add(damageFormula, game.i18n.localize("WWN.Roll.WeaponDamage"));
+  damage.add(attrMod, game.i18n.localize("WWN.Starship.IntDex"));
+
+  return postShipWeaponCard({
+    starship,
+    weapon,
+    title,
+    attack,
+    damage,
+    rollData: actor.getRollData(),
+    createMessage,
+    targetActor,
+  });
+}
+
+/* -------------------------------------------- */
+/*  Spike drill                                 */
+/* -------------------------------------------- */
+
+/**
+ * Dedicated spike-drill check (bridge Pilot). Honors Starfarer AE flags.
+ * @param {Actor} starship
+ * @param {{ difficulty?: number, skipDialog?: boolean }} [options]
+ */
+export async function rollSpikeDrill(starship, { difficulty, skipDialog = false } = {}) {
+  const bonuses = await bridgeFocusBonusesForShip(starship);
+  const stationLabel = game.i18n.localize("WWN.Starship.Station.bridge");
+  const title = game.i18n.format("WWN.Starship.SpikeDrillTitle", { ship: starship.name });
+
+  const resolved = await resolveStationLive(starship, "bridge");
+  if (resolved.mode === "unassigned") {
+    return ui.notifications.warn(
+      game.i18n.format("WWN.Starship.StationUnassigned", { station: stationLabel }),
+    );
+  }
+
+  let diff = difficulty;
+  if (diff == null || !Number.isFinite(Number(diff))) {
+    if (skipDialog) diff = 0;
+    else {
+      const result = await showWwnDialog({
+        modifier: "spike-drill",
+        title,
+        template: "systems/wwn/templates/dialog/spike-drill.hbs",
+        context: {
+          difficulty: 10,
+          autoThreshold: bonuses.spikeDrillAutoSucceedDiff,
+        },
+        buttons: [rollButton(), cancelButton()],
+      });
+      if (!result || result === "cancel") return;
+      diff = Number(result.difficulty) || 0;
+    }
+  }
+
+  if (
+    bonuses.spikeDrillAutoSucceedDiff > 0 &&
+    diff <= bonuses.spikeDrillAutoSucceedDiff
+  ) {
+    return createNoticeMessage({
+      title,
+      actor: resolved.mode === "actor" ? resolved.actor : starship,
+      body: game.i18n.format("WWN.Starship.SpikeDrillAutoSuccess", {
+        difficulty: diff,
+        threshold: bonuses.spikeDrillAutoSucceedDiff,
+      }),
+      flags: { kind: "spike-drill" },
+    });
+  }
+
+  if (resolved.mode === "formula") {
+    return WwnDice.rollFormula(starship, resolved.formula, { title });
+  }
+
+  const actor = resolved.actor;
+  const skillName = DEFAULT_STATION_SKILL.bridge;
+  const skill = findStationSkillItem(actor.items, skillName);
+  if (!skill && !isNpc(actor)) {
+    return ui.notifications.warn(
+      game.i18n.format("WWN.Starship.NoStationSkill", {
+        actor: actor.name,
+        skill: skillName,
+      }),
+    );
+  }
+
+  // Temporarily double Pilot skill level for the check when Starfarer L2 applies.
+  if (bonuses.spikeDrillDoublePilot && skill) {
+    const baseLevel = WwnDice.effectiveSkillLevel(actor, skill);
+    const doubled = baseLevel * 2;
+    const prompt = await WwnDice.promptModifier({ title, skipDialog });
+    if (!prompt) return;
+    const parts = new RollParts().add(
+      resolveSkillDiceFormula(skill.system?.skillDice || "2d6"),
+      game.i18n.localize("WWN.Roll.SkillDice"),
+    );
+    parts.add(doubled, game.i18n.localize("WWN.Starship.SpikeDrillDoublePilot"));
+    const attrKey = skill.system?.score || "int";
+    parts.add(actor.system.abilities?.[attrKey]?.mod ?? 0, attrKey.toUpperCase());
+    parts.add(prompt.modifier, game.i18n.localize("WWN.Roll.Situational"));
+    const roll = await new WwnSkillRoll(parts.formula(), actor.getRollData(), { kind: "skill" }).evaluate();
+    return createRollMessage({
+      rolls: [roll],
+      kind: "skill",
+      actor,
+      title,
+      bodyTemplate: "systems/wwn/templates/chat/simple-roll.hbs",
+      rollMeta: [{
+        label: game.i18n.localize("WWN.Roll.Formula"),
+        breakdown: parts.breakdown(),
+      }],
+    });
+  }
+
+  if (skill) return WwnDice.rollSkill(actor, skill, { skipDialog, title });
+  return rollNpcStationCheck(actor, { title, skipDialog });
+}
+

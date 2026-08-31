@@ -1,0 +1,36 @@
+<div class="wwn-chat-card{{#if defaultHealing}} wwn-heal-mode{{/if}}" data-heal="{{#if defaultHealing}}true{{else}}false{{/if}}" data-multiplier="1">
+  <header class="wwn-chat-header">
+    {{#if img}}<img src="{{img}}" class="wwn-chat-img" alt="" />{{/if}}
+    <div class="wwn-chat-titles">
+      <div class="wwn-chat-title">{{title}}</div>
+      {{#if subtitle}}<div class="wwn-chat-subtitle">{{subtitle}}</div>{{/if}}
+    </div>
+    {{#if badge}}
+    <span class="wwn-badge wwn-badge--{{badge.type}}">{{badge.label}}</span>
+    {{/if}}
+  </header>
+  {{#if description}}
+  <div class="wwn-chat-desc-drawer collapsed">
+    <button type="button" class="wwn-chat-desc-toggle" data-action="toggleDescription" aria-expanded="false">
+      <i class="fas fa-caret-down wwn-caret" aria-hidden="true"></i>
+      <span>{{localize "WWN.Tabs.Description"}}</span>
+    </button>
+    <div class="wwn-chat-desc-body">
+      <div class="wwn-chat-desc">{{{description}}}</div>
+    </div>
+  </div>
+  {{/if}}
+  {{#if rollRows.length}}
+  <table class="wwn-chat-rolls">
+    {{#each rollRows}}
+    {{> wwnChatRollRow}}
+    {{/each}}
+  </table>
+  {{/if}}
+  <div class="wwn-chat-body">
+    {{{body}}}
+  </div>
+  {{#if footer}}
+  <footer class="wwn-chat-footer">{{{footer}}}</footer>
+  {{/if}}
+</div>

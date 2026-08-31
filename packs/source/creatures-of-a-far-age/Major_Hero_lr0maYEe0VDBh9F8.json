@@ -1,0 +1,97 @@
+{
+  "_id": "lr0maYEe0VDBh9F8",
+  "name": "Major Hero",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [],
+  "effects": [],
+  "_key": "!actors!lr0maYEe0VDBh9F8",
+  "system": {
+    "hp": {
+      "value": 45,
+      "max": 45
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "10d8",
+    "skill": 3,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 10,
+      "instinct": 2,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": ""
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 12,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 18,
+        "ranged": 18
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Two attacks per round. Shock ignores AC value.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Major Hero",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "lr0maYEe0VDBh9F8",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

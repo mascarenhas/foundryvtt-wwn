@@ -1,0 +1,162 @@
+/* Header resource / XP fill bars (CSS grid). Label above; value/max over the fill. */
+
+.wwn-resource-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.wwn-resource-bar-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.25rem 0.4rem;
+
+  &--xp {
+    min-width: 0;
+  }
+}
+
+.wwn-resource-bar-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--wwn-text-muted, var(--wwn-dark-alt));
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.wwn-resource-bar-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.wwn-xp-bonus {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--wwn-accent-strong, var(--wwn-border-theme, var(--wwn-border)));
+  opacity: 0.95;
+}
+
+.wwn-resource-bar-values {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 0;
+  pointer-events: none;
+
+  .sep {
+    opacity: 0.7;
+  }
+}
+
+/* Beat global .wwn .window-content input border/background reset */
+.wwn.wwn-sheet {
+  .wwn-resource-bar-values input {
+    --input-height: 1.15rem;
+    pointer-events: auto;
+    width: 2.25rem;
+    height: var(--input-height);
+    min-height: 0;
+    padding: 0 0.15rem;
+    font-size: 0.8rem;
+    line-height: var(--input-height);
+    text-align: center;
+    color: var(--wwn-text, var(--wwn-dark-alt));
+    background: color-mix(in srgb, var(--wwn-bg-solid, #f5f2e8) 55%, transparent);
+    border: none;
+    border-radius: 0.15rem;
+    box-sizing: border-box;
+    appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+
+    &:hover:not(:disabled),
+    &:focus:not(:disabled) {
+      box-shadow: none;
+      background: color-mix(in srgb, var(--wwn-bg-solid, #f5f2e8) 75%, transparent);
+    }
+  }
+
+  .wwn-resource-bar-values > span:not(.sep) {
+    min-width: 1.5rem;
+    padding: 0 0.15rem;
+    font-size: 0.8rem;
+    line-height: 1.15rem;
+    text-align: center;
+    background: color-mix(in srgb, var(--wwn-bg-solid, #f5f2e8) 55%, transparent);
+    border-radius: 0.15rem;
+  }
+
+  .wwn-resource-bar-box--xp .wwn-resource-bar-values input {
+    width: auto;
+    min-width: 2.75rem;
+    max-width: 6rem;
+    field-sizing: content;
+  }
+}
+
+.wwn-resource-bar {
+  position: relative;
+  z-index: 0;
+  height: 1.35rem;
+  border-radius: 9999px;
+  background: var(--wwn-bar-track, rgba(0, 0, 0, 0.15));
+  overflow: hidden;
+  flex: 0 0 auto;
+
+  &-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 0;
+    width: var(--wwn-bar-pct, 0%);
+    border-radius: 9999px;
+    transition: width 150ms ease-out;
+    background: var(--wwn-bar-positive, #7da661);
+  }
+
+  &--positive .wwn-resource-bar-fill {
+    background: var(--wwn-bar-positive, #7da661);
+  }
+
+  &--negative .wwn-resource-bar-fill {
+    background: var(--wwn-bar-negative, #b5532e);
+  }
+
+  &--alienation .wwn-resource-bar-fill {
+    background: var(--wwn-bar-alienation, #7b5ea7);
+  }
+
+  &--stress .wwn-resource-bar-fill {
+    background: var(--wwn-bar-stress, #c99a2e);
+  }
+
+  &--overflow .wwn-resource-bar-fill {
+    background: var(--wwn-bar-overflow, #b3261e);
+  }
+
+  &--xp .wwn-resource-bar-fill {
+    background: var(--wwn-accent-strong, var(--wwn-bar-positive, #8a7a2e));
+  }
+}

@@ -1,0 +1,191 @@
+import WwnItemBase from "./base.mjs";
+import { PhysicalDataMixin } from "../mixins/physical.mjs";
+import { mergeFormulaMod } from "../../derivations/item-formulas.mjs";
+import { AMMO_MODES, mapWeaponAmmoMigration, resolveLinkedAmmo } from "../../helpers/ammo.mjs";
+import {
+  normalizeWeaponArtFallback,
+  resolveLinkedArt,
+} from "../../helpers/weapon-art.mjs";
+
+const fields = foundry.data.fields;
+
+/**
+ * Weapon. Skill, Art, and ammo are linked by item ID with name fallback.
+ */
+export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
+  /** @override */
+  static migrateData(source) {
+    source = super.migrateData(source);
+    if (!source || typeof source !== "object") return source;
+
+    // Coerce legacy blank / non-numeric shock AC before NumberField validation.
+    if (source.shock && typeof source.shock === "object") {
+      const ac = source.shock.ac;
+      if (ac === "" || ac === null || ac === undefined || Number.isNaN(Number(ac))) {
+        source.shock.ac = 15;
+      } else {
+        source.shock.ac = Number(ac);
+      }
+    }
+
+    // Pre-migration sheets wrote `system.skill`; the schema now uses skillFallback.
+    if (typeof source.skill === "string") {
+      if (!source.skillFallback) source.skillFallback = source.skill;
+      delete source.skill;
+    }
+    delete source.skillDamage;
+
+    // The Dark Sun fork linked attacks to Arts by name in `system.art`.
+    // Preserve that value before the strict v2 schema discards unknown fields.
+    if (Object.hasOwn(source, "art")) {
+      if (!source.artFallback) {
+        source.artFallback = normalizeWeaponArtFallback(source.art);
+      }
+      delete source.art;
+    }
+    source.artId ??= "";
+    source.artFallback = normalizeWeaponArtFallback(source.artFallback);
+
+    const needs =
+      source.ammoMode === undefined ||
+      source.ammoFallback === undefined ||
+      source.charges?.decrementOnAttack !== undefined ||
+      typeof source.ammo === "string";
+    if (!needs) return source;
+    const mapped = mapWeaponAmmoMigration(source);
+    source.ammoMode = mapped.ammoMode;
+    source.ammoId = mapped.ammoId || source.ammoId || "";
+    source.ammoFallback = mapped.ammoFallback;
+    source.charges = { ...(source.charges ?? {}), ...mapped.charges };
+    delete source.charges.decrementOnAttack;
+    delete source.ammo;
+    return source;
+  }
+
+  static defineSchema() {
+    const requiredInteger = { required: true, nullable: false, integer: true };
+    const schema = super.defineSchema();
+
+    schema.damage = new fields.StringField({ required: true, initial: "1d6" });
+    schema.bonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
+    schema.shock = new fields.SchemaField({
+      damage: new fields.StringField({ required: true, blank: true, initial: "" }),
+      ac: new fields.NumberField({ ...requiredInteger, initial: 15 }),
+    });
+
+    schema.trauma = new fields.SchemaField({
+      die: new fields.StringField({ required: true, blank: true, initial: "1d6" }),
+      rating: new fields.NumberField({ ...requiredInteger, initial: 2 }),
+    });
+
+    // Linked skill item id; name fallback retained for migration edge cases.
+    schema.skillId = new fields.StringField({ required: true, blank: true });
+    schema.skillFallback = new fields.StringField({ required: true, blank: true });
+    schema.artId = new fields.StringField({ required: true, blank: true });
+    schema.artFallback = new fields.StringField({ required: true, blank: true });
+    schema.score = new fields.StringField({ required: true, initial: "str" });
+
+    schema.melee = new fields.BooleanField({ initial: true });
+    schema.missile = new fields.BooleanField({ initial: false });
+    schema.slow = new fields.BooleanField({ initial: false });
+    schema.burst = new fields.BooleanField({ initial: false });
+    /** Tech level (0–3 primitive; 4+ advanced). Default 0 = primitive. */
+    schema.tl = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    /** Firearms (and hurlants) ignore TL≤2 non-magical armor/shields for hit rolls. */
+    schema.firearm = new fields.BooleanField({ initial: false });
+
+    schema.range = new fields.SchemaField({
+      short: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      medium: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      long: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    });
+
+    schema.save = new fields.StringField({ required: true, blank: true });
+    schema.tags = new fields.ArrayField(new fields.StringField(), { required: true, initial: [] });
+
+    schema.ammoMode = new fields.StringField({
+      required: true,
+      choices: Object.values(AMMO_MODES),
+      initial: AMMO_MODES.none,
+    });
+    schema.ammoId = new fields.StringField({ required: true, blank: true });
+    schema.ammoFallback = new fields.StringField({ required: true, blank: true });
+
+    schema.charges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    });
+
+    schema.counter = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 1 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 1 }),
+    });
+
+    return schema;
+  }
+
+  /** Resolve the linked skill item on the owning actor. */
+  get linkedSkill() {
+    const actor = this.parent?.actor;
+    if (!actor) return null;
+    if (this.skillId) {
+      const skill = actor.items.get(this.skillId);
+      if (skill) return skill;
+    }
+    if (this.skillFallback) {
+      return actor.items.find(
+        (i) => i.type === "skill" && i.name.toLowerCase() === this.skillFallback.toLowerCase()
+      ) ?? null;
+    }
+    return null;
+  }
+
+  /** Resolve the linked ammo item on the owning actor. */
+  get linkedAmmo() {
+    const actor = this.parent?.actor;
+    if (!actor) return null;
+    return resolveLinkedAmmo(actor.items, {
+      ammoId: this.ammoId,
+      ammoFallback: this.ammoFallback,
+    });
+  }
+
+  /** Resolve the linked Art power on the owning actor. */
+  get linkedArt() {
+    const actor = this.parent?.actor;
+    if (!actor) return null;
+    return resolveLinkedArt(actor.items, {
+      artId: this.artId,
+      artFallback: this.artFallback,
+    });
+  }
+
+  /** @override */
+  prepareBaseData() {
+    super.prepareBaseData();
+    this.bonusMod = 0;
+    this.damageMod = 0;
+    this.shock ??= {};
+    this.shock.damageMod = 0;
+    this.shock.acMod = 0;
+    this.trauma ??= {};
+    this.trauma.ratingMod = 0;
+    this.charges ??= {};
+    this.charges.maxMod = 0;
+  }
+
+  /** @override */
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    this.parent?.applyItemActiveEffects?.("final");
+
+    this.bonusValue = (this.bonus ?? 0) + (this.bonusMod ?? 0);
+    this.shockAcValue = (this.shock?.ac ?? 0) + (this.shock?.acMod ?? 0);
+    this.traumaRatingValue = (this.trauma?.rating ?? 0) + (this.trauma?.ratingMod ?? 0);
+    this.charges.maxValue = (this.charges?.max ?? 0) + (this.charges?.maxMod ?? 0);
+
+    this.damageDisplay = mergeFormulaMod(this.damage, this.damageMod);
+    this.shockDamageDisplay = mergeFormulaMod(this.shock?.damage, this.shock?.damageMod);
+  }
+}

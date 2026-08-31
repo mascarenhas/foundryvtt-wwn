@@ -1,0 +1,320 @@
+{
+  "name": "Pixie",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "1eoXKBneck97QgX2",
+      "name": "Tiny Dagger",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d4",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "1",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!1PXQCqQ2s6QJllSz.1eoXKBneck97QgX2"
+    },
+    {
+      "_id": "gvhPwyyH06hmMsYC",
+      "name": "Invisible",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Naturally invisible, but may choose to reveal themselves. May remain invisible when attacking: cannot be attacked in the first round; in subsequent rounds, may be attacked at &ndash;2 to hit (locatable by faint shadows and air movement).</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!1PXQCqQ2s6QJllSz.gvhPwyyH06hmMsYC"
+    },
+    {
+      "_id": "61D8D4pk9fFsK0EG",
+      "name": "Surprise",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Always surprise, if invisible.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!1PXQCqQ2s6QJllSz.61D8D4pk9fFsK0EG"
+    },
+    {
+      "_id": "uw1jGLbKZC7qHaH5",
+      "name": "Limited Flight",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Small wings only allow 3 turns of flight. Must rest 1 turn after flying.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!1PXQCqQ2s6QJllSz.uw1jGLbKZC7qHaH5"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Actor.9qbpp4eYLWt2MXYg"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 2,
+      "max": 2
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d8",
+    "skill": 1,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 13,
+      "morale": 7,
+      "instinct": 1,
+      "instinctTable": null,
+      "appearing": {
+        "d": "2d4",
+        "w": "1d4 * 10"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "1eoXKBneck97QgX2"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 14,
+        "ranged": 14
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 60
+      }
+    },
+    "biography": "<p>1&ndash;2&rsquo; tall humanoids with insectoid wings. Distant relatives of elves.</p>"
+  },
+  "prototypeToken": {
+    "name": "Pixie",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {},
+    "randomImg": true,
+    "light": {
+      "alpha": 0.25,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331560,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "1PXQCqQ2s6QJllSz",
+  "_key": "!actors!1PXQCqQ2s6QJllSz"
+}

@@ -1,14 +1,32 @@
 /**
  * @file System-level modifications to the way combat works
  */
-import { WWN } from "../config.js"
+import { WWN } from "../config/index.mjs"
 import WWNCombatGroupSelector from "./combat-set-groups.js"
+import { findAdjacentGroupTurn } from "./side-collapse.mjs"
+import { isNpc } from "../helpers/actor-types.mjs";
+import { applyEndOfTurnAdjacentShock } from "../helpers/end-of-turn-shock.mjs";
+import {
+  applyStarshipCombatBonusHp,
+  clearStarshipCombatBonusHp,
+} from "../helpers/starship-combat-hp.mjs";
+import { encounterKindFromCombatants } from "./encounter-kind.mjs";
+import {
+  onStarshipCombatStart,
+  onStarshipTurnStart,
+  onStarshipTurnEnd,
+} from "./starship/lifecycle.mjs";
+import { starshipActorsToClearOnCombatDelete } from "./starship/combat-delete-cleanup.mjs";
+import {
+  starshipInitiativeFormula,
+  compareStarshipInitiativeTie,
+} from "./starship/initiative.mjs";
 
 /**
  * An extension of Foundry's Combat class that implements initiative for individual combatants.
  */
 export class WWNCombat extends foundry.documents.Combat {
-  static FORMULA = "@initiative.roll + @initiative.value"
+  static FORMULA = "@initiativeRoll + @init"
 
   static get GROUPS() {
     return {
@@ -17,6 +35,18 @@ export class WWNCombat extends foundry.documents.Combat {
   }
 
   #combatantGroups = new Map()
+
+  /**
+   * Encounter kind from combatants in THIS combat only.
+   * @returns {"empty"|"starship"|"faction"|"personal"}
+   */
+  get encounterKind() {
+    return encounterKindFromCombatants(this.combatants);
+  }
+
+  get isStarshipEncounter() {
+    return this.encounterKind === "starship";
+  }
 
   // ===========================================================================
   // INITIATIVE MANAGEMENT
@@ -27,7 +57,79 @@ export class WWNCombat extends foundry.documents.Combat {
   }
 
   get isGroupInitiative() {
+    if (this.isStarshipEncounter) return false;
     return game.settings.get(game.system.id, "initiative") === "group";
+  }
+
+  /**
+   * Group initiative + collapse-sides setting: side-skip turns and nested tracker.
+   * @returns {boolean}
+   */
+  get isSideCollapseEnabled() {
+    return (
+      this.isGroupInitiative &&
+      game.settings.get(game.system.id, "collapseSidesInGroupInitiative") === true
+    );
+  }
+
+  /**
+   * Descriptors used by side-collapse turn helpers.
+   * @returns {{ id: string, groupId: string|null, isDefeated: boolean }[]}
+   */
+  #sideCollapseTurns() {
+    return this.turns.map(c => ({
+      id: c.id,
+      groupId: c.group?.id ?? null,
+      isDefeated: c.isDefeated
+    }));
+  }
+
+  /** @inheritDoc */
+  async nextTurn() {
+    if (!this.isSideCollapseEnabled) return super.nextTurn();
+    if (this.round === 0) return this.nextRound();
+
+    const result = findAdjacentGroupTurn({
+      turns: this.#sideCollapseTurns(),
+      currentTurnIndex: this.turn,
+      direction: 1,
+      skipDefeated: this.settings.skipDefeated
+    });
+
+    if (result.kind === "none") return this.nextRound();
+    if (result.kind === "round") return this.nextRound();
+
+    const nextTurn = result.turnIndex;
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, nextTurn);
+    const updateData = { round: this.round, turn: nextTurn };
+    const updateOptions = { direction: 1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
+  }
+
+  /** @inheritDoc */
+  async previousTurn() {
+    if (!this.isSideCollapseEnabled) return super.previousTurn();
+    if (this.round === 0) return this;
+
+    const result = findAdjacentGroupTurn({
+      turns: this.#sideCollapseTurns(),
+      currentTurnIndex: this.turn,
+      direction: -1,
+      skipDefeated: this.settings.skipDefeated
+    });
+
+    if (result.kind === "none") return this;
+    if (result.kind === "round") return this.previousRound();
+
+    const previousTurn = result.turnIndex;
+    const advanceTime = this.getTimeDelta(this.round, this.turn, this.round, previousTurn);
+    const updateData = { round: this.round, turn: previousTurn };
+    const updateOptions = { direction: -1, worldTime: { delta: advanceTime } };
+    Hooks.callAll("combatTurn", this, updateData, updateOptions);
+    await this.update(updateData, updateOptions);
+    return this;
   }
 
   async _getGroupInitiativeData(group, olderSiblingGroup, { excludeAlreadyRolled = false } = {}) {
@@ -40,28 +142,26 @@ export class WWNCombat extends foundry.documents.Combat {
 
     let initRoll;
     let maxInitValue = -Infinity;
-    const hasAlert = [...group.members].some(combatant => {
-      const items = combatant.token?.delta?.syntheticActor?.items ?? [];
-      return items.find(i => i.name === "Alert" && i.system?.ownedLevel === 1);
+    // AE-seeded init: group.mod >= 1 ≈ Alert L1; individual/group mod >= 100 ≈ Alert L2 / Vigilant
+    const hasAlert = [...group.members].some((combatant) => {
+      const init = combatant.actor?.system?.combat?.initiative;
+      return (Number(init?.group?.mod) || 0) >= 1 && (Number(init?.individual?.mod) || 0) < 100;
     });
-    const hasTopCombatant = [...group.members].some(combatant => {
-      const items = combatant.token?.delta?.syntheticActor?.items ?? [];
-      return items.some(i =>
-        (i.name === "Alert" && i.system?.ownedLevel === 2) ||
-        i.name === "Vigilant"
-      );
+    const hasTopCombatant = [...group.members].some((combatant) => {
+      const init = combatant.actor?.system?.combat?.initiative;
+      return (Number(init?.individual?.mod) || 0) >= 100 || (Number(init?.group?.mod) || 0) >= 100;
     });
 
     const allMembers = olderSiblingGroup
       ? [...group.members, ...olderSiblingGroup.members]
       : [...group.members];
     for (const combatant of allMembers) {
-      const data = combatant.token?.delta?.syntheticActor?.system;
-      if (!data?.initiative) continue;
+      const init = combatant.actor?.system?.combat?.initiative;
+      if (!init) continue;
 
-      const initValue = data.initiative.value ?? -Infinity;
+      const initValue = init.group?.value ?? init.value ?? -Infinity;
       if (initValue > maxInitValue) maxInitValue = initValue;
-      if (!initRoll) initRoll = data.initiative.roll;
+      if (!initRoll) initRoll = init.group?.roll ?? init.roll ?? "1d8";
     }
 
     if (maxInitValue === -Infinity) maxInitValue = 0;
@@ -136,25 +236,27 @@ export class WWNCombat extends foundry.documents.Combat {
     if (!this.isGroupInitiative) {
       return await super.rollInitiative(ids, { formula, updateTurn, messageOptions });
     }
-    ids = typeof ids === "string" ? [ids] : ids;
-    if (ids.size > 1) return;
+    ids = typeof ids === "string" ? [ids] : (ids ?? []);
+    if (!Array.isArray(ids) || ids.length !== 1) return;
     const combatant = this.combatants.get(ids[0]);
+    if (!combatant?.group) return;
     const group = combatant.group;
     const olderSiblingGroup = this.groups.find(g => g.name === group.name + "*");
-    const data = await this._getGroupInitiativeData(group, olderSiblingGroup);
-    if (!data) return;
-    if (game.user.isGM) {
-      await this.updateEmbeddedDocuments("CombatantGroup", data.combatantGroupUpdates);
-      await this.updateEmbeddedDocuments("Combatant", data.combatantUpdates);
-    } else {
+    if (!game.user.isGM) {
+      // GM re-rolls and posts the chat card so clients cannot supply totals.
       game.socket.emit("system.wwn", {
         action: "updateGroupInitiative",
         data: {
-          combatantGroupUpdates: data.combatantGroupUpdates,
-          combatantUpdates: data.combatantUpdates
-        }
+          combatId: this.id,
+          combatantId: combatant.id,
+        },
       });
+      return;
     }
+    const data = await this._getGroupInitiativeData(group, olderSiblingGroup);
+    if (!data) return;
+    await this.updateEmbeddedDocuments("CombatantGroup", data.combatantGroupUpdates);
+    await this.updateEmbeddedDocuments("Combatant", data.combatantUpdates);
     await foundry.documents.ChatMessage.implementation.create(data.chatMessage);
   }
 
@@ -179,8 +281,9 @@ export class WWNCombat extends foundry.documents.Combat {
       const olderSiblingGroup = this.groups.find(g => g.name === group.name + "*");
 
       if (excludePCGroups) {
-        let hasPC = [...group.members].some(c => !c.isNPC);
-        hasPC = hasPC || [...olderSiblingGroup.members].some(c => !c.isNPC);
+        const membersHavePc = (members) => [...members].some((c) => !isNpc(c.actor));
+        let hasPC = membersHavePc(group.members);
+        if (olderSiblingGroup) hasPC = hasPC || membersHavePc(olderSiblingGroup.members);
         if (hasPC) continue;
       }
       const data = await this._getGroupInitiativeData(group, olderSiblingGroup, { excludeAlreadyRolled });
@@ -238,13 +341,105 @@ export class WWNCombat extends foundry.documents.Combat {
   /** @inheritDoc */
   async startCombat() {
     await super.startCombat()
+    if (this.isStarshipEncounter) {
+      await this.#rollStarshipInitiative({ excludeAlreadyRolled: true });
+      await onStarshipCombatStart(this);
+      for (const c of this.combatants) {
+        if (c.actor?.type === "starship") await applyStarshipCombatBonusHp(c.actor);
+      }
+      return this;
+    }
     await this.smartRerollInitiative({ excludeAlreadyRolled: true })
+    for (const c of this.combatants) {
+      if (c.actor?.type === "starship") await applyStarshipCombatBonusHp(c.actor);
+    }
     return this
+  }
+
+  /**
+   * Starship initiative: 1d8 + bridge Int/Dex, once per engagement. PCs win ties.
+   * @param {{ excludeAlreadyRolled?: boolean }} [opts]
+   */
+  async #rollStarshipInitiative({ excludeAlreadyRolled = false } = {}) {
+    const updates = [];
+    const combatants = this.combatants.filter(
+      (c) => !c.defeated && (!excludeAlreadyRolled || c.initiative === null),
+    );
+    for (const c of combatants) {
+      if (c.actor?.type !== "starship") continue;
+      const formula = starshipInitiativeFormula(c.actor);
+      const roll = await new Roll(formula).evaluate();
+      await roll.toMessage({
+        speaker: ChatMessage.getSpeaker({ actor: c.actor }),
+        flavor: game.i18n.format("WWN.Starship.InitiativeRoll", { name: c.name }),
+      });
+      updates.push({ _id: c.id, initiative: roll.total });
+    }
+    if (updates.length) {
+      await this.updateEmbeddedDocuments("Combatant", updates);
+      // PC tie-break: if two ships share initiative, bump PC bridge slightly
+      const byInit = new Map();
+      for (const c of this.combatants) {
+        if (c.initiative == null) continue;
+        const key = Number(c.initiative);
+        if (!byInit.has(key)) byInit.set(key, []);
+        byInit.get(key).push(c);
+      }
+      const tieUpdates = [];
+      for (const [, group] of byInit) {
+        if (group.length < 2) continue;
+        group.sort(compareStarshipInitiativeTie);
+        // First in sorted order (PC) keeps value; others get -0.01 * rank
+        for (let i = 1; i < group.length; i++) {
+          tieUpdates.push({
+            _id: group[i].id,
+            initiative: Number(group[i].initiative) - 0.01 * i,
+          });
+        }
+      }
+      if (tieUpdates.length) await this.updateEmbeddedDocuments("Combatant", tieUpdates);
+    }
+    this.setupTurns();
+    await ui.combat?.render(true);
+  }
+
+  /** @inheritDoc */
+  async _onStartTurn(combatant, context) {
+    await super._onStartTurn(combatant, context);
+    if (combatant) await combatant.unsetFlag("wwn", "attackedThisTurn");
+    if (this.isStarshipEncounter && combatant?.actor?.type === "starship") {
+      await onStarshipTurnStart(combatant);
+      combatant.actor?.sheet?.render?.(false);
+    }
+  }
+
+  /** @inheritDoc */
+  async _onEndTurn(combatant, context) {
+    await super._onEndTurn(combatant, context);
+    if (this.isStarshipEncounter && combatant?.actor?.type === "starship") {
+      await onStarshipTurnEnd(combatant, this.round ?? 1);
+      combatant.actor?.sheet?.render?.(false);
+      return;
+    }
+    if (combatant) {
+      try {
+        await applyEndOfTurnAdjacentShock(combatant);
+      } catch (err) {
+        console.error("WWN | End-of-turn Shock failed:", err);
+      }
+    }
   }
 
   /** @inheritDoc */
   async _onEndRound(context) {
     await super._onEndRound(context)
+    if (this.isStarshipEncounter) {
+      for (const c of this.combatants) {
+        await c.unsetFlag("wwn", "meleeHitThisRound");
+        await c.unsetFlag("wwn", "attackedThisTurn");
+      }
+      return;
+    }
     if (context?.round) {
       switch (this.#rerollBehavior) {
         case "reset":
@@ -258,11 +453,35 @@ export class WWNCombat extends foundry.documents.Combat {
       }
     }
 
-    const npcs = this.combatants.filter(c => c.actor.type === "monster");
-    npcs.forEach(npc => {
-      const weapons = npc.token?.delta?.syntheticActor?.items.filter(i => i.type === "weapon");
-      weapons.forEach(weapon => weapon.update({ "system.counter.value": weapon.system.counter.max }));
-    });
+    const npcs = this.combatants.filter(c => isNpc(c.actor));
+    for (const npc of npcs) {
+      const weapons = npc.actor?.items?.filter((i) => i.type === "weapon") ?? [];
+      for (const weapon of weapons) {
+        await weapon.update({ "system.counter.value": weapon.system.counter.max });
+      }
+    }
+
+    for (const c of this.combatants) {
+      await c.unsetFlag("wwn", "meleeHitThisRound");
+      await c.unsetFlag("wwn", "attackedThisTurn");
+    }
+  }
+
+  /**
+   * Actor-scoped starship cleanup must run in `_preDelete` (still in the DB).
+   * Do not update combatants in `_onDelete`: Foundry already removed this Combat
+   * from the collection, and async work there can skip `super._onDelete`.
+   * @inheritDoc
+   */
+  async _preDelete(options, user) {
+    for (const actor of starshipActorsToClearOnCombatDelete(this.combatants)) {
+      try {
+        await clearStarshipCombatBonusHp(actor);
+      } catch (err) {
+        console.error("WWN | Failed to clear starship combat bonus HP on combat end:", err);
+      }
+    }
+    return super._preDelete(options, user);
   }
 
   /** @inheritDoc */
@@ -293,6 +512,27 @@ export class WWNCombat extends foundry.documents.Combat {
   async activateCombatant(turn) {
     if (game.user.isGM) {
       await game.combat.update({ turn })
+    }
+  }
+
+  /**
+   * Set initiative for a CombatantGroup and all of its members.
+   * @param {string} groupId
+   * @param {number|null} value
+   */
+  async setGroupInitiative(groupId, value) {
+    const group = this.groups.get(groupId);
+    if (!group || !game.user.isGM) return;
+
+    const combatantUpdates = [...group.members].map(c => ({
+      _id: c.id,
+      initiative: value
+    }));
+
+    if (combatantUpdates.length) {
+      await this.updateEmbeddedDocuments("Combatant", combatantUpdates);
+    } else {
+      await group.update({ initiative: value });
     }
   }
 
@@ -328,16 +568,16 @@ export class WWNCombat extends foundry.documents.Combat {
       if (groupInit !== maxInitiative && maxInitiative != -Infinity) {
         await group.update({ _id: group.id, initiative: maxInitiative });
         if (groupInit) {
-          ChatMessage.create({
-            speaker: {
-              alias: game.i18n.localize("WWN.Initiative")
-            },
-            flavor: game.i18n.format("WWN.combat.modifyInitiative", {
+          const { createNoticeMessage } = await import("../chat/chat-card.mjs");
+          await createNoticeMessage({
+            title: game.i18n.localize("WWN.Initiative"),
+            body: game.i18n.format("WWN.combat.modifyInitiative", {
               group: foundry.utils.escapeHTML(group.name),
               oldInit: groupInit,
               newInit: maxInitiative
             }),
-          })
+            flags: { kind: "initiative" },
+          });
         }
       }
       this.setupTurns();
@@ -412,30 +652,4 @@ export class WWNCombat extends foundry.documents.Combat {
     return (a.name || "").localeCompare(b.name || "")
   }
 
-  // ===========================================================================
-  // Randomize NPC HP
-  // ===========================================================================
-
-  static async preCreateToken(token, data, options, userId) {
-    const actor = game.actors.get(data.actorId);
-    const newData = {};
-
-    if (!actor || data.actorLink || !game.settings.get("wwn", "randomHP")) {
-      return token.updateSource(newData);
-    }
-
-    let newTotal = 0;
-    const modSplit = token.actor.system.hp.hd.split("+");
-    const dieSize = modSplit[0].split("d")[1];
-    const dieCount = modSplit[0].split("d")[0];
-    for (let i = 0; i < dieCount; i++) {
-      newTotal += Math.floor(Math.random() * dieSize + 1);
-    }
-    newTotal += parseInt(modSplit[1]) || 0;
-
-    foundry.utils.setProperty(newData, "delta.system.hp.value", newTotal);
-    foundry.utils.setProperty(newData, "delta.system.hp.max", newTotal);
-
-    return token.updateSource(newData);
-  }
 }

@@ -1,43 +1,35 @@
-// eslint-disable-next-line no-unused-vars
-import { WwnActor } from '../actor/entity.js';
+import { showWwnDialog, cancelButton } from "../applications/wwn-dialog.mjs";
+import { applyLegacySheetAliases } from "../helpers/sheet-legacy-bridge.mjs";
 
-export class WwnCharacterModifiers extends FormApplication {
-  static get defaultOptions() {
-    const options = super.defaultOptions;
-    options.classes = ["wwn", "dialog", "modifiers"],
-    options.id = 'sheet-modifiers';
-    options.template =
-      'systems/wwn/templates/actors/dialogs/modifiers-dialog.html';
-    options.width = 240;
-    return options;
+/**
+ * Open the read-only modifiers summary dialog for an actor.
+ * @param {Actor} actor
+ */
+export async function showCharacterModifiersDialog(actor) {
+  const system = foundry.utils.deepClone(actor.system);
+  applyLegacySheetAliases(system, {
+    separateRangedAC: game.settings.get("wwn", "separateRangedAC"),
+  });
+  await showWwnDialog({
+    modifier: "modifiers",
+    title: `${actor.name}: Modifiers`,
+    template: "systems/wwn/templates/actors/dialogs/modifiers-dialog.html",
+    context: {
+      system,
+      languages: actor.system.languages ?? [],
+      user: game.user,
+    },
+    position: { width: 240 },
+    buttons: [cancelButton({ label: "Close" })],
+  });
+}
+
+/** @deprecated Prefer {@link showCharacterModifiersDialog} */
+export class WwnCharacterModifiers {
+  constructor(object) {
+    this.object = object;
   }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Add the Entity name into the window title
-   * @type {String}
-   */
-  get title() {
-    return `${this.object.name}: Modifiers`;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Construct and return the data object used to render the HTML template for this form application.
-   * @return {Object}
-   */
-  getData() {
-    const data = foundry.utils.deepClone(this.object.data);
-    data.user = game.user;
-    return data;
-  }
-
-  /* -------------------------------------------- */
-
-  /** @override */
-  activateListeners(html) {
-    super.activateListeners(html);
+  render() {
+    return showCharacterModifiersDialog(this.object);
   }
 }

@@ -1,0 +1,160 @@
+{
+  "_id": "TPgHUXRWAHyWRF1z",
+  "name": "Automaton, Humanlike",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "1LTkBIOLd1TSc2EL",
+      "name": "Sword, Long",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {
+        "core": {
+          "sourceId": "Compendium.wwn.gear.RI9vqfJ63lQbeNJf"
+        }
+      },
+      "effects": [],
+      "system": {
+        "description": "<p><em><strong>Swords&nbsp;</strong></em>are common sidearms throughout the Latter&nbsp;Earth. The expense of forging a large blade makes it&nbsp;a symbol of wealth and status in many cultures, and its&nbsp;convenience makes it a favored arm for street wear.</p>",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 13
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "stab",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 100,
+        "weight": 1,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!TPgHUXRWAHyWRF1z.1LTkBIOLd1TSc2EL"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!TPgHUXRWAHyWRF1z",
+  "system": {
+    "hp": {
+      "value": 9,
+      "max": 9
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 12,
+      "instinct": 3,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": ""
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "1LTkBIOLd1TSc2EL"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 2,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Base weapon damage and shock values.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Automaton, Humanlike",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "TPgHUXRWAHyWRF1z",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

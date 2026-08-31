@@ -1,0 +1,50 @@
+{
+  "_id": "g9pbBHAwLlmwwKTz",
+  "name": "Origin Focus: Elf, Half-Elf",
+  "type": "focus",
+  "flags": {},
+  "img": "systems/wwn/assets/icons/items/origin-focus.png",
+  "effects": [
+    {
+      "_id": "halfElfDexCon0001",
+      "type": "base",
+      "name": "Elf, Half-Elf (Dexterity +1 / Constitution −1)",
+      "img": "systems/wwn/assets/icons/items/origin-focus.png",
+      "transfer": true,
+      "disabled": true,
+      "system": {
+        "changes": [
+          { "key": "system.abilities.dex.baseMod", "type": "add", "value": 1, "phase": "initial" },
+          { "key": "system.abilities.con.baseMod", "type": "add", "value": -1, "phase": "initial" }
+        ]
+      },
+      "flags": { "wwn": { "skipFocusLevelSync": true } },
+      "_key": "!items.effects!g9pbBHAwLlmwwKTz.halfElfDexCon0001"
+    }
+  ],
+  "system": {
+    "description": "<p>Where there are both elves and humans, half-elves tend to be inevitable additions to a campaign world. This Focus follows the &ldquo;between two worlds&rdquo; flavor of most half-elf interpretations.</p>\n<p><strong>Level 1: </strong>Gain Connect and any one skill as bonus skills. You can see out to thirty feet in any light condition short of perfect darkness. At your discretion, if you take after your elven parent, you may increase your Dexterity modifier by +1 but then also take a -1 to your Constitution modifier.</p>",
+    "ownedLevel": 1,
+    "resourceGrant": {
+      "targetName": "",
+      "targetSource": "",
+      "bonusMax": 0
+    },
+    "internalResource": {
+      "value": 0,
+      "max": 0
+    },
+    "resourceLength": "none",
+    "bonusSkills": [],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusDice": null,
+    "skillBonus": ""
+  },
+  "_key": "!items!g9pbBHAwLlmwwKTz",
+  "folder": "qz0AIQTCBhZxClN2",
+  "ownership": {
+    "default": 0,
+    "mgBwP0sTLP1VFg1m": 3
+  }
+}

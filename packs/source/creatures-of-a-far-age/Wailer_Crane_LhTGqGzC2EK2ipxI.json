@@ -1,0 +1,196 @@
+{
+  "_id": "LhTGqGzC2EK2ipxI",
+  "name": "Wailer Crane",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "yJSSYYQsdzlxaWbd",
+      "name": "Beak",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d6",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!LhTGqGzC2EK2ipxI.yJSSYYQsdzlxaWbd"
+    },
+    {
+      "_id": "xIuBeYiTr33ctHyb",
+      "name": "Wail",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 300000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "1d4",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "physical",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!LhTGqGzC2EK2ipxI.xIuBeYiTr33ctHyb"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!LhTGqGzC2EK2ipxI",
+  "system": {
+    "hp": {
+      "value": 4,
+      "max": 4
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 8,
+      "instinct": 6,
+      "instinctTable": null,
+      "appearing": {
+        "d": "2d4",
+        "w": "2d4"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "yJSSYYQsdzlxaWbd"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 2,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 12,
+        "ranged": 12
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p>These man-tall cranes were imbued with song by some ancient civilization, one with a completely incomprehensible musical taste. The ululating wails of these birds are thunderously loud and penetrating. When used as a Main Action attack, creatures within ten feet of the bird must make a Physical save or suffer 1d4 sonic damage. The cranes tend to form choirs of 2d4 birds that will sing for days on end and attack any creature that approaches too closely. They have a great fondness for bright trinkets, and wear them like jewelry. The crane with the most jewelry always leads the choir.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Wailer Crane",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "LhTGqGzC2EK2ipxI",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

@@ -1,12 +1,29 @@
 {
   "name": "wwn",
-  "version": "1.0.0",
+  "version": "2.0.0-alpha2.1",
   "description": "Worlds Without Number system for Foundry VTT",
   "scripts": {
     "build:css": "sass scss/:styles/ --style compressed",
-    "watch:css": "sass scss/:styles/ --watch --style compressed"
+    "watch:css": "sass scss/:styles/ --watch --style compressed",
+    "lint:packs": "node ./build/lint-pack-folders.mjs",
+    "build:packs": "npm run lint:packs && node ./build/build-packs.mjs",
+    "extract:packs": "node ./build/extract-packs.mjs",
+    "build": "npm run build:css && npm run build:packs",
+    "test": "node --test",
+    "migrate:packs": "node ./build/migrate-packs.mjs",
+    "generate:skills": "node ./import-scripts/generate-swn-awn-skills.mjs",
+    "generate:foci": "node ./import-scripts/generate-swn-awn-foci.mjs",
+    "generate:cwn-foci": "node ./import-scripts/generate-cwn-foci.mjs",
+    "generate:starship-fittings": "node ./import-scripts/generate-starship-fittings.mjs",
+    "generate:example-starships": "node ./import-scripts/generate-example-starships.mjs",
+    "generate:armor-fittings": "node ./import-scripts/generate-armor-fittings.mjs",
+    "generate:example-power-armor": "node ./import-scripts/generate-example-power-armor.mjs",
+    "generate:wire-foci": "node ./import-scripts/wire-foci-automation.mjs",
+    "generate:awn-mutations": "node ./import-scripts/generate-awn-mutations.mjs",
+    "generate:swn-psychic": "node ./import-scripts/generate-swn-psychic.mjs"
   },
   "devDependencies": {
+    "@foundryvtt/foundryvtt-cli": "^3.0.4",
     "sass": "^1.71.1"
   }
 }

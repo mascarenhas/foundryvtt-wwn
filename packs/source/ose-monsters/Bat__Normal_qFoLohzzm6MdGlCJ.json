@@ -1,0 +1,182 @@
+{
+  "name": "Bat, Normal",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "kBa5TQ1V5gXz8zV1",
+      "name": "Swarm",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p><strong style=\"box-sizing: border-box; user-select: text; color: #191813;\">▶ Swarm:</strong><span style=\"color: #191813;\">&nbsp;10 bats can swarm around a target&rsquo;s head, causing confusion: &ndash;2 to attack rolls and saves; unable to cast spells.</span></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!qFoLohzzm6MdGlCJ.kBa5TQ1V5gXz8zV1"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.qLJ5CnS9oDLg5A9T"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 1,
+      "max": 1
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1",
+    "skill": 0,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 5,
+      "morale": 6,
+      "instinct": 7,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1d100",
+        "w": "1d100"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": -1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Nocturnal, flying mammals that roost in caves or ruins.</p>\n<p><strong>▶ Echolocation:</strong> Unaffected by effects that impair, modify, or rely on sight. Blinded by magical silence.</p>\n<p><strong>▶ Attacks:</strong> As normal human.</p>\n<p><strong>▶ Flighty: </strong>Unless magically summoned or controlled, normal bats check morale every round.</p>"
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Normal Bat",
+    "displayName": 30,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "randomImg": true,
+    "alpha": 1,
+    "light": {
+      "alpha": 1,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 0.4,
+      "scaleY": 0.4,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331513,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "qFoLohzzm6MdGlCJ",
+  "_key": "!actors!qFoLohzzm6MdGlCJ"
+}

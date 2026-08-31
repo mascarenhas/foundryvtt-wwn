@@ -1,0 +1,84 @@
+{
+  "_id": "u5SOvQmO6BzshzPR",
+  "name": "Origin Focus: Gnome",
+  "type": "focus",
+  "flags": {},
+  "img": "systems/wwn/assets/icons/items/origin-focus.png",
+  "effects": [
+    {
+      "_id": "n2hBtHBY2ihnr7bv",
+      "type": "base",
+      "name": "Gnome (Strength −1)",
+      "img": "systems/wwn/assets/icons/items/focus.png",
+      "transfer": true,
+      "disabled": true,
+      "system": {
+        "changes": [
+          {
+            "key": "system.abilities.str.baseMod",
+            "type": "add",
+            "value": -1,
+            "phase": "initial"
+          }
+        ]
+      },
+      "flags": {
+        "wwn": {
+          "skipFocusLevelSync": true
+        }
+      },
+      "_key": "!items.effects!u5SOvQmO6BzshzPR.n2hBtHBY2ihnr7bv"
+    },
+    {
+      "_id": "b1ZneNLvJ76afdGO",
+      "type": "base",
+      "name": "Gnome (Wisdom −1)",
+      "img": "systems/wwn/assets/icons/items/focus.png",
+      "transfer": true,
+      "disabled": true,
+      "system": {
+        "changes": [
+          {
+            "key": "system.abilities.wis.baseMod",
+            "type": "add",
+            "value": -1,
+            "phase": "initial"
+          }
+        ]
+      },
+      "flags": {
+        "wwn": {
+          "skipFocusLevelSync": true
+        }
+      },
+      "_key": "!items.effects!u5SOvQmO6BzshzPR.b1ZneNLvJ76afdGO"
+    }
+  ],
+  "system": {
+    "description": "<p>Gnomish interpretations vary significantly, from mad tinkers to forest sprites. The origin below suits a subterranean forest-dweller; for tinkers, replace Sneak as a bonus skill with Craft.</p>\n<p><strong>Level 1: </strong>Gain Sneak as a bonus skill. Your Dexterity modifier increases by +1 and your Strength or Wisdom modifier decreases by -1. You can see clearly in the dark out to sixty feet.</p>",
+    "ownedLevel": 1,
+    "resourceGrant": {
+      "targetName": "",
+      "targetSource": "",
+      "bonusMax": 0
+    },
+    "internalResource": {
+      "value": 0,
+      "max": 0
+    },
+    "resourceLength": "none",
+    "bonusSkills": [
+      "sneak"
+    ],
+    "bonusSkillsPick": 1,
+    "bonusSkillsChosen": [],
+    "bonusDice": null,
+    "skillBonus": ""
+  },
+  "_key": "!items!u5SOvQmO6BzshzPR",
+  "folder": "qz0AIQTCBhZxClN2",
+  "ownership": {
+    "default": 0,
+    "mgBwP0sTLP1VFg1m": 3
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "name": "Sprite",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "hlADoWW7jnqZLlJf",
+      "name": "Curse",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Five sprites can collectively curse a target (no attack roll; Mental save). The effect is determined by the referee, but will always be used to comical effect (e.g. target trips, target&rsquo;s nose grows).</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "mental",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!GJIaoB70ZnPGY2Dl.hlADoWW7jnqZLlJf"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.9qbpp4eYLWt2MXYg"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 2,
+      "max": 2
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d4",
+    "skill": 1,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 6,
+      "morale": 7,
+      "instinct": 1,
+      "instinctTable": null,
+      "appearing": {
+        "d": "3d6",
+        "w": "5d8"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 0,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 14,
+        "ranged": 14
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 60
+      }
+    },
+    "biography": "<p>1&rsquo; tall, winged humanoids, related to pixies and elves. They are shy, but driven by curiosity and their odd sense of humour.</p>\n<ul>\n<li><strong>Curse: </strong>Five sprites can collectively curse a target (no attack roll; Mental save). The effect is determined by the referee, but will always be used to comical effect (e.g. target trips, target&rsquo;s nose grows).</li>\n<li><strong>Pranksters:</strong> Even if attacked, sprites have no interest in killing, merely in making practical jokes.</li>\n</ul>"
+  },
+  "prototypeToken": {
+    "name": "Sprite",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {},
+    "randomImg": true,
+    "light": {
+      "alpha": 0.25,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330920,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "GJIaoB70ZnPGY2Dl",
+  "_key": "!actors!GJIaoB70ZnPGY2Dl"
+}

@@ -1,0 +1,129 @@
+{
+  "_id": "FvXwWUtPe9iaSBJo",
+  "name": "Dwarven Veteran",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "aOPggTedw2odl6hr",
+      "name": "Scaled Armor",
+      "type": "armor",
+      "img": "systems/wwn/assets/icons/items/armor.png",
+      "sort": 100000,
+      "flags": {
+        "core": {
+          "sourceId": "Compendium.wwn.gear.uFfqbzNG5foT3Mku"
+        }
+      },
+      "effects": [],
+      "system": {
+        "description": "<p><em><strong>Scaled armor </strong></em>includes both armor of metal scales on a flexible backing, brigandine, jacks of plate, and other armor made up of small, connected plates that cover most of the wearer&rsquo;s body. Most are noisy, heavy suits, albeit flexible ones.</p>\n<p><em><strong>Medium armor</strong></em>&nbsp;is significantly noisier and more overt; it cannot be worn discreetly and applies its encumbrance as a penalty to any physical Sneak rolls made by the wearer.</p>",
+        "ac": 16,
+        "acRanged": 16,
+        "mod": 0,
+        "type": "medium",
+        "soak": 0,
+        "traumaTarget": 6,
+        "ashesHeavy": false,
+        "price": 500,
+        "weight": 3,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": ""
+      },
+      "_key": "!actors.items!FvXwWUtPe9iaSBJo.aOPggTedw2odl6hr"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!FvXwWUtPe9iaSBJo",
+  "system": {
+    "hp": {
+      "value": 9,
+      "max": 9
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 9,
+      "instinct": 3,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [],
+    "notes": "",
+    "combat": {
+      "ab": 3,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 16,
+        "ranged": 16
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": ""
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Dwarven Laborer",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "FvXwWUtPe9iaSBJo",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

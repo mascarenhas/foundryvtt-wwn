@@ -1,6 +1,37 @@
-# misc
-wwn.lock
-wwn.zip
-.vscode
-foundry
-.cursor
+# Ignore npm modules
+node_modules/
+
+# Sass build output (source lives in scss/)
+styles/*.css
+styles/*.css.map
+
+# Built LevelDB packs (JSON source lives in packs/source/)
+/packs/*
+!/packs/source/
+!/packs/source/**
+!/packs/data/
+!/packs/data/**
+!/packs/.gitattributes
+
+# LevelDB / Foundry pack DB artifacts
+packs/**/CURRENT
+packs/**/LOCK
+packs/**/LOG
+packs/**/LOG.old
+packs/**/MANIFEST-*
+packs/**/*.ldb
+packs/**/*.sst
+packs/**/*.log
+
+# Legacy NeDB pack files
+/packs/*.db
+packs/**/*.db
+
+# Local editor config
+.vscode/
+
+# Local design/plan docs (not shipped)
+/docs/
+
+# One-shot content import/generator scripts (local only)
+/import-scripts/

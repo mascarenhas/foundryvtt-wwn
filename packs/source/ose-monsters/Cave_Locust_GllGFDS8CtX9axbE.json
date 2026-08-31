@@ -1,0 +1,436 @@
+{
+  "name": "Cave Locust",
+  "type": "monster",
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.ZdkILw6CE7ROWNWf"
+    }
+  },
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "4p3ZZXGuZHXlaHSX",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d2",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.4p3ZZXGuZHXlaHSX"
+    },
+    {
+      "_id": "71tkZ6EurP3isUKy",
+      "name": "Jump",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 200000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><span style=\"color: #191813;\">Very skittish. If attacked, usually flee by jumping up to 60&rsquo; then flying away. 50% chance of jumping at a random opponent, in which case treat the jump as an attack.</span></p>",
+        "damage": "1d4",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.71tkZ6EurP3isUKy"
+    },
+    {
+      "_id": "ubXoIlHlX9MELcEJ",
+      "name": "Spit",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 300000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><span style=\"color: #191813;\">Used defensively. 10&rsquo; range. Target treated as AC 10. The affected character is covered in stinking spittle: unable to act for 1 turn (Physical save). Until the goo is washed off, others who come within 5&rsquo; must also make a Physical save or be violently sick.</span></p>",
+        "damage": "0",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": false,
+        "missile": true,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 10,
+          "medium": 0,
+          "long": 10
+        },
+        "save": "physical",
+        "tags": [
+          "Missile"
+        ],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.ubXoIlHlX9MELcEJ"
+    },
+    {
+      "_id": "MXXo6EscZLpRw4fy",
+      "name": "Shriek",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 400000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p><strong style=\"box-sizing: border-box; user-select: text; color: #191813;\">&nbsp;</strong><span style=\"color: #191813;\">If attacked or frightened, shriek to warn others. This may attract wandering monsters (20% chance per round).</span></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "1d100",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.MXXo6EscZLpRw4fy"
+    },
+    {
+      "_id": "UqCF3px1O8LN6nnP",
+      "name": "Poison Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 500000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p><span style=\"color: #191813;\">Immune to yellow mould and most poisons, due to their habit of eating fungi.</span></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.UqCF3px1O8LN6nnP"
+    },
+    {
+      "_id": "l7swSfndWxPe78OS",
+      "name": "Blend in with Stone",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 300000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p><span style=\"color: #191813;\">May be overlooked or mistaken for statues, due to their stony colouration.</span></p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!GllGFDS8CtX9axbE.l7swSfndWxPe78OS"
+    }
+  ],
+  "effects": [],
+  "system": {
+    "hp": {
+      "value": 9,
+      "max": 9
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "2d8",
+    "skill": 1,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 20,
+      "morale": 5,
+      "instinct": 6,
+      "instinctTable": null,
+      "appearing": {
+        "d": "2d10",
+        "w": "1d10"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "4p3ZZXGuZHXlaHSX",
+      "71tkZ6EurP3isUKy",
+      "ubXoIlHlX9MELcEJ"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 1,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 15,
+        "ranged": 15
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 20
+      }
+    },
+    "biography": "<p>2&ndash;3&rsquo; long, herbivorous, giant crickets that dwell in caverns.</p>"
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Cave Locust",
+    "displayName": 30,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "randomImg": false,
+    "light": {
+      "dim": 0,
+      "bright": 0,
+      "angle": 360,
+      "alpha": 1,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "color": null,
+      "coloration": 1,
+      "attenuation": 0.5,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "alpha": 1,
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331219,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "GllGFDS8CtX9axbE",
+  "_key": "!actors!GllGFDS8CtX9axbE"
+}

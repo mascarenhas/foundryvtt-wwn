@@ -1,0 +1,162 @@
+{
+  "_id": "DObO6lAR6PN7Hbuh",
+  "name": "Large Solitary Predator",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "5jDx2uHk5ue2O7mA",
+      "name": "Attack",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 13
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!DObO6lAR6PN7Hbuh.5jDx2uHk5ue2O7mA"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!DObO6lAR6PN7Hbuh",
+  "system": {
+    "hp": {
+      "value": 22,
+      "max": 22
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "5d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 8,
+      "instinct": 6,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": ""
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "5jDx2uHk5ue2O7mA"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 6,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": ""
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Large Solitary Predator",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": "",
+    "width": 2,
+    "height": 2,
+    "scale": 1,
+    "mirrorX": false,
+    "mirrorY": false,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightColor": "",
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "type": "",
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "DObO6lAR6PN7Hbuh",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": ""
+    },
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "_id": "MwoUjHFY21ZIZ3Lx",
+  "name": "Phantasmal Eidolon",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "ouU6fnTLRxCNL20X",
+      "name": "Attack",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d8",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "2",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!MwoUjHFY21ZIZ3Lx.ouU6fnTLRxCNL20X"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!MwoUjHFY21ZIZ3Lx",
+  "system": {
+    "hp": {
+      "value": 20,
+      "max": 20
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "4",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 12,
+      "instinct": 0,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "ouU6fnTLRxCNL20X"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 6,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 15,
+        "ranged": 15
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 30
+      }
+    },
+    "biography": "<p>Summoned by a @Compendium[wwn.abilities-wwn.pc8jwXR7JUYG2TNE]{Calculation of the Phantasmal Eidolon} spell.</p>\n<blockquote>\n<p>The caster may pick one special quality for the creature when it is summoned: the ability to fly at a rate of 30&rsquo;/move, the perfect duplication of a particular person they&rsquo;ve seen, the ability to form a telepathic speech connection with the caster, or the ability to effectively use normal weaponry and armor. The servitor lasts until destroyed or the dawn after the spell is cast.</p>\n</blockquote>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Phantasmal Eidolon",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "MwoUjHFY21ZIZ3Lx",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

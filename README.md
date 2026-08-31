@@ -9,7 +9,7 @@ Everything you need to play Worlds Without Number in Foundry VTT.
 ## Features
 
 - Calculated Readied/Stowed values, including dynamic tracking of currency weight
-- Calculates total wealth from carried coin, bank, and treaure items
+- Calculates total wealth from carried coin, bank, and treasure items
 - Track weapon tags; hovering over the tag icon or name displays the full tag description
 - Track Effort commitment by Art and have class-specific Effort updated automatically
   - Click Tweaks in the character title bar to activate spellcasting and enter caster class(es)
@@ -33,6 +33,10 @@ Everything you need to play Worlds Without Number in Foundry VTT.
   - Link appropriate Instinct tables from Compendium to NPC sheet to auto-roll when Instinct check is failed
 - Compendium includes weapons, armor, adventuring gear, arts, spells, and foci. Deluxe edition content is not included.
   - Thanks to Gavin over at Necrotic Gnome, the Compendium now includes OSE spells and (some) monsters.
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for clone/build setup, pack workflow, module layout, and release notes.
 
 ## License
 

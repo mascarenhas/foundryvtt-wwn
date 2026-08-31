@@ -1,0 +1,49 @@
+{
+  "_id": "xb4eRzSuecBsFxXl",
+  "name": "Growth of Animal",
+  "type": "power",
+  "flags": {
+    "cf": null
+  },
+  "img": "systems/wwn/assets/icons/items/spell.png",
+  "effects": [],
+  "_key": "!items!xb4eRzSuecBsFxXl",
+  "system": {
+    "subType": "spell",
+    "description": "<p><strong>Duration: 12 turns</strong></p>\n<p><strong>Range: 120&rsquo;</strong></p>\n<p>One non-magical, normal animal is doubled in size and strength when this spell is cast upon it.</p>\n<p><strong>▶ Damage: </strong>The damage inflicted by the animal&rsquo;s attacks is doubled.</p>\n<p><strong>▶ Load: </strong>The amount of weight the animal can carry is doubled.</p>\n<p><strong>Restrictions: </strong>This spell may be used on giant versions of normal animals, but intelligent animals and fantastic monsters are unaffected.</p>",
+    "source": "Cleric",
+    "resourceName": "Spell Slots",
+    "commitmentOptions": [
+      {
+        "cost": 1,
+        "length": "day",
+        "note": ""
+      }
+    ],
+    "poolCommitted": {
+      "none": 0,
+      "active": 0,
+      "scene": 0,
+      "day": 0
+    },
+    "internalResource": {
+      "value": 0,
+      "max": 0
+    },
+    "internalResourceLength": "scene",
+    "level": 3,
+    "prepared": true,
+    "activation": {
+      "roll": "",
+      "rollType": "result",
+      "rollTarget": 0,
+      "save": "",
+      "range": "120'",
+      "duration": "12 turns"
+    }
+  },
+  "ownership": {
+    "default": 0,
+    "mgBwP0sTLP1VFg1m": 3
+  }
+}

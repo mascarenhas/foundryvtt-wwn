@@ -1,5 +1,57 @@
 # Changelog
 
+## New in 2.0.0
+
+### Before you update
+
+- **Back up your world** before installing 2.0.0.
+- Migration runs automatically for the GM when the world loads. On a large world **migration can take a long time** — leave Foundry open and wait for it to finish.
+- Requires **Foundry VTT v14**. Not compatible with v13.
+
+### What's new
+
+- **Classes and Edges** are items you add to a character (Full/Partial classes for WWN and SWN; Edges for AWN and CWN).
+  - They drive attack bonus, hit dice, Effort or spell capacity, and class features.
+  - Edge-only characters keep the Expert half-level attack bonus unless an Edge raises it to full level (for example On Target).
+  - Existing characters are prompted once to pick their class(es). Old Class Ability foci are archived under Items.
+- **Abilities compendiums by game line:** **WWN Abilities**, **SWN Abilities**, **AWN Abilities**, and **CWN Abilities**. Skills for each line live in a Skills folder inside that pack. New characters get the matching skill set from world settings.
+  - SWN: full focus list, Psychic Techniques (shared **Psychic Effort** pool), and Expert / Psychic / Warrior class items.
+  - AWN: full focus list, mutations, and Survivor Edges.
+  - CWN: Cities Without Number skill, full focus list, and Operator Edges.
+- **Compendiums** are reorganized (gear, magic items, abilities, assets, tags, tables) using Foundry's compendium folder feature. Old broken items from the defunct Compendium Folders module removed.
+  - Pack ids changed (`wwn.abilities-wwn` and the matching SWN/AWN/CWN packs). Old `wwn.abilities` / `wwn.skills-*` world links are not remapped, so journals that link to compendium items WILL break.
+- **SWN Psychic Techniques** in **SWN Abilities**: all six disciplines’ cores and techniques, committing from **Psychic Effort**, with System Strain where the book calls for it.
+- **AWN Mutations** in **AWN Abilities**: positive and negative mutations with System Strain, use limits, automated effects where practical, and bonus-skill grants.
+- **AWN Tables** for mutation generation and stigma tables. The former **Tables** pack is now labeled **WWN Tables**.
+- **Powers** replace Arts and Spells. Subtypes cover arts, spells, psychic techniques, mutations, cyberware, and related abilities. Powers can grant bonus skills.
+- **Character sheet** layout and combat bonuses have been reworked to lean on Active Effects.
+  - Modern Foundry sheets with in-sheet tabs and selectable UI themes (WWN / SWN / AWN / CWN). Still WIP.
+  - The Attributes tab is renamed **Main** and includes a Favorites section for PCs.
+  - Header bars show HP and System Strain always; Alienation and Stress when those settings are on; XP uses a fill bar.
+  - The old Tweaks menu is gone; bonuses live as Active Effects.
+  - Powers, classes, and foci share one Powers tab. Alignment, background, and class list live on Details.
+  - Attack bonus and hit dice come from your classes (adjust with Active Effects when needed).
+- **Foci and class features** on characters from world pre-2.0.0 refresh from **WWN Abilities** on migration. Your focus level and skill choices are kept; replaced copies go under Items → **Migration Backups** (one folder per character).
+- **Weapons and ammo** support linked ammo and magazine-style reload more clearly, with a dedicated ammo item type for arrows, bolts, energy cells, and spare magazines. Personal attacks better follow Without Number rules: natural 1 and 20, Shock as a damage floor on hits, firearms (including hurlants) and high-tech weapons ignoring light non-magical armor, and powered armor stopping primitive or unarmed attacks.
+- **Group initiative** can collapse the tracker by side (default on), advancing one side at a time. WIP. Untested.
+- **Monsters** keep editable combat numbers on a Config tab.
+- **Starships** for Stars Without Number.
+  - Hull presets seed speed, armor, HP, crew limits, AC, and power/mass/hardpoint budgets; stats stay editable.
+  - Fittings, weapons, and defenses install on the ship; cost, power, and mass scale with hull class as in the rulebook.
+  - Crew stations (bridge, gunnery, engineering, comms, captain) can link a world actor or use an NPC roll formula; roll checks and ship weapons from the sheet.
+  - Compendiums: **Starship Fittings** and **Example Starships**.
+  - **Starship combat** (SWN): type-segregated encounters (ships / factions / personal cannot mix in the same combat); Command Points; department actions on the ship sheet; tracker CP/Escape/Crisis HUD; Armor/AP, Target Systems, Escape/Pursue, and Crises. Department actions and hulk saves resolve from station roll totals vs DC (or opposed totals), not success confirms; Flak/Cloud helpers covered by unit tests. Detection locks / pre-combat pursuit still deferred. Manual smoke recommended (see `docs/design/specs/2026-07-31-starship-combat-harden-design.md`).
+- **Dialogs and chat cards** share the selected UI theme. Party sheet and character creator use the same theming. Old chat/dialog templates are removed. Attack cards explain hit outcomes and tuck roll breakdowns behind a help icon.
+- **Modular power armor** for Ashes Without Number.
+  - Power armor actors with frame presets, mass/power budgets, Soak, power cells/runtime, and maintenance.
+  - Armor fittings install on the suit; over-budget builds shut down fittings per the rules.
+  - Link a PC pilot: the suit shows pilot skills and HP while AC, Soak, and exo Strength stay on the suit. Damage hits Soak first, then the pilot.
+  - Automation for common fittings (plating, exo boost, efficiency, training disadvantage, weapon mounts, and selected special fittings).
+  - **Phase B effect engine (WIP):** `fittingState` scene/maint uses, Activate / Trigger Reaction on the Armor tab, capability badges, movement/mode chat actions (no auto-token move), best-effort auto reactions plus manual Trigger, target lock / linked targeting / ammo feed hooks, VI (Tsukumogami assist when activated; Black Ofuda empty-suit mode with suit AB/HP/Soak/Move/saves), Identification Lock, Backseat Driver incap, medical doses, trauma stabilizer, and skipped-maintenance failure dice. Plating shock/trauma flags apply in the attack pipeline.
+  - Compendiums: **Armor Fittings** and **Example Power Armor**. FOR TESTING ONLY. This compendium will be removed later, as it is part of paid content.
+  - WIP. Largely untested.
+- Assorted sheet and pack fixes for Foundry v14.
+
 ## New in 1.6.1
 
 ### Changes
@@ -52,7 +104,7 @@
 
 ## New in 1.5.0
 
-### Note: Updated for v13. No attempt was made to maintain compatibility with v12.
+### Note: Updated for v13. No attempt was made to maintain compatibility with v12
 
 - All testing efforts were done in v13's Dark mode. The sheet was never designed with v13's theming in mind and it turned out to be pretty difficult to attempt to add it this late in the game. Light mode will _probably_ work fine but don't be surprised if there are small visual issues here and there.
 
@@ -343,7 +395,7 @@
 
 ## New in 1.0.0
 
-### Warning!
+### Warning
 
 This update contains significant breaking changes. Please backup existing worlds before updating to avoid the nightmare of data loss or in case you wish to roll back to the previous version.
 
@@ -401,10 +453,10 @@ This update contains significant breaking changes. Please backup existing worlds
 ### Changes
 
 - Changed the way attribute mods, saves, and AC are calculated to better support Foundry's export function.
-  - This required some refactoring, so if you see any odd behavior, please report it on the WWN Github page: https://github.com/SobranDM/foundryvtt-wwn/issues
+  - This required some refactoring, so if you see any odd behavior, please report it on the WWN Github page: <https://github.com/SobranDM/foundryvtt-wwn/issues>
 - Removed the book icon on PCs that previously displayed a few modifiers. Most of these are now exposed to the user elsewhere and the rest were wildly out of date.
 - Tweaked the display size of the description and notes fields on the details tab. If both of these exceed 4 lines or so, you will get a scrollbar while on that tab.
-- Removed references to 5e token art, as it has been pointed out that this is pretty bad practice and I am forced to agree. I encourage anyone who enjoys that art to go support Forgotten Adventures for their amazing library of token art, which is constantly growing: https://www.patreon.com/forgottenadventures/posts
+- Removed references to 5e token art, as it has been pointed out that this is pretty bad practice and I am forced to agree. I encourage anyone who enjoys that art to go support Forgotten Adventures for their amazing library of token art, which is constantly growing: <https://www.patreon.com/forgottenadventures/posts>
 - All inventory items and spells are now sorted alphabetically.
 - All monster abilities and equipment are now divided by type and sorted alphabetically.
 - All monster item types are now rollable.
@@ -528,7 +580,7 @@ This update contains significant breaking changes. Please backup existing worlds
 
 - Updated system to function with version 0.8.6 of Foundry. While most things appear to be working correctly, this is an early release. Bugs may abound.
 
-# Known Issues:
+# Known Issues
 
 - Attribute roller does not save results correctly. The rolls happen and they appear to save but the attributes will reset to null upon next server reboot. Please set your attributes manually until I get this fixed.
 - Linking Instinct tables to a monster sheet does not work when dragged from the Compendium. RollTables outside of a Compendium link correctly and pre-existing monsters with tables linked in the Compendium continue to function correctly.

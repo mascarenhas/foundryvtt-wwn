@@ -1,0 +1,271 @@
+/**
+ * Delegated chat card action wiring (replaces WWN's jQuery delegation).
+ * Toggle/multiplier are card-local UI state stored as data- attributes on
+ * the card root — no message re-render, no persistence.
+ */
+import {
+  applyStrainToActor,
+  parseStrainField,
+  resolveStrainAmount,
+} from "../helpers/strain.mjs";
+import { applyPowerEffectsToActor } from "../helpers/power-effects.mjs";
+import { getApplyRows, resolveApplyRowAmount } from "./damage-amount.mjs";
+
+export const WWN_CHAT_CARD_ACTIONS = Object.freeze([
+  "toggleHeal",
+  "setMultiplier",
+  "applyRow",
+  "applyStraight",
+  "rollCardSave",
+  "selectSaveGroup",
+  "applyHitDice",
+  "powerDamage",
+  "applyTargetStrain",
+  "applyPowerEffects",
+  "toggleDescription",
+]);
+
+export class ChatListener {
+  /** Attach the delegated listener to the chat log. */
+  static activate() {
+    Hooks.on("renderChatMessageHTML", (message, html) => {
+      html.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-action]");
+        if (!target || !html.contains(target)) return;
+        void ChatListener.#onAction(event, target, message).catch((err) => {
+          console.error("WWN | Chat card action failed", err);
+        });
+      });
+    });
+  }
+
+  static async #onAction(event, target, message) {
+    const action = target.dataset.action;
+    if (!WWN_CHAT_CARD_ACTIONS.includes(action)) return;
+    const card = target.closest(".wwn-chat-card");
+    if (!card) return;
+    event.preventDefault();
+    switch (action) {
+      case "toggleHeal": {
+        const healing = card.dataset.heal === "true";
+        card.dataset.heal = String(!healing);
+        card.classList.toggle("wwn-heal-mode", !healing);
+        target.classList.toggle("active", !healing);
+        break;
+      }
+      case "setMultiplier": {
+        card.dataset.multiplier = target.dataset.value;
+        for (const btn of card.querySelectorAll('[data-action="setMultiplier"]')) {
+          btn.classList.toggle("active", btn === target);
+        }
+        break;
+      }
+      case "applyRow":
+      case "applyStraight": {
+        const flags = getApplyRows(message);
+        const row = flags.find((r) => r.id === target.dataset.rowId);
+        if (!row) return;
+        const raw = resolveApplyRowAmount(message, row, {
+          useAlt: action === "applyStraight",
+        });
+        if (raw == null) {
+          ui.notifications.warn(game.i18n.localize("WWN.Chat.ApplyDenied"));
+          return;
+        }
+        const multiplier = Number(card?.dataset.multiplier ?? 1);
+        const sign = card?.dataset.heal === "true" ? -1 : 1;
+        await ChatListener.#applyToTokens(raw * sign, multiplier);
+        break;
+      }
+      case "toggleDescription": {
+        const drawer = target.closest(".wwn-chat-desc-drawer");
+        if (!drawer) return;
+        const collapsed = drawer.classList.toggle("collapsed");
+        target.setAttribute("aria-expanded", String(!collapsed));
+        break;
+      }
+      case "rollCardSave": {
+        const saveId = target.dataset.save;
+        const tokens = ChatListener.#ownedTokenTargets();
+        if (tokens === null) return;
+        const { rollCardGroupSave } = await import("./group-saves.mjs");
+        await rollCardGroupSave(tokens, saveId);
+        break;
+      }
+      case "selectSaveGroup": {
+        const { selectSaveGroupTokens, controlCanvasTokens } = await import("./group-saves.mjs");
+        const tokens = selectSaveGroupTokens(
+          target.dataset.group,
+          message,
+          canvas.tokens?.placeables ?? []
+        );
+        controlCanvasTokens(tokens);
+        break;
+      }
+      case "applyHitDice": {
+        const actorUuid = message.getFlag("wwn", "actorUuid");
+        const total = message.getFlag("wwn", "hitDiceTotal");
+        const actor = await fromUuid(actorUuid);
+        if (!actor?.isOwner) return;
+        await ChatListener.#applyHitDice(actor, total);
+        break;
+      }
+      case "powerDamage": {
+        const itemUuid = message.getFlag("wwn", "itemUuid");
+        const item = await fromUuid(itemUuid);
+        if (!item) return;
+        if (!(item.isOwner || game.user.isGM)) {
+          ui.notifications.warn(game.i18n.localize("WWN.Chat.ApplyDenied"));
+          return;
+        }
+        await item.rollPowerDamage();
+        break;
+      }
+      case "applyTargetStrain": {
+        const raw = message.getFlag("wwn", "targetStrain");
+        if (!raw) return;
+        const parsed = parseStrainField(raw);
+        const amount = await resolveStrainAmount(parsed, {
+          title: game.i18n.localize("WWN.Power.TargetStrainChoiceTitle"),
+          hintKey: "WWN.Power.TargetStrainChoiceHint",
+          labelKey: "WWN.Power.TargetStrain",
+        });
+        if (amount === null || amount <= 0) return;
+        const actors = ChatListener.#ownedActorTargets();
+        if (actors === null) return;
+        let applied = 0;
+        for (const actor of actors) {
+          try {
+            if (await applyStrainToActor(actor, amount)) applied++;
+          } catch (err) {
+            console.warn("WWN | applyTargetStrain failed", actor.name, err);
+            ui.notifications.warn(game.i18n.format("WWN.Chat.ApplyFailed", { name: actor.name }));
+          }
+        }
+        if (applied > 0) {
+          ui.notifications.info(
+            game.i18n.format("WWN.Power.TargetStrainApplied", { amount, count: applied })
+          );
+        }
+        break;
+      }
+      case "applyPowerEffects": {
+        const itemUuid = message.getFlag("wwn", "itemUuid");
+        const durationScope = message.getFlag("wwn", "durationScope");
+        if (!itemUuid || !durationScope) return;
+        const item = await fromUuid(itemUuid);
+        if (!item) return;
+        const actors = ChatListener.#ownedActorTargets();
+        if (actors === null) return;
+        let applied = 0;
+        let skipped = 0;
+        for (const actor of actors) {
+          try {
+            const result = await applyPowerEffectsToActor(actor, item, { durationScope });
+            applied += result.applied;
+            skipped += result.skipped;
+          } catch (err) {
+            console.warn("WWN | applyPowerEffects failed", actor.name, err);
+            ui.notifications.warn(game.i18n.format("WWN.Chat.ApplyFailed", { name: actor.name }));
+          }
+        }
+        if (applied > 0) {
+          ui.notifications.info(
+            game.i18n.format("WWN.Power.EffectsApplied", { count: applied, name: item.name })
+          );
+        } else if (skipped > 0) {
+          ui.notifications.warn(game.i18n.localize("WWN.Power.EffectsAlreadyApplied"));
+        }
+        break;
+      }
+    }
+  }
+
+  /** Selected tokens take priority; fall back to targeted tokens. */
+  static #tokenTargets() {
+    let tokens = canvas.tokens?.controlled ?? [];
+    if (!tokens.length) tokens = Array.from(game.user.targets ?? []);
+    return tokens.filter((t) => t.actor);
+  }
+
+  /**
+   * Owned (or GM-accessible) token targets for apply / save actions.
+   * @returns {Token[]|null} null when the caller already received a warning
+   */
+  static #ownedTokenTargets() {
+    const all = ChatListener.#tokenTargets();
+    if (!all.length) {
+      ui.notifications.warn(game.i18n.localize("WWN.Chat.NoTokenSelected"));
+      return null;
+    }
+    const owned = all.filter((t) => t.actor.isOwner || game.user.isGM);
+    if (!owned.length) {
+      ui.notifications.warn(game.i18n.localize("WWN.Chat.ApplyDenied"));
+      return null;
+    }
+    return owned;
+  }
+
+  /**
+   * Owned (or GM-accessible) actors for apply actions.
+   * @returns {Actor[]|null} null when the caller already received a warning
+   */
+  static #ownedActorTargets() {
+    const tokens = ChatListener.#ownedTokenTargets();
+    return tokens === null ? null : tokens.map((t) => t.actor);
+  }
+
+  static async #applyToTokens(amount, multiplier) {
+    const actors = ChatListener.#ownedActorTargets();
+    if (actors === null) return;
+    const { buildApplyDamageNotice } = await import("./apply-damage-notice.mjs");
+    const { createNoticeMessage } = await import("./chat-card.mjs");
+    const notice = buildApplyDamageNotice(
+      amount,
+      multiplier,
+      actors.map((a) => a.name)
+    );
+    await createNoticeMessage({
+      ...notice,
+      flags: { kind: "apply-damage" },
+    });
+    for (const actor of actors) {
+      try {
+        await actor.applyDamage(amount, multiplier);
+      } catch (err) {
+        console.warn("WWN | applyDamage failed", actor.name, err);
+        ui.notifications.warn(game.i18n.format("WWN.Chat.ApplyFailed", { name: actor.name }));
+      }
+    }
+  }
+
+  /**
+   * WWN/SWN level-up rule: reroll the full HD pool; if the new total beats
+   * the current max HP, take it — otherwise old max +1.
+   */
+  static async #applyHitDice(actor, total) {
+    const oldMax = actor.system.hp.max;
+    let newMax;
+    let outcome;
+    if (total > oldMax) {
+      newMax = total;
+      outcome = game.i18n.format("WWN.Roll.HitDiceImproved", { total, max: newMax });
+    } else {
+      newMax = oldMax + 1;
+      outcome = game.i18n.format("WWN.Roll.HitDiceIncrement", { total, old: oldMax, max: newMax });
+    }
+    const gained = Math.max(newMax - oldMax, 0);
+    await actor.update({
+      "system.hp.max": newMax,
+      "system.hp.value": actor.system.hp.value + gained,
+    });
+    const { createCardMessage } = await import("./chat-card.mjs");
+    const esc = foundry.utils.escapeHTML;
+    return createCardMessage({
+      actor,
+      title: game.i18n.localize("WWN.Roll.HitDiceApplied"),
+      bodyTemplate: "systems/wwn/templates/chat/notice-body.hbs",
+      context: { bodyHtml: `<p>${esc(outcome)}</p>` },
+    });
+  }
+}

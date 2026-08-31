@@ -1,0 +1,425 @@
+{
+  "name": "Golem, Amber",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "9UDOP4SvWqyayIui",
+      "name": "Claw",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "2d6",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "6",
+          "ac": 18
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 2,
+          "max": 2
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.9UDOP4SvWqyayIui"
+    },
+    {
+      "_id": "zE0TcOWnGRE0SpQp",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "2d10",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "8",
+          "ac": 18
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.zE0TcOWnGRE0SpQp"
+    },
+    {
+      "_id": "psL7GruKs1WrlzBi",
+      "name": "Mundane Damage Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Can only be harmed by magical attacks.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.psL7GruKs1WrlzBi"
+    },
+    {
+      "_id": "wyCjq5BXZ0lGr5cF",
+      "name": "Tracking",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Without error.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.wyCjq5BXZ0lGr5cF"
+    },
+    {
+      "_id": "genjSiEhSu1nWZKI",
+      "name": "Detect Invisible Creatures",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Within 60&rsquo;.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.genjSiEhSu1nWZKI"
+    },
+    {
+      "_id": "Gk2VsqaKYVW12VGS",
+      "name": "Immunity",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/ability.png",
+      "sort": 0,
+      "flags": {
+        "core": {
+          "sourceId": "Item.6XemchOYN2GUV4KG"
+        }
+      },
+      "effects": [],
+      "system": {
+        "subType": "ability",
+        "description": "<p>Unharmed by gas; unaffected by charm, hold, and sleep spells.</p>",
+        "commitmentOptions": [
+          {
+            "cost": 0,
+            "length": "none",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!gMPiGFTGSqDhrkl0.Gk2VsqaKYVW12VGS"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.i5LJiPkhuCETUsPA"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 45,
+      "max": 45
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "10d8",
+    "skill": 2,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 2300,
+      "morale": 12,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "1",
+        "w": "1"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "9UDOP4SvWqyayIui",
+      "zE0TcOWnGRE0SpQp"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 10,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 14,
+        "ranged": 14
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 60
+      }
+    },
+    "biography": "<p>Artificial beings constructed from different materials by mighty clerics or wizards.</p>\n<p>Amber golems are constructed in the form of giant cats (e.g. lions or tigers).</p>\n<ul>\n<li><strong>Other materials: </strong>Golems formed of other materials are also possible.</li>\n<li><strong style=\"font-family: var(--font-primary); font-size: var(--font-size-14);\">Constructing:</strong><span style=\"font-family: var(--font-primary); font-size: var(--font-size-14);\"> A very complex, expen</span>sive, and time-consuming process.</li>\n</ul>"
+  },
+  "prototypeToken": {
+    "name": "Amber Golem",
+    "displayName": 30,
+    "actorLink": false,
+    "width": 2,
+    "height": 2,
+    "lockRotation": false,
+    "rotation": 0,
+    "alpha": 1,
+    "light": {
+      "alpha": 0.5,
+      "angle": 360,
+      "bright": 0,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "reverse": false,
+        "type": null
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "color": null,
+      "attenuation": 0.5
+    },
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "flags": {
+      "image-hover": {
+        "hideArt": false
+      }
+    },
+    "randomImg": false,
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": "#ff8503",
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738331416,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "gMPiGFTGSqDhrkl0",
+  "_key": "!actors!gMPiGFTGSqDhrkl0"
+}

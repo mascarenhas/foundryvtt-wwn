@@ -1,0 +1,156 @@
+{
+  "_id": "PvL78JpB3rsFLK0G",
+  "name": "Ashcrawler",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "CDKP4VbiItWny7Q7",
+      "name": "Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d6",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 2,
+          "max": 2
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!PvL78JpB3rsFLK0G.CDKP4VbiItWny7Q7"
+    }
+  ],
+  "effects": [],
+  "_key": "!actors!PvL78JpB3rsFLK0G",
+  "system": {
+    "hp": {
+      "value": 23,
+      "max": 23
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "6d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 10,
+      "instinct": 4,
+      "instinctTable": null,
+      "appearing": {
+        "d": "0",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "CDKP4VbiItWny7Q7"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 8,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 13,
+        "ranged": 13
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 50
+      }
+    },
+    "biography": "<p>One of the hideous fungal life forms that sometimes emerge from the Ashblight, an ashcrawler resembles a centipede that stands half as tall as a man and is at least ten feet long. The &ldquo;chitin&rdquo; of the crawler is nothing but a hardened fungal shell around the soft, damp interior of the organism. Those bitten by an ashcrawler must make a Physical save or be infected by the fungus. Without magical healing, they&rsquo;ll become wholly enslaved by the parasitical fungus within a week, becoming a &ldquo;crawler slave&rdquo; and using their own intellect and abilities to gather new prey for the creature. The stat line given for them below reflects an average unlucky peasant, but stronger slaves are possible. Crawler slaves can hide most of the infection under concealing clothing, and can only be saved by powerful healing magic at the GM&rsquo;s discretion.</p>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Ashcrawler",
+    "displayName": 30,
+    "img": "icons/svg/mystery-man.svg",
+    "tint": null,
+    "width": 1,
+    "height": 1,
+    "scale": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "vision": false,
+    "dimSight": 0,
+    "brightSight": 0,
+    "dimLight": 0,
+    "brightLight": 0,
+    "sightAngle": 360,
+    "lightAngle": 360,
+    "lightAlpha": 1,
+    "lightAnimation": {
+      "speed": 5,
+      "intensity": 5
+    },
+    "actorId": "PvL78JpB3rsFLK0G",
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {},
+    "randomImg": false,
+    "prependAdjective": true
+  }
+}

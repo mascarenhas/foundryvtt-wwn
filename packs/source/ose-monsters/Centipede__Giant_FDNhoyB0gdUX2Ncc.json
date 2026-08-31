@@ -1,0 +1,200 @@
+{
+  "name": "Centipede, Giant",
+  "type": "monster",
+  "img": "icons/svg/cowled.svg",
+  "items": [
+    {
+      "_id": "Fbu7oz2VexT3dd8T",
+      "name": "Poison Bite",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "<p><strong>Poison:</strong> Causes victims to become horribly sick for ten days (Physical save): no physical activity possible except half speed movement.</p>",
+        "damage": "0",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "physical",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!FDNhoyB0gdUX2Ncc.Fbu7oz2VexT3dd8T"
+    }
+  ],
+  "effects": [],
+  "flags": {
+    "core": {
+      "sourceId": "Compendium.wwn.ose-monsters.E5dktx6eQJ64WKxk"
+    }
+  },
+  "system": {
+    "hp": {
+      "value": 2,
+      "max": 2
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "1d4",
+    "skill": 0,
+    "details": {
+      "alignment": "Neutral",
+      "xp": 6,
+      "morale": 7,
+      "instinct": 6,
+      "instinctTable": null,
+      "appearing": {
+        "d": "2d4",
+        "w": "1d8"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "Fbu7oz2VexT3dd8T"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 0,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 10,
+        "ranged": 10
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 20
+      }
+    },
+    "biography": "<p>1&rsquo; long centipedes that dwell in dark, damp locations.</p>"
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Giant Centipede",
+    "displayName": 30,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": "classes.effort1"
+    },
+    "randomImg": true,
+    "alpha": 1,
+    "light": {
+      "alpha": 1,
+      "angle": 360,
+      "bright": 0,
+      "color": null,
+      "coloration": 1,
+      "dim": 0,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "darkness": {
+        "min": 0,
+        "max": 1
+      },
+      "attenuation": 0.5
+    },
+    "texture": {
+      "src": "icons/svg/cowled.svg",
+      "tint": null,
+      "scaleX": 1.5,
+      "scaleY": 1.5,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": 1668738330980,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "folder": null,
+  "sort": 0,
+  "ownership": {
+    "default": 0
+  },
+  "_id": "FDNhoyB0gdUX2Ncc",
+  "_key": "!actors!FDNhoyB0gdUX2Ncc"
+}

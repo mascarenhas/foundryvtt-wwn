@@ -1,0 +1,20 @@
+{{!-- NPC header: portrait, name, HD (roll HP), HP bar under the name. --}}
+<header class="sheet-header wwn-sheet-header wwn-npc-header">
+  <div class="wwn-header-identity">
+    <img class="profile-img" src="{{actor.img}}" data-action="editImage" data-edit="img" title="{{actor.name}}" alt="" />
+    <div class="wwn-header-identity-fields">
+      <div class="wwn-header-row wwn-header-row--primary">
+        <input class="wwn-header-name" name="name" type="text" value="{{actor.name}}"
+          placeholder="{{localize 'WWN.details.name'}}" />
+        <label class="wwn-chip" title="{{localize 'WWN.HitDiceLong'}}">
+          <span class="wwn-chip-label">{{localize "WWN.HitDiceShort"}}</span>
+          <input type="text" name="system.hd" value="{{system.hd}}" />
+          <a data-action="rollNpcHp" title="{{localize 'WWN.Roll.NpcHp'}}"><i class="fas fa-dice"></i></a>
+        </label>
+      </div>
+      <div class="wwn-header-bars wwn-npc-hp">
+        {{> wwnResourceBars resourceBars=resourceBars xpBar=null xpPerChar=false}}
+      </div>
+    </div>
+  </div>
+</header>

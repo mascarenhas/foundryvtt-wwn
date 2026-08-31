@@ -1,0 +1,238 @@
+{
+  "_id": "QRQjKdy6RbgLcpeb",
+  "name": "Grave Knight",
+  "type": "monster",
+  "sort": 100001,
+  "flags": {},
+  "img": "icons/svg/mystery-man.svg",
+  "items": [
+    {
+      "_id": "nydq84XoUXVZK6C6",
+      "name": "Attack",
+      "type": "weapon",
+      "img": "systems/wwn/assets/icons/items/weapon.png",
+      "sort": 100000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "description": "",
+        "damage": "1d10",
+        "bonus": 0,
+        "skillDamage": false,
+        "shock": {
+          "damage": "",
+          "ac": 15
+        },
+        "trauma": {
+          "die": "1d6",
+          "rating": 2
+        },
+        "skillId": "",
+        "skillFallback": "punch",
+        "score": "str",
+        "melee": true,
+        "missile": false,
+        "slow": false,
+        "burst": false,
+        "range": {
+          "short": 0,
+          "medium": 0,
+          "long": 0
+        },
+        "save": "",
+        "tags": [],
+        "ammoId": "",
+        "charges": {
+          "value": 0,
+          "max": 0
+        },
+        "counter": {
+          "value": 1,
+          "max": 1
+        },
+        "price": 0,
+        "weight": 0,
+        "quantity": 1,
+        "equipped": false,
+        "stowed": false,
+        "weightless": "",
+        "containerId": "",
+        "ammoMode": "none",
+        "ammoFallback": ""
+      },
+      "_key": "!actors.items!QRQjKdy6RbgLcpeb.nydq84XoUXVZK6C6"
+    },
+    {
+      "_id": "Vmmlkjjc2ipcw9Qo",
+      "name": "Regenerate",
+      "type": "power",
+      "img": "systems/wwn/assets/icons/items/art.png",
+      "sort": 200000,
+      "flags": {},
+      "effects": [],
+      "system": {
+        "subType": "art",
+        "description": "<p>Regains all lost hit points at dusk each day, assuming it's not destroyed.</p>",
+        "source": "",
+        "resourceName": "Effort",
+        "commitmentOptions": [
+          {
+            "cost": 1,
+            "length": "scene",
+            "note": ""
+          }
+        ],
+        "poolCommitted": {
+          "none": 0,
+          "active": 0,
+          "scene": 0,
+          "day": 0
+        },
+        "internalResource": {
+          "value": 0,
+          "max": 0
+        },
+        "internalResourceLength": "scene",
+        "activation": {
+          "roll": "",
+          "rollType": "result",
+          "rollTarget": 0,
+          "save": "",
+          "range": "",
+          "duration": ""
+        }
+      },
+      "_key": "!actors.items!QRQjKdy6RbgLcpeb.Vmmlkjjc2ipcw9Qo"
+    }
+  ],
+  "effects": [],
+  "system": {
+    "hp": {
+      "value": 18,
+      "max": 18
+    },
+    "strain": {
+      "value": 0
+    },
+    "alienation": {
+      "value": 0
+    },
+    "stress": {
+      "value": 0
+    },
+    "hd": "4d8",
+    "skill": 1,
+    "details": {
+      "alignment": "",
+      "xp": 0,
+      "morale": 12,
+      "instinct": 0,
+      "instinctTable": null,
+      "appearing": {
+        "d": "",
+        "w": "0"
+      },
+      "treasure": {
+        "table": "",
+        "type": ""
+      }
+    },
+    "favorites": [
+      "nydq84XoUXVZK6C6"
+    ],
+    "notes": "",
+    "combat": {
+      "ab": 6,
+      "damageBonus": 0,
+      "damageBonusHalfLevel": false,
+      "acManual": {
+        "melee": 15,
+        "ranged": 15
+      }
+    },
+    "movement": {
+      "base": {
+        "value": 40
+      }
+    },
+    "biography": "<p>Created with a @UUID[Compendium.wwn.abilities-wwn.MY4JGlLBpmu7FWEv]{Raise Grave Knight} spell.</p>\n<blockquote>\n<p>It is fully intelligent and self-willed, albeit utterly devoted to its creator, and it remembers a significant amount about its prior life. A grave knight regains all lost hit points at dusk each day, assuming it&rsquo;s not destroyed. A caster may have only one grave knight active at a time. One that has been reduced to zero hit points is destroyed and can only be rebuilt with a month of painstaking repair and re-enchantment.</p>\n</blockquote>"
+  },
+  "ownership": {
+    "default": 0
+  },
+  "prototypeToken": {
+    "flags": {},
+    "name": "Grave Knight",
+    "displayName": 30,
+    "width": 1,
+    "height": 1,
+    "lockRotation": false,
+    "rotation": 0,
+    "actorLink": false,
+    "disposition": -1,
+    "displayBars": 20,
+    "bar1": {
+      "attribute": "hp"
+    },
+    "bar2": {
+      "attribute": null
+    },
+    "randomImg": false,
+    "light": {
+      "dim": 0,
+      "bright": 0,
+      "angle": 360,
+      "alpha": 1,
+      "animation": {
+        "speed": 5,
+        "intensity": 5,
+        "type": null,
+        "reverse": false
+      },
+      "color": null,
+      "coloration": 1,
+      "attenuation": 0.5,
+      "luminosity": 0.5,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "texture": {
+      "src": "icons/svg/mystery-man.svg",
+      "tint": null,
+      "scaleX": 1,
+      "scaleY": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "rotation": 0
+    },
+    "sight": {
+      "angle": 360,
+      "enabled": false,
+      "range": 0,
+      "brightness": 1,
+      "visionMode": "basic",
+      "color": null,
+      "attenuation": 0.1,
+      "saturation": 0,
+      "contrast": 0
+    },
+    "alpha": 1,
+    "detectionModes": [],
+    "prependAdjective": true
+  },
+  "folder": null,
+  "_stats": {
+    "systemId": "wwn",
+    "systemVersion": null,
+    "coreVersion": null,
+    "createdTime": null,
+    "modifiedTime": null,
+    "lastModifiedBy": null
+  },
+  "_key": "!actors!QRQjKdy6RbgLcpeb"
+}
