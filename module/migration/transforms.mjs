@@ -1213,11 +1213,15 @@ function migrateCharacter(actor) {
   const moveBonus = Number(s.movement?.bonus) || 0;
   if (moveBonus) tweakChanges.push({ key: "system.movement.bonus", type: "add", value: moveBonus, phase: "initial" });
 
-  if (tweakChanges.length) {
+  if (
+    tweakChanges.length
+    && !effects.some((effect) => String(effect?.name ?? "").trim() === "Migrated: WWN Tweaks")
+  ) {
     effects.push({
       name: "Migrated: WWN Tweaks",
       img: "icons/svg/upgrade.svg",
       system: { changes: tweakChanges },
+      flags: { wwn: { migrationGenerated: "legacyTweaks" } },
     });
   }
   // Legacy `warrior` flag → classEdge "Full Warrior" via assignment dialog; do not

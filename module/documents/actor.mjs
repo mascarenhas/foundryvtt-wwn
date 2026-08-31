@@ -186,6 +186,7 @@ export class WwnActor extends Actor {
   /** @inheritDoc */
   _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
     super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
+    if (options?.wwnMigrating || game.wwn?.migrating) return;
     if (collection !== "items" || !isNpc(this) || userId !== game.user.id) return;
 
     const favorites = mergeWeaponFavorites(this.system.favorites, documents);
@@ -195,6 +196,7 @@ export class WwnActor extends Actor {
   /** @inheritDoc */
   _onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId) {
     super._onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId);
+    if (options?.wwnMigrating || game.wwn?.migrating) return;
     // Prune deleted items from favorites
     if (collection !== "items" || userId !== game.user.id) return;
     const favorites = this.system.favorites ?? [];

@@ -1,5 +1,13 @@
 # Changelog
 
+## New in 2.0.0-alpha2.3
+
+### Fixes
+
+- Fixed Foundry v14 migration of Actor inventories by deleting persisted embedded Item rows before recreating their canonical forms.
+- Fixed unlinked-token migration to update only each Token's base-relative ActorDelta items, preserving tombstones without copying the full synthetic inventory.
+- Fixed legacy Tweaks Active Effects being mistaken for already-persisted rows during the pre-ready migration pass.
+
 ## New in 2.0.0-alpha2.2
 
 ### Fixes

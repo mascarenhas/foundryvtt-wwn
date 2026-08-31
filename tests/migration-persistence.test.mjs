@@ -143,24 +143,200 @@ describe("forced release migration persistence", () => {
     assert.equal(updates[0].options.wwnMigrating, true);
   });
 
-  it("clears embedded items with one replacement operator", async () => {
+  it("creates a pre-ready legacy Tweaks effect instead of updating its transient id", async () => {
     foundry.data ??= {};
     foundry.data.operators ??= {};
     foundry.data.operators.ForcedReplacement = {
       create: (value) => ({ operator: "replace", value }),
     };
 
-    let update;
+    const transientEffect = {
+      _id: "transient-effect",
+      _key: "!actors.effects!actor-1.transient-effect",
+      _stats: { createdTime: null },
+      name: "Migrated: WWN Tweaks",
+      img: "icons/svg/upgrade.svg",
+      flags: { wwn: { migrationGenerated: "legacyTweaks" } },
+      system: {
+        changes: [
+          {
+            key: "system.abilities.dex.baseMod",
+            type: "add",
+            value: 1,
+            phase: "initial",
+            priority: null,
+          },
+        ],
+      },
+    };
+    const raw = {
+      _id: "actor-1",
+      name: "Loaded PC",
+      type: "character",
+      system: { details: { level: 1 }, combat: { abMod: 0 } },
+      items: [],
+      effects: [transientEffect],
+    };
+    const created = [];
+    const updated = [];
     const actor = {
+      type: raw.type,
+      name: raw.name,
+      system: raw.system,
+      img: undefined,
+      _source: { effects: structuredClone(raw.effects) },
+      items: { size: 0, invalidDocumentIds: new Set() },
+      effects: { size: 1 },
+      toObject: () => structuredClone(raw),
+      update: async () => {},
+      updateEmbeddedDocuments: async (...args) => updated.push(args),
+      createEmbeddedDocuments: async (...args) => created.push(args),
+    };
+
+    await migrateActorDocument(actor, { forcePersist: true, persistItems: false });
+
+    assert.equal(updated.length, 0);
+    assert.equal(created.length, 1);
+    assert.equal(created[0][0], "ActiveEffect");
+    assert.equal(created[0][1].length, 1);
+    assert.equal(Object.hasOwn(created[0][1][0], "_id"), false);
+    assert.equal(Object.hasOwn(created[0][1][0], "_key"), false);
+    assert.equal(Object.hasOwn(created[0][1][0], "_stats"), false);
+    assert.equal(created[0][2].wwnMigrating, true);
+  });
+
+  it("keeps the legacy system intact when creating its Tweaks effect fails", async () => {
+    foundry.data ??= {};
+    foundry.data.operators ??= {};
+    foundry.data.operators.ForcedReplacement = {
+      create: (value) => ({ operator: "replace", value }),
+    };
+
+    const transientEffect = {
+      _id: "transient-effect",
+      _key: "!actors.effects!actor-1.transient-effect",
+      _stats: { createdTime: null },
+      name: "Migrated: WWN Tweaks",
+      img: "icons/svg/upgrade.svg",
+      flags: { wwn: { migrationGenerated: "legacyTweaks" } },
+      system: {
+        changes: [
+          {
+            key: "system.abilities.dex.baseMod",
+            type: "add",
+            value: 1,
+            phase: "initial",
+            priority: null,
+          },
+        ],
+      },
+    };
+    const raw = {
+      _id: "actor-1",
+      name: "Loaded PC",
+      type: "character",
+      system: { details: { level: 1 }, combat: { abMod: 0 } },
+      items: [],
+      effects: [transientEffect],
+    };
+    let systemUpdates = 0;
+    const actor = {
+      type: raw.type,
+      name: raw.name,
+      system: raw.system,
+      img: undefined,
+      _source: { effects: structuredClone(raw.effects) },
+      items: { size: 0, invalidDocumentIds: new Set() },
+      effects: { size: 1 },
+      toObject: () => structuredClone(raw),
+      update: async () => { systemUpdates++; },
+      updateEmbeddedDocuments: async () => {},
+      createEmbeddedDocuments: async () => {
+        throw new Error("effect create failed");
+      },
+    };
+
+    await assert.rejects(
+      migrateActorDocument(actor, { forcePersist: true, persistItems: false }),
+      /effect create failed/
+    );
+    assert.equal(systemUpdates, 0);
+  });
+
+  it("does not recreate or update a persisted generated Tweaks effect on retry", async () => {
+    foundry.data ??= {};
+    foundry.data.operators ??= {};
+    foundry.data.operators.ForcedReplacement = {
+      create: (value) => ({ operator: "replace", value }),
+    };
+
+    const persistedEffect = {
+      _id: "persisted-effect",
+      _key: "!actors.effects!actor-1.persisted-effect",
+      _stats: { createdTime: 1788200000000 },
+      name: "Migrated: WWN Tweaks",
+      img: "icons/svg/upgrade.svg",
+      flags: { wwn: { migrationGenerated: "legacyTweaks" } },
+      system: {
+        changes: [
+          {
+            key: "system.abilities.dex.baseMod",
+            type: "add",
+            value: 1,
+            phase: "initial",
+            priority: null,
+          },
+        ],
+      },
+    };
+    const raw = {
+      _id: "actor-1",
+      name: "Loaded PC",
+      type: "character",
+      system: { details: { level: 1 }, combat: { abMod: 0 } },
+      items: [],
+      effects: [persistedEffect],
+    };
+    const created = [];
+    const updated = [];
+    const actor = {
+      type: raw.type,
+      name: raw.name,
+      system: raw.system,
+      img: undefined,
+      _source: { effects: structuredClone(raw.effects) },
+      items: { size: 0, invalidDocumentIds: new Set() },
+      effects: { size: 1 },
+      toObject: () => structuredClone(raw),
+      update: async () => {},
+      updateEmbeddedDocuments: async (...args) => updated.push(args),
+      createEmbeddedDocuments: async (...args) => created.push(args),
+    };
+
+    await migrateActorDocument(actor, { forcePersist: true, persistItems: false });
+
+    assert.equal(updated.length, 0);
+    assert.equal(created.length, 0);
+  });
+
+  it("clears embedded items through the database delete-all operation", async () => {
+    let deletion;
+    const actor = {
+      isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [{ _id: "item-1" }] }),
-      update: async (changes, options) => { update = { changes, options }; },
+      deleteEmbeddedDocuments: async (name, ids, options) => {
+        deletion = { name, ids, options };
+      },
     };
 
     await clearEmbeddedItems(actor);
 
-    assert.deepEqual(update.changes.items, { operator: "replace", value: [] });
-    assert.equal(Object.hasOwn(update.options, "recursive"), false);
+    assert.deepEqual(deletion, {
+      name: "Item",
+      ids: [],
+      options: { deleteAll: true, wwnMigrating: true },
+    });
   });
 
   it("recursively merges partial world-item migration patches", async () => {

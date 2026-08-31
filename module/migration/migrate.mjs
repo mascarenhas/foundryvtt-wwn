@@ -23,7 +23,10 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.2";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.3";
+
+/** Marks the one Actor-level effect synthesized while loading legacy tweak fields. */
+const LEGACY_TWEAK_EFFECT_MIGRATION = "legacyTweaks";
 
 /**
  * Plain-ish item source from a world/embedded Item document.
@@ -166,7 +169,7 @@ export async function migrateWorld({ forcePersist = false } = {}) {
         if (!actor) continue;
         try {
           console.info(`WWN | Migration: starting token actor ${actor.name} on scene ${scene.name}`);
-          await migrateActorDocument(actor, { forcePersist });
+          await migrateUnlinkedToken(token, { forcePersist });
           console.info(`${actor.name}-- Token Migration Complete`);
         } catch (err) {
           failures++;
@@ -331,7 +334,10 @@ export function actorMigrationPersistencePlan({
  * Migrate a single Actor document in place (system shape + embedded items).
  * Does not change actor type.
  */
-export async function migrateActorDocument(actor, { forcePersist = false } = {}) {
+export async function migrateActorDocument(
+  actor,
+  { forcePersist = false, persistItems = true } = {}
+) {
   if (actor.type === "faction") return; // out of scope — leave untouched
 
   // Fast path: already canonical shape, no embedded content to fix.
@@ -354,7 +360,7 @@ export async function migrateActorDocument(actor, { forcePersist = false } = {})
 
   const result = migrateActorData(raw);
   if (!result) {
-    if (!bare) {
+    if (!bare && persistItems) {
       const replaced = await replaceEmbeddedItemsIfNeeded(actor, itemSources);
       if (replaced) await finalizeActorMigrationHooks(actor);
     }
@@ -367,8 +373,11 @@ export async function migrateActorDocument(actor, { forcePersist = false } = {})
     bare,
     rawSystem: raw.system,
     result,
-    itemsChanged,
+    // Synthetic Token actors persist their collection through Token.delta,
+    // never by replacing the full effective inventory on the ephemeral Actor.
+    itemsChanged: persistItems && itemsChanged,
   });
+  if (!persistItems) persistence.items = null;
 
   if (!persistence.shouldPersist) {
     if (!bare && isNpc(actor)) await ensureNpcWeaponFavorites(actor);
@@ -407,6 +416,96 @@ export async function migrateActorDocument(actor, { forcePersist = false } = {})
 
   if (!bare && isNpc(actor)) await ensureNpcWeaponFavorites(actor);
   if (persistence.items !== null) await finalizeActorMigrationHooks(actor);
+}
+
+/**
+ * Persist an unlinked Token actor without copying its full synthetic inventory
+ * into the ActorDelta. The delta is the durable, base-relative boundary; only
+ * entries already owned by that delta are written back.
+ * @param {TokenDocument} token
+ * @param {{ forcePersist?: boolean }} options
+ */
+export async function migrateUnlinkedToken(token, { forcePersist = false } = {}) {
+  const actor = token?.actor;
+  const delta = token?.delta;
+  if (!actor || !delta) return;
+
+  const deltaItems = collectActorDeltaItemSources(delta);
+
+  // Actor.update correctly computes sparse system/effect changes for a
+  // synthetic Actor. Its embedded Item collection needs separate handling.
+  await migrateActorDocument(actor, { forcePersist, persistItems: false });
+
+  const migratedActor = token.actor ?? actor;
+  const actorRaw = migratedActor.toObject();
+  const effectiveItems = collectEmbeddedItemSources(migratedActor, actorRaw);
+  const canonicalDeltaItems = buildActorDeltaItemMigration(deltaItems, effectiveItems);
+  const itemsChanged =
+    JSON.stringify(deltaItems) !== JSON.stringify(canonicalDeltaItems);
+
+  if (forcePersist || itemsChanged) {
+    // Arrays are full replacements under Foundry update semantics. Do not use
+    // ForcedReplacement here: ActorDelta.items is an EmbeddedCollectionDelta
+    // whose tombstones and base-relative ownership must remain intact.
+    await token.update(
+      { delta: { items: canonicalDeltaItems } },
+      { enforceTypes: false, diff: false, wwnMigrating: true }
+    );
+  }
+
+  if (forcePersist || itemsChanged) {
+    const refreshedActor = token.actor ?? migratedActor;
+    await finalizeActorMigrationHooks(refreshedActor);
+  }
+}
+
+/**
+ * Read only the Item entries managed by an ActorDelta, including tombstones.
+ * @param {ActorDelta} delta
+ * @returns {object[]}
+ */
+function collectActorDeltaItemSources(delta) {
+  const source = Array.isArray(delta?._source?.items) ? delta._source.items : [];
+  const byId = new Map();
+  for (const item of source) {
+    if (!item?._id) continue;
+    byId.set(item._id, foundry.utils.deepClone(item));
+  }
+  return Array.from(byId.values());
+}
+
+/**
+ * Canonicalize delta-owned Items against the full synthetic inventory while
+ * preserving deletion tombstones and excluding inherited base-only Items.
+ * @param {object[]} deltaItems
+ * @param {object[]} effectiveItems
+ * @returns {object[]}
+ */
+export function buildActorDeltaItemMigration(deltaItems, effectiveItems) {
+  const canonicalEffective = migrateActorItems(
+    (effectiveItems ?? []).filter((item) => !item?._tombstone)
+  );
+  const effectiveById = new Map(
+    canonicalEffective.filter((item) => item?._id).map((item) => [item._id, item])
+  );
+
+  const migrated = [];
+  for (const source of deltaItems ?? []) {
+    if (source?._tombstone) {
+      migrated.push(foundry.utils.deepClone(source));
+      continue;
+    }
+    const canonical = effectiveById.get(source?._id);
+    if (canonical) {
+      migrated.push(foundry.utils.deepClone(canonical));
+      continue;
+    }
+    const [fallback] = migrateActorItems([source]);
+    // Some migration steps deliberately retire an embedded Item. Omitting it
+    // from the replacement delta array removes the delta-owned row as well.
+    if (fallback) migrated.push(foundry.utils.deepClone(fallback));
+  }
+  return migrated;
 }
 
 /**
@@ -451,17 +550,20 @@ async function persistActorMigration(actor, data) {
   if (data.tokenSrc) update["prototypeToken.texture.src"] = data.tokenSrc;
   if (data.legacyWounds) update[`flags.${NS}.legacyWounds`] = data.legacyWounds;
 
+  if (data.effects?.length && !data.bare) {
+    console.info(`WWN | ${label}: persisting effects…`);
+    // A pre-ready migration effect is synthesized from fields that the system
+    // replacement removes. Store it first so a failed create remains safely
+    // retryable from the still-legacy actor source.
+    await persistActorEffectMigrations(actor, data.effects);
+  }
+
   if (Object.keys(update).length) {
     console.info(`WWN | ${label}: persisting system…`);
     // ForcedReplacement already expresses exact replacement. Combining it
     // with recursive:false makes Foundry wrap top-level values in a second
     // operator, which breaks TypeDataField and synthetic Token actors.
     await actor.update(update, { enforceTypes: false, diff: false, wwnMigrating: true });
-  }
-
-  if (data.effects?.length && !data.bare) {
-    console.info(`WWN | ${label}: persisting effects…`);
-    await persistActorEffectMigrations(actor, data.effects);
   }
 
   if (data.items == null) return;
@@ -485,6 +587,24 @@ async function persistActorEffectMigrations(actor, effects) {
     // Skip names owned by classEdge assignment / cleanup.
     if (String(effect.name ?? "").trim() === "Full Warrior") continue;
 
+    // Actor.migrateData runs before ready and can synthesize the legacy Tweaks
+    // effect in memory. That temporary source row has an ID, but no matching
+    // database row; attempting to update it produces "undefined id" on v14.
+    // Persist it as a fresh effect instead. Once stored, createdTime lets a
+    // retry distinguish the real row from the pre-ready temporary one.
+    const generatedMigration =
+      effect.flags?.[NS]?.migrationGenerated === LEGACY_TWEAK_EFFECT_MIGRATION;
+    const persistedGenerated =
+      generatedMigration && effect._stats?.createdTime != null;
+    if (generatedMigration && !persistedGenerated) {
+      const data = foundry.utils.deepClone(effect);
+      delete data._id;
+      delete data._key;
+      delete data._stats;
+      toCreate.push(data);
+      continue;
+    }
+
     const id = effect._id;
     if (!id || !sourceById.has(id)) {
       const data = foundry.utils.deepClone(effect);
@@ -507,16 +627,25 @@ async function persistActorEffectMigrations(actor, effects) {
   }
 
   if (toUpdate.length) {
-    await actor.updateEmbeddedDocuments("ActiveEffect", toUpdate, { enforceTypes: false });
+    await actor.updateEmbeddedDocuments("ActiveEffect", toUpdate, {
+      enforceTypes: false,
+      wwnMigrating: true,
+    });
   }
   if (toCreate.length) {
     // Avoid duplicating an already-present migration Tweaks AE.
     const existingNames = new Set(
-      (actor._source?.effects ?? []).map((e) => String(e.name ?? "").trim())
+      (actor._source?.effects ?? [])
+        .filter(
+          (e) =>
+            e.flags?.[NS]?.migrationGenerated !== LEGACY_TWEAK_EFFECT_MIGRATION
+            || e._stats?.createdTime != null
+        )
+        .map((e) => String(e.name ?? "").trim())
     );
     const filtered = toCreate.filter((e) => !existingNames.has(String(e.name ?? "").trim()));
     if (filtered.length) {
-      await actor.createEmbeddedDocuments("ActiveEffect", filtered);
+      await actor.createEmbeddedDocuments("ActiveEffect", filtered, { wwnMigrating: true });
     }
   }
 }
@@ -562,7 +691,7 @@ async function replaceEmbeddedItemsIfNeeded(actor, itemSources) {
  * @param {Actor} actor
  * @param {object[]} migratedItems
  */
-async function replaceEmbeddedItemsSafely(actor, migratedItems) {
+export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
   const label = actor.name ?? actor.id;
   const backup = foundry.utils.deepClone(collectEmbeddedItemSources(actor, actor.toObject()));
   console.info(`WWN | ${label}: clearing ${actor.items?.size ?? 0} embedded items…`);
@@ -577,6 +706,9 @@ async function replaceEmbeddedItemsSafely(actor, migratedItems) {
       err
     );
     try {
+      // A failed batch can still leave some rows behind. Ensure the restore is
+      // applied to an actually empty collection rather than colliding by ID.
+      await clearEmbeddedItems(actor);
       await recreateEmbeddedItems(actor, backup);
     } catch (restoreErr) {
       console.error(`WWN | ${label}: embed restore also failed:`, restoreErr);
@@ -586,21 +718,22 @@ async function replaceEmbeddedItemsSafely(actor, migratedItems) {
 }
 
 /**
- * Wipe the actor's item collection without constructing legacy Item documents.
- * Foundry's ForcedReplacement still createDocument()'s existing rows when IDs
- * match — an empty replacement avoids that path entirely.
+ * Wipe a real Actor's Item collection through Foundry's database API. A parent
+ * update of the EmbeddedCollection field does not delete its server-side rows.
+ * Synthetic Token actors must instead persist their base-relative ActorDelta.
  * @param {Actor} actor
  */
 export async function clearEmbeddedItems(actor) {
-  const hasItems =
-    actor.items?.size > 0
-    || (actor.items?.invalidDocumentIds?.size ?? 0) > 0
-    || (actor.toObject().items?.length ?? 0) > 0;
-  if (!hasItems) return;
-  await actor.update(
-    { items: forcedReplace([]) },
-    { enforceTypes: false, diff: false, wwnMigrating: true }
-  );
+  if (actor?.isToken) {
+    throw new Error("Cannot bulk-replace Items on a synthetic Token actor; update Token.delta instead.");
+  }
+  // Always ask the server to clear the persisted collection. In particular,
+  // do not trust a client collection after a failed create batch: the server
+  // may contain rows which never reached this client's in-memory Actor.
+  await actor.deleteEmbeddedDocuments("Item", [], {
+    deleteAll: true,
+    wwnMigrating: true,
+  });
 }
 
 /**
