@@ -1326,6 +1326,7 @@ export function applyEmbeddedItemMigration(item) {
       ...migrated,
       _id: item._id ?? migrated._id,
       _key: item._key ?? migrated._key,
+      ...(Object.hasOwn(item, "_stats") ? { _stats: item._stats } : {}),
     };
   }
   // Partial patch (e.g. `{ system: { … } }`) — shallow-merge system.
@@ -1571,6 +1572,7 @@ function migrateCharacter(actor) {
       name: def.name,
       type: "currency",
       img: CONFIG.WWN?.defaultIcons?.currency ?? "icons/svg/coins.svg",
+      flags: { wwn: { migrationGenerated: "legacyCurrency" } },
       system: { multiplier: def.multiplier, perSlot: def.perSlot, carried, banked },
     });
   }

@@ -503,6 +503,22 @@ describe("applyEmbeddedItemMigration", () => {
     assert.equal(out.system.subType, "art");
   });
 
+  it("preserves persistence metadata across a full embedded-item replacement", () => {
+    const stats = { createdTime: 1788200000000, modifiedTime: 1788200001000 };
+    const out = applyEmbeddedItemMigration({
+      _id: "wild-talent",
+      name: "Wild Psychic Talent",
+      type: "focus",
+      flags: { wwn: { migrationGenerated: "darkSunWildPsychicTalent" } },
+      _stats: stats,
+      system: { ownedLevel: 1 },
+      effects: [],
+    });
+
+    assert.equal(out._stats, stats);
+    assert.equal(out._stats.createdTime, 1788200000000);
+  });
+
   it("merges partial weapon shock.ac fixes", () => {
     const out = applyEmbeddedItemMigration({
       _id: "w1",

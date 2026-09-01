@@ -54,6 +54,158 @@ function legacyDarkSunActor() {
   };
 }
 
+function legacyCurrencyPersistenceActor() {
+  const actor = legacyDarkSunActor();
+  actor.items = [
+    {
+      _id: "asset-1",
+      name: "Persisted Asset",
+      type: "asset",
+      _stats: { createdTime: null },
+      effects: [],
+      system: {},
+    },
+  ];
+  return actor;
+}
+
+/**
+ * Model Foundry's already-migrated client source separately from durable Actor
+ * system and embedded-Item rows. This makes transaction ordering and rollback
+ * assertions meaningful rather than mutating one shared mock array.
+ */
+function migrationPersistenceHarness({
+  storedSystem,
+  storedItems,
+  failCreateAttempts = new Set(),
+  failSystemUpdateAttempts = new Set(),
+} = {}) {
+  const legacy = legacyCurrencyPersistenceActor();
+  let databaseSystem = structuredClone(storedSystem ?? legacy.system);
+  let databaseItems = structuredClone(storedItems ?? legacy.items);
+  const loaded = migrateActorData({
+    ...structuredClone(legacy),
+    system: structuredClone(databaseSystem),
+    items: structuredClone(databaseItems),
+  });
+  let transientIndex = 0;
+  let liveItems = (loaded.items ?? databaseItems).map((item) => {
+    if (item._id) return structuredClone(item);
+    transientIndex += 1;
+    return {
+      ...structuredClone(item),
+      _id: `transient-${transientIndex}`,
+      _key: `!actors.items!actor-1.transient-${transientIndex}`,
+      _stats: { createdTime: null },
+    };
+  });
+  const events = [];
+  let createAttempt = 0;
+  let systemUpdateAttempt = 0;
+
+  const actor = {
+    id: "actor-1",
+    name: legacy.name,
+    type: legacy.type,
+    img: undefined,
+    system: structuredClone(loaded.system ?? databaseSystem),
+    effects: { size: 0 },
+    get items() {
+      liveItems.size = liveItems.length;
+      liveItems.invalidDocumentIds = new Set();
+      return liveItems;
+    },
+    toObject() {
+      return {
+        _id: this.id,
+        name: this.name,
+        type: this.type,
+        system: structuredClone(this.system),
+        items: structuredClone(liveItems),
+        effects: [],
+      };
+    },
+    updateSource(changes) {
+      events.push({ kind: "updateSource", changes: structuredClone(changes) });
+      if (changes.items?.operator === "replace") liveItems = [];
+    },
+    async deleteEmbeddedDocuments(documentName, ids, options) {
+      events.push({ kind: "itemDelete", documentName, ids: [...ids], options });
+      const databaseIds = new Set(databaseItems.map((item) => item._id));
+      for (const id of ids) {
+        assert.equal(databaseIds.has(id), true, `database must contain ${id}`);
+      }
+      databaseItems = databaseItems.filter((item) => !ids.includes(item._id));
+      liveItems = liveItems.filter((item) => !ids.includes(item._id));
+    },
+    async createEmbeddedDocuments(documentName, items, options) {
+      assert.equal(documentName, "Item");
+      createAttempt += 1;
+      events.push({
+        kind: "itemCreate",
+        ids: items.map((item) => item._id ?? null),
+        names: items.map((item) => item.name),
+        hasStats: items.map((item) => Object.hasOwn(item, "_stats")),
+        hasKeys: items.map((item) => Object.hasOwn(item, "_key")),
+        migrationPersisted: items.map(
+          (item) => item.flags?.wwn?.migrationPersisted ?? null
+        ),
+        options,
+      });
+      if (failCreateAttempts.has(createAttempt)) {
+        throw new Error(`item create failed on attempt ${createAttempt}`);
+      }
+      const existingIds = new Set(databaseItems.map((item) => item._id));
+      const created = items.map((source, index) => {
+        const id = source._id ?? `created-${createAttempt}-${index}`;
+        assert.equal(existingIds.has(id), false, `create id ${id} must be free`);
+        existingIds.add(id);
+        const created = {
+          ...structuredClone(source),
+          _id: id,
+        };
+        // Foundry stamps newly created rows only when migration does not replay
+        // an ephemeral pre-ready statistics object.
+        if (!Object.hasOwn(source, "_stats")) {
+          created._stats = { createdTime: 1000 + createAttempt };
+        }
+        return created;
+      });
+      databaseItems.push(...structuredClone(created));
+      liveItems.push(...structuredClone(created));
+      return created;
+    },
+    async update(changes, options) {
+      systemUpdateAttempt += 1;
+      events.push({
+        kind: "actorUpdate",
+        changes: structuredClone(changes),
+        options,
+      });
+      if (failSystemUpdateAttempts.has(systemUpdateAttempt)) {
+        throw new Error(`system update failed on attempt ${systemUpdateAttempt}`);
+      }
+      const replacement = changes.system?.operator === "replace"
+        ? changes.system.value
+        : changes.system;
+      if (replacement != null) {
+        databaseSystem = structuredClone(replacement);
+        this.system = structuredClone(replacement);
+      }
+    },
+  };
+
+  return {
+    actor,
+    events,
+    snapshot: () => ({
+      databaseSystem: structuredClone(databaseSystem),
+      databaseItems: structuredClone(databaseItems),
+      liveItems: structuredClone(liveItems),
+    }),
+  };
+}
+
 describe("forced release migration persistence", () => {
   it("writes already-migrated Dark Sun currency and weapon-Art sources", () => {
     const legacy = legacyDarkSunActor();
@@ -144,10 +296,11 @@ describe("forced release migration persistence", () => {
         assert.deepEqual(changes.items, { operator: "replace", value: [] });
         liveItems = [];
       },
-      deleteEmbeddedDocuments: async (_name, _ids, options) => {
-        assert.equal(options.deleteAll, true);
-        assert.equal(liveItems.length, 0, "deleteAll must not inspect transient IDs");
-        databaseItems = [];
+      deleteEmbeddedDocuments: async (_name, ids, options) => {
+        assert.deepEqual(ids, ["weapon-1", "art-1"]);
+        assert.deepEqual(options, { wwnMigrating: true });
+        assert.equal(liveItems.length, 4, "explicit deletion runs before the local clear");
+        databaseItems = databaseItems.filter((item) => !ids.includes(item._id));
       },
       createEmbeddedDocuments: async (_name, items, options) => {
         assert.equal(options.keepId, true);
@@ -181,6 +334,106 @@ describe("forced release migration persistence", () => {
           banked: 0,
         },
       ]
+    );
+  });
+
+  it("keeps the legacy system and restores only persisted Items when item creation fails", async () => {
+    const harness = migrationPersistenceHarness({
+      failCreateAttempts: new Set([1]),
+    });
+
+    await assert.rejects(
+      migrateActorDocument(harness.actor, { forcePersist: true }),
+      /item create failed on attempt 1/,
+    );
+
+    const actorUpdates = harness.events.filter((event) => event.kind === "actorUpdate");
+    const creates = harness.events.filter((event) => event.kind === "itemCreate");
+    const state = harness.snapshot();
+
+    assert.equal(actorUpdates.length, 0, "Actor system persistence must wait for Items");
+    assert.equal(creates.length, 2, "the failed replacement must make one bounded restore attempt");
+    assert.deepEqual(creates[0].names, ["Persisted Asset", "Bits", "Ceramic Pieces"]);
+    assert.deepEqual(creates[0].hasStats, [true, false, false]);
+    assert.deepEqual(creates[0].hasKeys, [false, false, false]);
+    assert.deepEqual(creates[0].migrationPersisted, [null, true, true]);
+    assert.deepEqual(creates[1].names, ["Persisted Asset"]);
+    assert.deepEqual(state.databaseItems.map((item) => item._id), ["asset-1"]);
+    assert.ok(state.databaseSystem.scores, "the durable Actor system must remain legacy");
+
+    // A reload still has the legacy currency source fields and therefore can
+    // synthesize the currency Items again on a clean retry.
+    const reloaded = migrateActorData({
+      ...legacyCurrencyPersistenceActor(),
+      system: state.databaseSystem,
+      items: state.databaseItems,
+    });
+    assert.equal(reloaded.items.filter((item) => item.type === "currency").length, 2);
+  });
+
+  it("rolls Items back after an Actor update failure and succeeds on a fresh retry", async () => {
+    const first = migrationPersistenceHarness({
+      failSystemUpdateAttempts: new Set([1]),
+    });
+
+    await assert.rejects(
+      migrateActorDocument(first.actor, { forcePersist: true }),
+      /system update failed on attempt 1/,
+    );
+
+    const firstCreates = first.events.filter((event) => event.kind === "itemCreate");
+    const firstDeletes = first.events.filter((event) => event.kind === "itemDelete");
+    const firstUpdates = first.events.filter((event) => event.kind === "actorUpdate");
+    const recovered = first.snapshot();
+
+    assert.equal(firstUpdates.length, 1);
+    assert.equal(firstCreates.length, 2, "system failure must trigger one Item rollback create");
+    assert.deepEqual(firstDeletes[0].ids, ["asset-1"]);
+    assert.deepEqual(
+      firstDeletes[1].ids,
+      ["asset-1", "transient-1", "transient-2"],
+      "server-stamped generated rows must be classified as persisted during rollback",
+    );
+    assert.deepEqual(firstCreates[0].hasStats, [true, false, false]);
+    assert.deepEqual(firstCreates[0].hasKeys, [false, false, false]);
+    assert.deepEqual(firstCreates[0].migrationPersisted, [null, true, true]);
+    assert.deepEqual(firstCreates[1].names, ["Persisted Asset"]);
+    assert.deepEqual(recovered.databaseItems.map((item) => item._id), ["asset-1"]);
+    assert.ok(recovered.databaseSystem.scores, "failed Actor update must leave legacy system data");
+
+    const retry = migrationPersistenceHarness({
+      storedSystem: recovered.databaseSystem,
+      storedItems: recovered.databaseItems,
+    });
+    await migrateActorDocument(retry.actor, { forcePersist: true });
+
+    const final = retry.snapshot();
+    const retryCreateIndex = retry.events.findIndex((event) => event.kind === "itemCreate");
+    const retryUpdateIndex = retry.events.findIndex((event) => event.kind === "actorUpdate");
+    assert.ok(retryCreateIndex >= 0 && retryCreateIndex < retryUpdateIndex);
+    assert.equal(Object.hasOwn(final.databaseSystem, "scores"), false);
+    assert.equal(final.databaseItems.filter((item) => item.type === "currency").length, 2);
+  });
+
+  it("keeps the Actor update error primary when the bounded Item rollback also fails", async () => {
+    const harness = migrationPersistenceHarness({
+      failCreateAttempts: new Set([2, 3]),
+      failSystemUpdateAttempts: new Set([1]),
+    });
+
+    await assert.rejects(
+      migrateActorDocument(harness.actor, { forcePersist: true }),
+      /system update failed on attempt 1/,
+    );
+
+    assert.equal(
+      harness.events.filter((event) => event.kind === "actorUpdate").length,
+      1,
+    );
+    assert.equal(
+      harness.events.filter((event) => event.kind === "itemCreate").length,
+      3,
+      "rollback and its safety restore must each be attempted at most once",
     );
   });
 
@@ -398,7 +651,7 @@ describe("forced release migration persistence", () => {
     assert.equal(created.length, 0);
   });
 
-  it("locally clears transient live items before the database delete-all operation", async () => {
+  it("clears a known pre-ready generated Item without sending its transient id", async () => {
     const events = [];
     const actor = {
       isToken: false,
@@ -408,6 +661,7 @@ describe("forced release migration persistence", () => {
           {
             _id: "transient-currency",
             type: "currency",
+            flags: { wwn: { migrationGenerated: "legacyCurrency" } },
             _stats: { createdTime: null },
           },
         ],
@@ -416,9 +670,7 @@ describe("forced release migration persistence", () => {
       updateSource: (changes) => {
         events.push({ kind: "updateSource", changes });
       },
-      deleteEmbeddedDocuments: async (name, ids, options) => {
-        events.push({ kind: "delete", name, ids, options });
-      },
+      deleteEmbeddedDocuments: async () => assert.fail("transient id must not reach the database"),
     };
 
     await clearEmbeddedItems(actor);
@@ -427,12 +679,7 @@ describe("forced release migration persistence", () => {
       kind: "updateSource",
       changes: { items: { operator: "replace", value: [] } },
     });
-    assert.deepEqual(events[1], {
-      kind: "delete",
-      name: "Item",
-      ids: [],
-      options: { deleteAll: true, wwnMigrating: true },
-    });
+    assert.equal(events.length, 1);
   });
 
   it("recursively merges partial world-item migration patches", async () => {

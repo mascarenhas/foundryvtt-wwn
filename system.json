@@ -2,7 +2,7 @@
   "id": "wwn",
   "title": "Worlds Without Number",
   "description": "Play Worlds Without Number on Foundry VTT",
-  "version": "2.0.0-alpha2.6",
+  "version": "2.0.0-alpha2.7",
   "compatibility": {
     "minimum": "14",
     "verified": "14",

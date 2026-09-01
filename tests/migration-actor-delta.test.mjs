@@ -8,6 +8,7 @@ import {
   migrateUnlinkedToken,
   replaceEmbeddedItemsSafely,
 } from "../module/migration/migrate.mjs";
+import { migrateActorItems } from "../module/migration/transforms.mjs";
 
 foundry.data ??= {};
 foundry.data.operators ??= {};
@@ -16,12 +17,14 @@ foundry.data.operators.ForcedReplacement = {
 };
 
 describe("Foundry v14 embedded-item migration persistence", () => {
-  it("clears the local source before deleting all persisted Actor items", async () => {
+  it("deletes explicit persisted Actor item ids before clearing the local source", async () => {
     const calls = [];
     const actor = {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
-      toObject: () => ({ items: [{ _id: "item-1" }] }),
+      // Old imported rows commonly have no creation timestamp despite being
+      // real database documents.
+      toObject: () => ({ items: [{ _id: "item-1", _stats: { createdTime: null } }] }),
       update: async () => assert.fail("clearEmbeddedItems must not persist Actor.items"),
       updateSource: (changes) => {
         calls.push({ kind: "updateSource", changes });
@@ -35,38 +38,114 @@ describe("Foundry v14 embedded-item migration persistence", () => {
 
     assert.equal(calls.length, 2);
     assert.deepEqual(calls[0], {
+      kind: "delete",
+      documentName: "Item",
+      ids: ["item-1"],
+      options: { wwnMigrating: true },
+    });
+    assert.deepEqual(calls[1], {
       kind: "updateSource",
       changes: { items: { operator: "replace", value: [] } },
     });
-    assert.deepEqual(calls[1], {
-      kind: "delete",
-      documentName: "Item",
-      ids: [],
-      options: { deleteAll: true, wwnMigrating: true },
-    });
   });
 
-  it("removes pre-ready transient currency locally before deleteAll inspects items", async () => {
-    const liveItems = [
-      { _id: "persisted-weapon", type: "weapon", _stats: { createdTime: 1 } },
-      { _id: "transient-currency", type: "currency", _stats: { createdTime: null } },
+  it("excludes only known pre-ready Items while deleting persisted rows", async () => {
+    let liveItems = [
+      { _id: "persisted-weapon", type: "weapon", _stats: { createdTime: null } },
+      {
+        _id: "transient-currency",
+        type: "currency",
+        flags: { wwn: { migrationGenerated: "legacyCurrency" } },
+        _stats: { createdTime: null },
+      },
+      {
+        _id: "transient-wild-focus",
+        type: "focus",
+        flags: { wwn: { migrationGenerated: "darkSunWildPsychicTalent" } },
+        _stats: { createdTime: null },
+      },
+      {
+        _id: "transient-legate-edge",
+        type: "classEdge",
+        flags: { wwn: { migrationGenerated: "legacyLegateEffort" } },
+        _stats: { createdTime: null },
+      },
+      {
+        _id: "persisted-wild-focus",
+        type: "focus",
+        flags: { wwn: { migrationGenerated: "darkSunWildPsychicTalent" } },
+        _stats: { createdTime: 1234 },
+      },
+      {
+        _id: "persisted-legate-edge",
+        type: "classEdge",
+        flags: {
+          wwn: {
+            migrationGenerated: "legacyLegateEffort",
+            migrationPersisted: true,
+          },
+        },
+        _stats: { createdTime: null },
+      },
     ];
+    const serverIds = new Set([
+      "persisted-weapon",
+      "persisted-wild-focus",
+      "persisted-legate-edge",
+    ]);
+    const calls = [];
     const actor = {
       isToken: false,
-      items: liveItems,
+      get items() {
+        liveItems.invalidDocumentIds = new Set();
+        return liveItems;
+      },
       toObject: () => ({ items: structuredClone(liveItems) }),
       update: async () => assert.fail("a database update would send transient currency IDs"),
       updateSource: (changes) => {
         assert.deepEqual(changes.items, { operator: "replace", value: [] });
-        liveItems.length = 0;
+        calls.push({ kind: "updateSource" });
+        liveItems = [];
       },
-      deleteEmbeddedDocuments: async (_documentName, _ids, options) => {
-        assert.equal(liveItems.length, 0, "transient items must be gone before deleteAll");
-        assert.equal(options.deleteAll, true);
+      deleteEmbeddedDocuments: async (documentName, ids, options) => {
+        calls.push({ kind: "delete", documentName, ids: [...ids], options });
+        assert.equal(liveItems.length, 6, "explicit deletion runs against the intact collection");
+        for (const id of ids) {
+          assert.equal(serverIds.delete(id), true, `server must contain persisted id ${id}`);
+        }
       },
     };
 
     await clearEmbeddedItems(actor);
+
+    assert.deepEqual(calls, [
+      {
+        kind: "delete",
+        documentName: "Item",
+        ids: ["persisted-weapon", "persisted-wild-focus", "persisted-legate-edge"],
+        options: { wwnMigrating: true },
+      },
+      { kind: "updateSource" },
+    ]);
+    assert.deepEqual([...serverIds], []);
+    assert.equal(liveItems.length, 0);
+  });
+
+  it("retains persistence stats while canonicalizing a generated migration Item", () => {
+    const stats = { createdTime: 1234, modifiedTime: 5678 };
+    const [migrated] = migrateActorItems([
+      {
+        _id: "persisted-wild-focus",
+        name: "Wild Psychic Talent",
+        type: "focus",
+        flags: { wwn: { migrationGenerated: "darkSunWildPsychicTalent" } },
+        _stats: stats,
+        effects: [],
+        system: { ownedLevel: 1 },
+      },
+    ]);
+
+    assert.deepEqual(migrated._stats, stats);
   });
 
   it("rejects attempts to clear an unlinked Token's synthetic Actor", async () => {
@@ -86,7 +165,7 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(deleted, false);
   });
 
-  it("still clears locally and issues deleteAll when the collection appears empty", async () => {
+  it("still clears locally when there are no persisted item ids", async () => {
     const calls = [];
     const actor = {
       isToken: false,
@@ -107,12 +186,6 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       {
         kind: "updateSource",
         changes: { items: { operator: "replace", value: [] } },
-      },
-      {
-        kind: "delete",
-        documentName: "Item",
-        ids: [],
-        options: { deleteAll: true, wwnMigrating: true },
       },
     ]);
   });
@@ -349,16 +422,27 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(finalizerItemScans, 0, "unchanged delta items must not run post-item hooks");
   });
 
-  it("clears again before restoring the original items after recreate fails", async () => {
-    const backup = [
+  it("deletes a partial recreate before restoring the original persisted snapshot", async () => {
+    let liveItems = [
       {
         _id: "legacy-art",
         name: "Legacy Art",
         type: "art",
+        _stats: { createdTime: null },
         effects: [],
         system: { source: "Elementalist", time: "Scene", effort: 1 },
       },
+      {
+        _id: "transient-currency",
+        name: "Bits",
+        type: "currency",
+        flags: { wwn: { migrationGenerated: "legacyCurrency" } },
+        _stats: { createdTime: null },
+        effects: [],
+        system: { multiplier: 1, carried: 9, banked: 5 },
+      },
     ];
+    const backup = structuredClone(liveItems);
     const migrated = [
       {
         _id: "legacy-art",
@@ -367,27 +451,58 @@ describe("Foundry v14 embedded-item migration persistence", () => {
         effects: [],
         system: { subType: "art" },
       },
+      structuredClone(backup[1]),
     ];
+    const persistedMigrated = structuredClone(migrated);
+    delete persistedMigrated[1]._stats;
+    persistedMigrated[1].flags.wwn.migrationPersisted = true;
+    const serverItems = new Map([["legacy-art", structuredClone(liveItems[0])]]);
     const events = [];
     let createAttempt = 0;
     const actor = {
       id: "actor-1",
       name: "Rollback Actor",
       isToken: false,
-      items: { size: 1, invalidDocumentIds: new Set() },
-      toObject: () => ({ items: structuredClone(backup) }),
-      update: async () => assert.fail("rollback clear must remain local before deleteAll"),
+      get items() {
+        liveItems.invalidDocumentIds = new Set();
+        return liveItems;
+      },
+      toObject: () => ({ items: structuredClone(liveItems) }),
+      update: async () => assert.fail("rollback clear must not persist Actor.items"),
       updateSource: (changes) => {
         events.push({ kind: "updateSource", changes });
+        liveItems = [];
       },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
-        events.push({ kind: "delete", documentName, ids, options });
+        events.push({ kind: "delete", documentName, ids: [...ids], options });
+        for (const id of ids) {
+          assert.equal(serverItems.delete(id), true, `server must contain ${id}`);
+        }
       },
       createEmbeddedDocuments: async (documentName, items, options) => {
         createAttempt += 1;
         events.push({ kind: "create", documentName, items: structuredClone(items), options });
-        if (createAttempt === 1) throw new Error("simulated create failure");
-        return items;
+        if (createAttempt === 1) {
+          // Model a non-atomic server batch: one migrated row was inserted and
+          // reflected in the client before a later row failed.
+          const partial = {
+            ...structuredClone(items[0]),
+            _stats: { createdTime: 5678 },
+          };
+          serverItems.set(partial._id, structuredClone(partial));
+          liveItems = [partial];
+          throw new Error("simulated create failure");
+        }
+        for (const source of items) {
+          assert.equal(serverItems.has(source._id), false, `restore id ${source._id} must be free`);
+          const restored = {
+            ...structuredClone(source),
+            _stats: { ...(source._stats ?? {}), createdTime: 9012 },
+          };
+          serverItems.set(restored._id, structuredClone(restored));
+          liveItems.push(restored);
+        }
+        return liveItems;
       },
     };
 
@@ -397,19 +512,20 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     );
 
     assert.deepEqual(events.map((event) => event.kind), [
-      "updateSource",
       "delete",
+      "updateSource",
       "create",
-      "updateSource",
       "delete",
+      "updateSource",
       "create",
     ]);
-    assert.deepEqual(events[0].changes.items, { operator: "replace", value: [] });
-    assert.equal(events[1].options.deleteAll, true);
-    assert.deepEqual(events[2].items, migrated);
-    assert.deepEqual(events[3].changes.items, { operator: "replace", value: [] });
-    assert.equal(events[4].options.deleteAll, true);
-    assert.deepEqual(events[5].items, backup);
+    assert.deepEqual(events[0].ids, ["legacy-art"]);
+    assert.deepEqual(events[1].changes.items, { operator: "replace", value: [] });
+    assert.deepEqual(events[2].items, persistedMigrated);
+    assert.deepEqual(events[3].ids, ["legacy-art"]);
+    assert.deepEqual(events[4].changes.items, { operator: "replace", value: [] });
+    assert.deepEqual(events[5].items, [backup[0]]);
     assert.equal(events[5].options.keepId, true);
+    assert.deepEqual([...serverItems.keys()], ["legacy-art"]);
   });
 });

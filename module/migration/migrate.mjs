@@ -23,10 +23,17 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.6";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.7";
 
 /** Marks the one Actor-level effect synthesized while loading legacy tweak fields. */
 const LEGACY_TWEAK_EFFECT_MIGRATION = "legacyTweaks";
+
+/** Items which Actor.migrateData can synthesize before their database rows exist. */
+const PRE_READY_ITEM_MIGRATION_MARKERS = new Set([
+  "legacyCurrency",
+  "darkSunWildPsychicTalent",
+  "legacyLegateEffort",
+]);
 
 /** Share one migration run among automatic/manual callers on this client. */
 let migrationInFlight = null;
@@ -583,17 +590,32 @@ async function persistActorMigration(actor, data) {
     await persistActorEffectMigrations(actor, data.effects);
   }
 
-  if (Object.keys(update).length) {
+  let itemBackup = null;
+  if (data.items != null) {
+    const migratedItems = migrateActorItems(data.items);
+    itemBackup = await replaceEmbeddedItemsSafely(actor, migratedItems);
+  }
+
+  if (!Object.keys(update).length) return;
+
+  try {
     // ForcedReplacement already expresses exact replacement. Combining it
     // with recursive:false makes Foundry wrap top-level values in a second
     // operator, which breaks TypeDataField and synthetic Token actors.
     await actor.update(update, { enforceTypes: false, diff: false, wwnMigrating: true });
+  } catch (err) {
+    if (itemBackup != null) {
+      try {
+        // Keep the stored legacy system and its original Items together. A
+        // reload can then reconstruct the pre-ready generated rows and retry
+        // the whole Actor migration without duplicating them.
+        await replaceEmbeddedItemsSafely(actor, itemBackup);
+      } catch (restoreErr) {
+        console.error(`WWN | ${actor.name ?? actor.id}: item rollback after Actor update failed:`, restoreErr);
+      }
+    }
+    throw err;
   }
-
-  if (data.items == null) return;
-
-  const migratedItems = migrateActorItems(data.items);
-  await replaceEmbeddedItemsSafely(actor, migratedItems);
 }
 
 /**
@@ -698,6 +720,21 @@ function collectEmbeddedItemSources(actor, raw) {
 }
 
 /**
+ * Whether an Item exists only because Actor.migrateData synthesized it before
+ * ready. A null timestamp alone is not sufficient: many real v13 rows have no
+ * createdTime, so only the closed set of migration markers is trusted, and a
+ * row stamped migrationPersisted by our create path is always treated as real.
+ * @param {object} item
+ * @returns {boolean}
+ */
+function isPreReadyGeneratedItem(item) {
+  const marker = item.flags?.[NS]?.migrationGenerated;
+  return PRE_READY_ITEM_MIGRATION_MARKERS.has(marker)
+    && item.flags?.[NS]?.migrationPersisted !== true
+    && item._stats?.createdTime == null;
+}
+
+/**
  * Replace embedded items when legacy types remain (no actor system rewrite needed).
  * @param {Actor} actor
  * @param {object[]} itemSources
@@ -714,16 +751,21 @@ async function replaceEmbeddedItemsIfNeeded(actor, itemSources) {
  * Clear then recreate embeds; restore the pre-clear snapshot if recreate fails.
  * @param {Actor} actor
  * @param {object[]} migratedItems
+ * @returns {Promise<object[]>} persisted pre-replacement snapshot
  */
 export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
   const label = actor.name ?? actor.id;
-  const backup = foundry.utils.deepClone(collectEmbeddedItemSources(actor, actor.toObject()));
-  await clearEmbeddedItems(actor);
+  const backup = foundry.utils.deepClone(
+    collectEmbeddedItemSources(actor, actor.toObject()).filter(
+      (item) => !isPreReadyGeneratedItem(item)
+    )
+  );
   try {
+    await clearEmbeddedItems(actor);
     await recreateEmbeddedItems(actor, migratedItems);
   } catch (err) {
     console.error(
-      `WWN | ${label}: recreate failed; restoring ${backup.length} embedded items…`,
+      `WWN | ${label}: item replacement failed; restoring ${backup.length} persisted items…`,
       err
     );
     try {
@@ -736,6 +778,7 @@ export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
     }
     throw err;
   }
+  return backup;
 }
 
 /**
@@ -746,12 +789,11 @@ export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
  * per-document workflow for those transient IDs and fail before reaching the
  * persisted rows.
  *
- * Clear the local EmbeddedCollection source without a database update, then
- * issue deleteAll. A normal Actor.update translates the EmbeddedCollection
- * replacement into server-side child operations, including the transient IDs,
- * and fails before the explicit deleteAll can run. updateSource is deliberately
- * local-only, so deleteAll sees only real persisted rows. Synthetic Token
- * actors must instead persist their base-relative ActorDelta.
+ * Snapshot the IDs before mutating local source, exclude only known pre-ready
+ * generated rows, and delete the remaining explicit IDs while Foundry can
+ * still resolve them in the live collection. Then clear the transient rows
+ * locally. Synthetic Token actors must instead persist their base-relative
+ * ActorDelta.
  * @param {Actor} actor
  */
 export async function clearEmbeddedItems(actor) {
@@ -759,12 +801,21 @@ export async function clearEmbeddedItems(actor) {
     throw new Error("Cannot bulk-replace Items on a synthetic Token actor; update Token.delta instead.");
   }
 
-  actor.updateSource({ items: forcedReplace([]) });
+  const itemSources = collectEmbeddedItemSources(actor, actor.toObject());
+  const persistedIds = itemSources
+    .filter((item) => !isPreReadyGeneratedItem(item))
+    .map((item) => item._id)
+    .filter(Boolean);
 
-  await actor.deleteEmbeddedDocuments("Item", [], {
-    deleteAll: true,
-    wwnMigrating: true,
-  });
+  // Foundry resolves deleteAll from the live EmbeddedCollection. Clearing that
+  // collection first therefore makes deleteAll a server-side no-op, while
+  // leaving it intact includes pre-ready generated IDs which the server has
+  // never stored. Delete only the explicit persisted IDs while they are still
+  // present locally, then discard the remaining transient Documents locally.
+  if (persistedIds.length) {
+    await actor.deleteEmbeddedDocuments("Item", persistedIds, { wwnMigrating: true });
+  }
+  actor.updateSource({ items: forcedReplace([]) });
 }
 
 /**
@@ -773,7 +824,20 @@ export async function clearEmbeddedItems(actor) {
  */
 async function recreateEmbeddedItems(actor, items) {
   if (!items?.length) return;
-  await actor.createEmbeddedDocuments("Item", items, {
+  const createSources = items.map((item) => {
+    if (!isPreReadyGeneratedItem(item)) return item;
+    const source = foundry.utils.deepClone(item);
+    // Let Foundry stamp the newly persisted row. Retaining null migration-time
+    // stats would make a later forced retry mistake this real row for another
+    // pre-ready transient and omit its ID from the database delete.
+    delete source._key;
+    delete source._stats;
+    source.flags ??= {};
+    source.flags[NS] ??= {};
+    source.flags[NS].migrationPersisted = true;
+    return source;
+  });
+  await actor.createEmbeddedDocuments("Item", createSources, {
     keepId: true,
     enforceTypes: false,
     wwnMigrating: true,

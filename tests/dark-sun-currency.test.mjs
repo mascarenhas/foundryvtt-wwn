@@ -113,6 +113,12 @@ describe("legacy Dark Sun currency migration", () => {
         { name: "Gold Pieces", multiplier: 1000, perSlot: 100, carried: 6, banked: 0 },
       ]
     );
+    assert.ok(
+      currencies.every(
+        (item) => item.flags?.wwn?.migrationGenerated === "legacyCurrency"
+      ),
+      "pre-ready generated currency must be distinguishable from persisted Items"
+    );
   });
 
   it("creates a Bits item when only legacy banked currency is nonzero", () => {
@@ -121,6 +127,7 @@ describe("legacy Dark Sun currency migration", () => {
 
     assert.equal(currencies.length, 1);
     assert.equal(currencies[0].name, "Bits");
+    assert.equal(currencies[0].flags?.wwn?.migrationGenerated, "legacyCurrency");
     assert.deepEqual(currencies[0].system, {
       multiplier: 1,
       perSlot: 100,

@@ -1,5 +1,13 @@
 # Changelog
 
+## New in 2.0.0-alpha2.7
+
+### Fixes
+
+- Fixed the alpha2.6 migration regression that left character and monster sheets without their skills, powers, inventory, attacks, or other embedded Items after duplicate-ID failures.
+- Reworked Actor Item persistence to delete explicit database IDs before clearing pre-ready generated currency and resource Items from the client, so Forge's stored rows are actually replaced instead of colliding during recreation.
+- Made Actor migration transactional and retry-safe: Item failures retain the legacy Actor system, Actor-update failures restore the persisted Item snapshot, and generated currency, Wild Psychic Talent, and Legate Items are marked once they are stored.
+
 ## New in 2.0.0-alpha2.6
 
 ### Fixes
