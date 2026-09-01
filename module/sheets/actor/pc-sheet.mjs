@@ -21,7 +21,7 @@ export class WwnPcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBaseA
   constructor(...args) {
     super(...args);
     /** @type {boolean} */
-    this._wwnClassAssignmentPrompted = false;
+    this._wwnClassAssignmentPromptPending = false;
   }
 
   /** @override */
@@ -108,12 +108,26 @@ export class WwnPcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBaseA
   async _onRender(context, options) {
     await super._onRender(context, options);
 
-    if (!this._wwnClassAssignmentPrompted && this.isEditable) {
-      this._wwnClassAssignmentPrompted = true;
-      queueMicrotask(() => {
-        maybeShowClassAssignmentDialog(this.actor).catch((err) => {
+    // Class/Edge create hooks deliberately skip companion and bonus-skill
+    // grants during migration, so wait for a later post-migration render.
+    if (
+      !this._wwnClassAssignmentPromptPending
+      && this.isEditable
+      && !game.wwn?.migrating
+      && this.actor.getFlag("wwn", "needsClassAssignment")
+    ) {
+      this._wwnClassAssignmentPromptPending = true;
+      queueMicrotask(async () => {
+        try {
+          await maybeShowClassAssignmentDialog(this.actor);
+        } catch (err) {
           console.error("WWN | Class assignment dialog failed:", err);
-        });
+        } finally {
+          // Only suppress calls while one check/dialog is active so a later
+          // flag-driven render can retry, and so a transient dialog failure is
+          // not latched forever.
+          this._wwnClassAssignmentPromptPending = false;
+        }
       });
     }
   }

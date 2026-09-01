@@ -99,9 +99,6 @@ export async function maybeShowClassAssignmentDialog(actor) {
     return true;
   }
 
-  await actor.unsetFlag(NS, "needsClassAssignment");
-  await actor.unsetFlag(NS, "classAssignmentDismissed");
-
   const toCreate = [];
   for (const name of result.names ?? []) {
     const doc = await findSystemPackItemByName(name);
@@ -129,5 +126,10 @@ export async function maybeShowClassAssignmentDialog(actor) {
   if (toCreate.length) {
     await actor.createEmbeddedDocuments("Item", toCreate);
   }
+  // Clear the retry marker only after the class Items exist. If a pack lookup
+  // or embedded create fails, the next sheet render can offer the assignment
+  // again instead of leaving the actor permanently unclassed.
+  await actor.unsetFlag(NS, "needsClassAssignment");
+  await actor.unsetFlag(NS, "classAssignmentDismissed");
   return true;
 }

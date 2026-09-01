@@ -4,7 +4,8 @@
 <section class="tab inventory {{tab.cssClass}}" data-group="{{tab.group}}" data-tab="{{tab.id}}">
   <div class="wwn-inventory-stack wwn-data-table">
 
-    {{!-- Wealth summary (coin amounts live in the Currency section below) --}}
+    {{!-- Carried denominations and aggregate wealth summary. The detailed
+          Currency section below also exposes banked amounts and item controls. --}}
     <div class="wwn-panel wwn-inventory-purse">
       <div class="wwn-inventory-purse-header">
         <span class="wwn-section-header">
@@ -15,6 +16,14 @@
         </span>
       </div>
       <div class="wwn-inventory-purse-fields">
+        {{#each currencies as |currency|}}
+        <label class="wwn-purse-field" data-item-id="{{currency.id}}"
+          title="{{currency.name}} (×{{currency.system.multiplier}})">
+          <span class="wwn-purse-label">{{currency.name}}</span>
+          <input class="currency" type="number" value="{{currency.system.carried}}"
+            data-item-field="system.carried" data-dtype="Number" placeholder="0" />
+        </label>
+        {{/each}}
         <label class="wwn-purse-field" title="{{localize 'WWN.items.PersonalTreasureHint'}}">
           <span class="wwn-purse-label">{{localize "WWN.items.PersonalTreasure"}}</span>
           <input class="currency" type="number" value="{{system.personalTreasure}}" data-dtype="Number" disabled />

@@ -75,3 +75,28 @@ describe("resource bar value overlay", () => {
     assert.doesNotMatch(input, /border:\s*1px/);
   });
 });
+
+describe("class assignment prompt retry", () => {
+  it("requires a post-migration flag and guards only an in-flight check", () => {
+    const src = read("module/sheets/actor/pc-sheet.mjs");
+    const onRenderStart = src.indexOf("async _onRender(context, options)");
+    const onRenderEnd = src.indexOf("/*  Actions", onRenderStart);
+    assert.ok(onRenderStart >= 0 && onRenderEnd > onRenderStart, "expected PC sheet render hook");
+    const onRender = src.slice(onRenderStart, onRenderEnd);
+
+    assert.doesNotMatch(src, /_wwnClassAssignmentPrompted/);
+    assert.match(src, /this\._wwnClassAssignmentPromptPending = false/);
+    assert.match(onRender, /!this\._wwnClassAssignmentPromptPending/);
+    assert.match(onRender, /this\.isEditable/);
+    assert.match(onRender, /create hooks deliberately skip companion and bonus-skill/);
+    assert.match(onRender, /!game\.wwn\?\.migrating/);
+    assert.match(onRender, /this\.actor\.getFlag\("wwn", "needsClassAssignment"\)/);
+    assert.match(onRender, /this\._wwnClassAssignmentPromptPending = true/);
+    assert.match(onRender, /await maybeShowClassAssignmentDialog\(this\.actor\)/);
+    assert.match(
+      onRender,
+      /finally\s*\{[\s\S]*this\._wwnClassAssignmentPromptPending = false/,
+      "the in-flight guard must reset whether the dialog is skipped, shown, or fails"
+    );
+  });
+});

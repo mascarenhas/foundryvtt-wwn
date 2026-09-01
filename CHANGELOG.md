@@ -1,5 +1,15 @@
 # Changelog
 
+## New in 2.0.0-alpha2.5
+
+### Fixes
+
+- Fixed the remaining ten Dark Sun PC migrations failing on temporary currency Item IDs by clearing those pre-ready Documents locally before deleting persisted inventory rows.
+- Restored carried coin denominations to the compact Currency panel at the top of the inventory while retaining the detailed Currency section below.
+- Mapped every Dark Sun v1.10 class to its WWN/SWN Class/Edge choices, including Psychic classes, so restored characters open the chooser with the correct full class or two partial classes preselected.
+- Deferred class choosers until migration has finished and made sheets retry the prompt on later renders; confirming the class choices restores class-derived Effort pools and spell slots.
+- Preserved legacy Art Effort commitments and used spell slots in the new shared-pool counters, including M'uamba's two spent High Mage slots.
+
 ## New in 2.0.0-alpha2.4
 
 ### Fixes

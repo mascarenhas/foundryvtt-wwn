@@ -22,6 +22,9 @@ import { isSpuriousExpertAbResidual } from "../derivations/attack-bonus.mjs";
 
 const MODE_TO_TYPE = { 0: "custom", 1: "multiply", 2: "add", 3: "downgrade", 4: "upgrade", 5: "override" };
 
+/** In-call marker retained through Actor.migrateData's two item passes, never serialized. */
+const LEGACY_SPELL_SOURCE = Symbol("wwn.legacySpellSource");
+
 /** Pack / common names that should become type `ammo` (lowercase). */
 export const KNOWN_AMMO_NAMES = new Set([
   "arrows",
@@ -264,7 +267,7 @@ export function legacyArtTimeToCommitment(time) {
   if (!normalized || normalized === "-") {
     return { cost: 0, length: "none", note: "" };
   }
-  if (normalized === "active" || normalized === "commit") {
+  if (normalized === "active" || normalized === "commit" || normalized === "committed") {
     return { cost: 1, length: "active", note: "" };
   }
   if (normalized === "day") {
@@ -272,6 +275,91 @@ export function legacyArtTimeToCommitment(time) {
   }
   // "scene" and any unrecognized value
   return { cost: 1, length: "scene", note: "" };
+}
+
+/** Coerce a legacy persisted resource counter to a non-negative integer. */
+function legacyResourceCount(value) {
+  const count = Number(value);
+  if (!Number.isFinite(count) || count <= 0) return 0;
+  return Math.trunc(count);
+}
+
+/** Empty persisted commitment buckets for the consolidated Power model. */
+function emptyPoolCommitted() {
+  return { none: 0, active: 0, scene: 0, day: 0 };
+}
+
+/**
+ * Convert an Art's legacy committed Effort counter into its shared-pool bucket.
+ * A non-zero counter with a blank legacy time is still real spend. Treat it as
+ * active commitment: v13 had no separate duration state, and this preserves the
+ * point until the user explicitly releases or resets it.
+ */
+function legacyArtCommitmentState(time, effort) {
+  const count = legacyResourceCount(effort);
+  let option = legacyArtTimeToCommitment(time);
+  if (count > 0 && option.cost <= 0) {
+    option = { cost: 1, length: "active", note: "" };
+  }
+  const poolCommitted = emptyPoolCommitted();
+  if (count > 0 && ["active", "scene", "day"].includes(option.length)) {
+    poolCommitted[option.length] = count;
+  }
+  return { option, poolCommitted };
+}
+
+/**
+ * Allocate an actor-level v13 unleveled spell-spend total onto migrated spells.
+ * The old model did not remember which spells consumed those slots, so retain
+ * the exact total deterministically across prepared spells (then any others).
+ * Only ids that were legacy `spell` Items are touched, preserving mixed worlds.
+ * @param {object[]} items migrated embedded Item sources
+ * @param {object} legacySpells legacy actor `system.spells`
+ * @param {Set<string>} legacySpellIds ids converted from legacy spell Items
+ * @returns {object[]}
+ */
+export function applyLegacyUnleveledSpellSpend(items, legacySpells, legacySpellIds) {
+  if (legacySpells?.leveledSlots !== false) return items;
+  if (!(legacySpellIds instanceof Set) || !legacySpellIds.size) return items;
+
+  const candidateIndices = [];
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index];
+    if (
+      legacySpellIds.has(item?._id)
+      && item?.type === "power"
+      && item.system?.subType === "spell"
+    ) {
+      candidateIndices.push(index);
+    }
+  }
+  if (!candidateIndices.length) return items;
+
+  const ordered = [
+    ...candidateIndices.filter((index) => !!items[index].system?.prepared),
+    ...candidateIndices.filter((index) => !items[index].system?.prepared),
+  ];
+  const spent = legacyResourceCount(legacySpells?.perDay?.value);
+  const allocations = new Map(candidateIndices.map((index) => [index, 0]));
+  for (let n = 0; n < spent; n++) {
+    const index = ordered[n % ordered.length];
+    allocations.set(index, allocations.get(index) + 1);
+  }
+
+  return items.map((item, index) => {
+    if (!allocations.has(index)) return item;
+    return {
+      ...item,
+      system: {
+        ...item.system,
+        poolCommitted: {
+          ...emptyPoolCommitted(),
+          ...(item.system?.poolCommitted ?? {}),
+          day: allocations.get(index),
+        },
+      },
+    };
+  });
 }
 
 /** Legacy criticals-branch currency slots converted to Dark Sun currency items. */
@@ -355,6 +443,7 @@ export function migrateEffectData(effectData) {
 
 export function migrateArtToPower(item) {
   const s = item.system ?? {};
+  const commitment = legacyArtCommitmentState(s.time, s.effort);
   return {
     _id: item._id,
     name: item.name,
@@ -368,9 +457,9 @@ export function migrateArtToPower(item) {
       description: s.description ?? "",
       source: s.source ?? "",
       resourceName: "Effort",
-      commitmentOptions: [legacyArtTimeToCommitment(s.time)],
-      poolCommitted: { none: 0, active: 0, scene: 0, day: 0 },
-      internalResource: { value: Number(s.effort) || 0, max: 0 },
+      commitmentOptions: [commitment.option],
+      poolCommitted: commitment.poolCommitted,
+      internalResource: { value: 0, max: 0 },
       internalResourceLength: "scene",
       activation: {
         roll: s.roll ?? "",
@@ -386,7 +475,13 @@ export function migrateArtToPower(item) {
 
 export function migrateSpellToPower(item) {
   const s = item.system ?? {};
-  return {
+  // Leveled v13 spell Items stored remaining `cast` beside total
+  // `memorized`; the difference is the number of slots already consumed.
+  const spent = Math.max(
+    legacyResourceCount(s.memorized) - legacyResourceCount(s.cast),
+    0,
+  );
+  const migrated = {
     _id: item._id,
     name: item.name,
     type: "power",
@@ -400,8 +495,8 @@ export function migrateSpellToPower(item) {
       source: s.class ?? "",
       resourceName: "Spell Slots",
       commitmentOptions: [{ cost: 1, length: "day", note: "" }],
-      poolCommitted: { none: 0, active: 0, scene: 0, day: 0 },
-      internalResource: { value: Number(s.cast) || 0, max: 0 },
+      poolCommitted: { ...emptyPoolCommitted(), day: spent },
+      internalResource: { value: 0, max: 0 },
       internalResourceLength: "scene",
       level: Number(s.lvl) || 1,
       prepared: !!s.prepared,
@@ -415,6 +510,11 @@ export function migrateSpellToPower(item) {
       },
     },
   };
+  // WwnActor.migrateData first canonicalizes embedded Items, then migrates the
+  // actor system. Keep enough ephemeral provenance for the actor-level
+  // unleveled slot counter to find these converted spells on that second pass.
+  migrated[LEGACY_SPELL_SOURCE] = true;
+  return migrated;
 }
 
 export function migrateAbilityToPower(item) {
@@ -1168,7 +1268,19 @@ export function migrateActorData(actor) {
 function migrateCharacter(actor) {
   const s = actor.system ?? {};
   const isWwn = !!s.scores;
-  const items = migrateActorItems(actor.items ?? []);
+  const legacySpellIds = new Set(
+    (actor.items ?? [])
+      .filter(
+        (item) =>
+          item?._id
+          && (item.type === "spell" || item[LEGACY_SPELL_SOURCE] === true),
+      )
+      .map((item) => item._id),
+  );
+  let items = migrateActorItems(actor.items ?? []);
+  if (isWwn) {
+    items = applyLegacyUnleveledSpellSpend(items, s.spells, legacySpellIds);
+  }
   const effects = (actor.effects ?? []).map(migrateEffectData);
 
   if (!isWwn) {

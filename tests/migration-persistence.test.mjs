@@ -139,7 +139,8 @@ describe("forced release migration persistence", () => {
         };
       },
       toObject: () => ({ items: structuredClone(liveItems) }),
-      update: async (changes) => {
+      update: async () => assert.fail("item clear must not round-trip through Actor.update"),
+      updateSource: (changes) => {
         assert.deepEqual(changes.items, { operator: "replace", value: [] });
         liveItems = [];
       },
@@ -397,7 +398,7 @@ describe("forced release migration persistence", () => {
     assert.equal(created.length, 0);
   });
 
-  it("clears transient live items before the database delete-all operation", async () => {
+  it("locally clears transient live items before the database delete-all operation", async () => {
     const events = [];
     const actor = {
       isToken: false,
@@ -411,8 +412,9 @@ describe("forced release migration persistence", () => {
           },
         ],
       }),
-      update: async (changes, options) => {
-        events.push({ kind: "update", changes, options });
+      update: async () => assert.fail("item clear must not round-trip through Actor.update"),
+      updateSource: (changes) => {
+        events.push({ kind: "updateSource", changes });
       },
       deleteEmbeddedDocuments: async (name, ids, options) => {
         events.push({ kind: "delete", name, ids, options });
@@ -422,9 +424,8 @@ describe("forced release migration persistence", () => {
     await clearEmbeddedItems(actor);
 
     assert.deepEqual(events[0], {
-      kind: "update",
+      kind: "updateSource",
       changes: { items: { operator: "replace", value: [] } },
-      options: { enforceTypes: false, diff: false, wwnMigrating: true },
     });
     assert.deepEqual(events[1], {
       kind: "delete",

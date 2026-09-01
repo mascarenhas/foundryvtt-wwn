@@ -16,14 +16,15 @@ foundry.data.operators.ForcedReplacement = {
 };
 
 describe("Foundry v14 embedded-item migration persistence", () => {
-  it("clears the live collection before deleting all persisted Actor items", async () => {
+  it("clears the local source before deleting all persisted Actor items", async () => {
     const calls = [];
     const actor = {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [{ _id: "item-1" }] }),
-      update: async (changes, options) => {
-        calls.push({ kind: "update", changes, options });
+      update: async () => assert.fail("clearEmbeddedItems must not persist Actor.items"),
+      updateSource: (changes) => {
+        calls.push({ kind: "updateSource", changes });
       },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
         calls.push({ kind: "delete", documentName, ids, options });
@@ -34,9 +35,8 @@ describe("Foundry v14 embedded-item migration persistence", () => {
 
     assert.equal(calls.length, 2);
     assert.deepEqual(calls[0], {
-      kind: "update",
+      kind: "updateSource",
       changes: { items: { operator: "replace", value: [] } },
-      options: { enforceTypes: false, diff: false, wwnMigrating: true },
     });
     assert.deepEqual(calls[1], {
       kind: "delete",
@@ -46,7 +46,7 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     });
   });
 
-  it("removes pre-ready transient currency before deleteAll inspects live items", async () => {
+  it("removes pre-ready transient currency locally before deleteAll inspects items", async () => {
     const liveItems = [
       { _id: "persisted-weapon", type: "weapon", _stats: { createdTime: 1 } },
       { _id: "transient-currency", type: "currency", _stats: { createdTime: null } },
@@ -55,7 +55,8 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       isToken: false,
       items: liveItems,
       toObject: () => ({ items: structuredClone(liveItems) }),
-      update: async (changes) => {
+      update: async () => assert.fail("a database update would send transient currency IDs"),
+      updateSource: (changes) => {
         assert.deepEqual(changes.items, { operator: "replace", value: [] });
         liveItems.length = 0;
       },
@@ -74,6 +75,7 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       isToken: true,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [{ _id: "delta-item" }] }),
+      updateSource: () => assert.fail("synthetic token actor source must remain untouched"),
       deleteEmbeddedDocuments: async () => { deleted = true; },
     };
 
@@ -84,14 +86,15 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     assert.equal(deleted, false);
   });
 
-  it("still clears and issues deleteAll when the local Actor collection appears empty", async () => {
+  it("still clears locally and issues deleteAll when the collection appears empty", async () => {
     const calls = [];
     const actor = {
       isToken: false,
       items: { size: 0, invalidDocumentIds: new Set() },
       toObject: () => ({ items: [] }),
-      update: async (changes, options) => {
-        calls.push({ kind: "update", changes, options });
+      update: async () => assert.fail("clearEmbeddedItems must not persist Actor.items"),
+      updateSource: (changes) => {
+        calls.push({ kind: "updateSource", changes });
       },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
         calls.push({ kind: "delete", documentName, ids, options });
@@ -102,9 +105,8 @@ describe("Foundry v14 embedded-item migration persistence", () => {
 
     assert.deepEqual(calls, [
       {
-        kind: "update",
+        kind: "updateSource",
         changes: { items: { operator: "replace", value: [] } },
-        options: { enforceTypes: false, diff: false, wwnMigrating: true },
       },
       {
         kind: "delete",
@@ -374,8 +376,9 @@ describe("Foundry v14 embedded-item migration persistence", () => {
       isToken: false,
       items: { size: 1, invalidDocumentIds: new Set() },
       toObject: () => ({ items: structuredClone(backup) }),
-      update: async (changes, options) => {
-        events.push({ kind: "update", changes, options });
+      update: async () => assert.fail("rollback clear must remain local before deleteAll"),
+      updateSource: (changes) => {
+        events.push({ kind: "updateSource", changes });
       },
       deleteEmbeddedDocuments: async (documentName, ids, options) => {
         events.push({ kind: "delete", documentName, ids, options });
@@ -394,10 +397,10 @@ describe("Foundry v14 embedded-item migration persistence", () => {
     );
 
     assert.deepEqual(events.map((event) => event.kind), [
-      "update",
+      "updateSource",
       "delete",
       "create",
-      "update",
+      "updateSource",
       "delete",
       "create",
     ]);

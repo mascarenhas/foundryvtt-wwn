@@ -55,6 +55,45 @@ describe("precheckClassEdgesFromClassField", () => {
   it("maps Healer", () => {
     assert.deepEqual(precheckClassEdgesFromClassField("Healer"), ["Healer"]);
   });
+
+  it("maps the Dark Sun v1.10 class headings", () => {
+    const cases = [
+      ["BARBARIAN (WARRIOR/SKINSHIFTER)", ["Partial Warrior", "Skinshifter"]],
+      ["BARD (WARRIOR/BARD)", ["Partial Warrior", "Bard"]],
+      ["FIGHTER (WARRIOR)", ["Full Warrior"]],
+      ["GLADIATOR (WARRIOR/DUELIST)", ["Partial Warrior", "Duelist"]],
+      ["RANGER (WARRIOR/BEASTMASTER)", ["Partial Warrior", "Beastmaster"]],
+      ["ELEMENTAL CLERIC (ELEMENTALIST)", ["Full Elementalist"]],
+      ["ELEMENTAL MONK (ELEMENTALIST/VOWED)", ["Partial Elementalist", "Vowed"]],
+      ["SORCERER (HIGH MAGE)", ["Full High Mage"]],
+      ["PSIONICIST (PSYCHIC)", ["Full Psychic"]],
+      ["PSYCHIC WARRIOR (WARRIOR/PSYCHIC)", ["Partial Warrior", "Partial Psychic"]],
+      ["THIEF (WARRIOR/EXPERT)", ["Partial Warrior", "Partial Expert"]],
+    ];
+
+    for (const [label, expected] of cases) {
+      assert.deepEqual(precheckClassEdgesFromClassField(label), expected, label);
+    }
+  });
+
+  it("maps every class-bearing PC in the pristine v13 Dark Sun backup", () => {
+    const actors = [
+      ["Adnaan", "Ranger (Warrior/Beastmaster)", ["Partial Warrior", "Beastmaster"]],
+      ["Adnaan (Copy)", "Ranger (Warrior/Beastmaster)", ["Partial Warrior", "Beastmaster"]],
+      ["Davi Noé", "Gladiator", ["Partial Warrior", "Duelist"]],
+      ["Kahn'te", "Fighter (Warrior)", ["Full Warrior"]],
+      ["M'uamba Khara", "Sorcerer (High Mage)", ["Full High Mage"]],
+      ["Tao´ka", "Psychic Warrior", ["Partial Warrior", "Partial Psychic"]],
+      ["Vax Devitto", "Fighter (Warrior)", ["Full Warrior"]],
+      ["VeeCent Devitto", "Fighter (Warrior)", ["Full Warrior"]],
+      ["Wener", "Psychic Warrior", ["Partial Warrior", "Partial Psychic"]],
+      ["Wor'tex", "Fighter", ["Full Warrior"]],
+    ];
+
+    for (const [actor, label, expected] of actors) {
+      assert.deepEqual(precheckClassEdgesFromClassField(label), expected, actor);
+    }
+  });
 });
 
 describe("isRetiredClassAbilityName", () => {

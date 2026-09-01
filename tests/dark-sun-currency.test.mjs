@@ -60,6 +60,32 @@ describe("Dark Sun currency defaults", () => {
     assert.equal(lang["WWN.items.total.short"], "Total Bits");
     assert.match(lang["WWN.items.total.long"], /Bits/);
   });
+
+  it("shows editable carried denominations in the compact purse summary", () => {
+    const source = fs.readFileSync(
+      path.join(root, "templates/actor/pc/tabs/inventory.hbs"),
+      "utf8"
+    );
+    const purseStart = source.indexOf('<div class="wwn-inventory-purse-fields">');
+    const purseEnd = source.indexOf("</div>", purseStart);
+    assert.ok(purseStart >= 0 && purseEnd > purseStart, "compact purse fields should exist");
+    const purse = source.slice(purseStart, purseEnd);
+
+    assert.match(purse, /\{\{#each currencies as \|currency\|\}\}/);
+    assert.match(purse, /data-item-id="\{\{currency\.id\}\}"/);
+    assert.match(purse, /value="\{\{currency\.system\.carried\}\}"/);
+    assert.match(purse, /data-item-field="system\.carried"/);
+    assert.ok(
+      purse.indexOf("{{#each currencies") < purse.indexOf('WWN.items.PersonalTreasure'),
+      "denominations should precede the aggregate purse fields"
+    );
+
+    assert.match(
+      source.slice(source.indexOf('sectionId="inventory.currency"')),
+      /value="\{\{currency\.system\.banked\}\}"/,
+      "the lower detailed Currency section must remain available"
+    );
+  });
 });
 
 describe("legacy Dark Sun currency migration", () => {

@@ -23,7 +23,7 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.4";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.5";
 
 /** Marks the one Actor-level effect synthesized while loading legacy tweak fields. */
 const LEGACY_TWEAK_EFFECT_MIGRATION = "legacyTweaks";
@@ -746,12 +746,12 @@ export async function replaceEmbeddedItemsSafely(actor, migratedItems) {
  * per-document workflow for those transient IDs and fail before reaching the
  * persisted rows.
  *
- * First replace the live EmbeddedCollection with an empty one. A parent update
- * does not delete the hierarchical server-side rows, but it does remove those
- * transient Documents from the requesting client. The following deleteAll can
- * then clear every persisted row, including rows left by a partially failed
- * create batch. Synthetic Token actors must instead persist their
- * base-relative ActorDelta.
+ * Clear the local EmbeddedCollection source without a database update, then
+ * issue deleteAll. A normal Actor.update translates the EmbeddedCollection
+ * replacement into server-side child operations, including the transient IDs,
+ * and fails before the explicit deleteAll can run. updateSource is deliberately
+ * local-only, so deleteAll sees only real persisted rows. Synthetic Token
+ * actors must instead persist their base-relative ActorDelta.
  * @param {Actor} actor
  */
 export async function clearEmbeddedItems(actor) {
@@ -759,14 +759,8 @@ export async function clearEmbeddedItems(actor) {
     throw new Error("Cannot bulk-replace Items on a synthetic Token actor; update Token.delta instead.");
   }
 
-  await actor.update(
-    { items: forcedReplace([]) },
-    { enforceTypes: false, diff: false, wwnMigrating: true }
-  );
+  actor.updateSource({ items: forcedReplace([]) });
 
-  // Always ask the server to clear the persisted collection, even when the
-  // now-empty client collection reports no rows. The server may contain rows
-  // which never reached this client after a failed create batch.
   await actor.deleteEmbeddedDocuments("Item", [], {
     deleteAll: true,
     wwnMigrating: true,
