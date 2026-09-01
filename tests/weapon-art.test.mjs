@@ -103,9 +103,9 @@ describe("legacy weapon Art migration", () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(root, "system.json"), "utf8"));
     const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
     const migration = fs.readFileSync(path.join(root, "module/migration/migrate.mjs"), "utf8");
-    assert.equal(manifest.version, "2.0.0-alpha2.5");
+    assert.equal(manifest.version, "2.0.0-alpha2.6");
     assert.equal(pkg.version, manifest.version);
-    assert.match(migration, /NEEDS_MIGRATION_BELOW\s*=\s*"2\.0\.0-alpha2\.5"/);
+    assert.match(migration, /NEEDS_MIGRATION_BELOW\s*=\s*"2\.0\.0-alpha2\.6"/);
     assert.match(migration, /forceReleasePass/);
   });
 

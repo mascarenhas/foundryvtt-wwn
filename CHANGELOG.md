@@ -1,5 +1,15 @@
 # Changelog
 
+## New in 2.0.0-alpha2.6
+
+### Fixes
+
+- Restored Dark Sun side resources with native v2 grant Items: Wild Psychic Talent now establishes the shared Psychic Effort pool, Psychic Training augments that same pool, and Legate is a real Edge that grants Legate Effort.
+- Unified legacy Psychic and Wild Talent Arts onto Psychic Effort and retained their committed Effort, including M'uamba's and Vax's existing spend.
+- Added the campaign's bonus Wild Psychic Talent Focus to migrated non-Psychic Dark Sun characters, while leaving Psionicists and Psychic Warriors on their class-derived Psychic Effort.
+- Distinguished Classes from Edges in the assignment prompt and character header, so owning Legate can no longer hide or suppress the required base-class selection.
+- Kept unresolved class commitments out of unrelated side pools while the class chooser is still pending, and made a partially completed v13 migration safe to retry.
+
 ## New in 2.0.0-alpha2.5
 
 ### Fixes

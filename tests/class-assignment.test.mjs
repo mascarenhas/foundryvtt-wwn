@@ -5,6 +5,8 @@ import "../build/foundry-shim.mjs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  darkSunClassEdgesFromClassField,
+  isClassItem,
   precheckClassEdgesFromClassField,
   tokenizeClassField,
 } from "../module/helpers/class-assignment-guess.mjs";
@@ -96,6 +98,19 @@ describe("precheckClassEdgesFromClassField", () => {
   });
 });
 
+describe("Class versus Edge identity", () => {
+  it("does not treat native Edges as assigned Classes", () => {
+    assert.equal(isClassItem({ type: "classEdge", system: { edgeType: "edge" } }), false);
+    assert.equal(isClassItem({ type: "classEdge", system: { edgeType: "class" } }), true);
+    assert.equal(isClassItem({ type: "classEdge", system: {} }), true);
+  });
+
+  it("exposes only exact Dark Sun class labels through the strict mapper", () => {
+    assert.deepEqual(darkSunClassEdgesFromClassField("Sorcerer (High Mage)"), ["Full High Mage"]);
+    assert.equal(darkSunClassEdgesFromClassField("High Mage"), null);
+  });
+});
+
 describe("isRetiredClassAbilityName", () => {
   it("matches retired foci", () => {
     assert.equal(isRetiredClassAbilityName("Class Ability: Killing Blow"), true);
@@ -121,6 +136,18 @@ describe("shouldFlagPackPcClassAssignment", () => {
     assert.equal(
       shouldFlagPackPcClassAssignment({ items: [{ type: "classEdge" }, { type: "skill" }] }, 2),
       false
+    );
+  });
+
+  it("still flags when the actor owns only a native Edge", () => {
+    assert.equal(
+      shouldFlagPackPcClassAssignment({
+        items: [
+          { type: "classEdge", system: { edgeType: "edge" } },
+          { type: "skill" },
+        ],
+      }, 0),
+      true,
     );
   });
 

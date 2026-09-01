@@ -11,6 +11,7 @@ import {
   evaluateSkillLevelRequirement,
 } from "../../helpers/skill-points.mjs";
 import { usesDailyTravel } from "../../derivations/movement.mjs";
+import { isClassItem } from "../../helpers/class-assignment-guess.mjs";
 
 const TPL = "systems/wwn/templates/actor/pc";
 
@@ -89,7 +90,8 @@ export class WwnPcSheet extends composeMixins(CollapsibleSectionsMixin)(WwnBaseA
     context.stabilized = !!actor.getFlag("wwn", "stabilized");
 
     context.classEdges = context.classEdges ?? [];
-    context.classEdgesTooltip = context.classEdges.map((edge) => edge.name).join(" · ");
+    context.headerClassEdges = context.classEdges.filter(isClassItem);
+    context.classEdgesTooltip = context.headerClassEdges.map((edge) => edge.name).join(" · ");
 
     context.inventorySections = ["weapons", "armors", "ammo", "gear", "treasure", "currency"].map((id) => ({
       id: `inventory.${id}`,

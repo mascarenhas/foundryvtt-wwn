@@ -50,18 +50,30 @@ export function notifyPsychicFocusGrant(focus) {
 }
 
 /**
- * Sync Wild Psychic Talent Effort pool with ownedLevel (1 at L1, 2 at L2+).
+ * Sync Wild Psychic Talent's shared Psychic Effort grant with ownedLevel
+ * (1 at L1, 2 at L2+). Psychic techniques spend from the actor pool, so the
+ * old per-Focus internal counter must stay disabled.
  * @param {Item} focus
  */
 export async function syncWildPsychicEffort(focus) {
   if (focus.name !== "Wild Psychic Talent") return;
   const level = Math.max(Number(focus.system.ownedLevel) || 1, 1);
   const max = level >= 2 ? 2 : 1;
-  const cur = Number(focus.system.internalResource?.max) || 0;
-  if (cur === max) return;
+  const grant = focus.system.resourceGrant ?? {};
+  const internal = focus.system.internalResource ?? {};
+  if (
+    grant.targetName === "Psychic Effort"
+    && Number(grant.bonusMax) === max
+    && Number(internal.value) === 0
+    && Number(internal.max) === 0
+    && focus.system.resourceLength === "none"
+  ) return;
   await focus.update({
-    "system.internalResource.max": max,
-    "system.internalResource.value": Math.min(Number(focus.system.internalResource?.value) || 0, max),
+    "system.resourceGrant.targetName": "Psychic Effort",
+    "system.resourceGrant.targetSource": "",
+    "system.resourceGrant.bonusMax": max,
+    "system.internalResource.max": 0,
+    "system.internalResource.value": 0,
     "system.resourceLength": "none",
   });
 }

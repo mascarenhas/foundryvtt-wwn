@@ -19,6 +19,10 @@ import {
   normalizeWeaponArtFallback,
 } from "../helpers/weapon-art.mjs";
 import { isSpuriousExpertAbResidual } from "../derivations/attack-bonus.mjs";
+import {
+  darkSunClassEdgesFromClassField,
+  precheckClassEdgesFromClassField,
+} from "../helpers/class-assignment-guess.mjs";
 
 const MODE_TO_TYPE = { 0: "custom", 1: "multiply", 2: "add", 3: "downgrade", 4: "upgrade", 5: "override" };
 
@@ -441,6 +445,98 @@ export function migrateEffectData(effectData) {
 /*  Item transforms (M2-M5b)                    */
 /* -------------------------------------------- */
 
+const WILD_PSYCHIC_TALENT = "Wild Psychic Talent";
+const PSYCHIC_EFFORT = "Psychic Effort";
+const LEGATE_EFFORT = "Legate Effort";
+
+/**
+ * Named shared pool for a legacy Art source.
+ * Wild Talent is an alias for ordinary Psychic Effort in Dark Sun.
+ * @param {string} source
+ * @returns {string}
+ */
+export function migratedArtResourceName(source) {
+  const normalized = String(source ?? "").trim().toLowerCase();
+  if (["psychic", "wild talent", "wild psychic talent"].includes(normalized)) {
+    return PSYCHIC_EFFORT;
+  }
+  if (normalized === "legate") return LEGATE_EFFORT;
+  return "Effort";
+}
+
+/**
+ * A migrated Wild Psychic Talent Focus. Its grant establishes the actor-wide
+ * Psychic Effort pool; it deliberately has no private per-Focus counter.
+ * @param {number} max
+ * @returns {object}
+ */
+export function migratedWildPsychicTalentFocus(max = 1) {
+  const ownedLevel = Math.max(Number(max) || 1, 1) >= 2 ? 2 : 1;
+  return {
+    name: WILD_PSYCHIC_TALENT,
+    type: "focus",
+    img: "systems/wwn/assets/icons/items/focus.png",
+    effects: [],
+    flags: { wwn: { migrationGenerated: "darkSunWildPsychicTalent" } },
+    system: {
+      description:
+        "<p>Wild talents are not treated as psychics for general purposes. "
+        + "They have one point of Psychic Effort, or two at level 2 of this Focus.</p>",
+      ownedLevel,
+      resourceGrant: {
+        targetName: PSYCHIC_EFFORT,
+        targetSource: "",
+        bonusMax: ownedLevel,
+      },
+      internalResource: { value: 0, max: 0 },
+      resourceLength: "none",
+      bonusSkills: [],
+      bonusSkillsPick: 0,
+      bonusSkillsChosen: [],
+      bonusDice: null,
+      skillBonus: "",
+    },
+  };
+}
+
+/**
+ * A grant-only Edge for a legacy named pool such as Legate Effort.
+ * A constant formula remains fixed at the stored maximum and stays editable
+ * in the normal Class/Edge item sheet as Legate Effort later increases.
+ * @param {string} name
+ * @param {string} poolName
+ * @param {number} max
+ * @param {string} marker
+ * @returns {object}
+ */
+export function migratedPoolGrantEdge(name, poolName, max, marker) {
+  const storedMax = Math.max(Math.floor(Number(max) || 0), 0);
+  return {
+    name,
+    type: "classEdge",
+    img: "systems/wwn/assets/icons/items/class-ability.png",
+    effects: [],
+    flags: { wwn: { migrationGenerated: marker } },
+    system: {
+      description:
+        `<p>Migrated ${poolName} grant. Edit this Edge's pool formula if the maximum changes.</p>`,
+      edgeType: "edge",
+      attackProgression: "none",
+      skillPointsPerLevel: 3,
+      poolGrant: { name: poolName, formula: String(storedMax), value: 0, progression: [] },
+      slotGrant: { enabled: false, value: 0, progression: [], leveledProgression: [] },
+      hdGrant: { die: "", perLevelMod: 0 },
+      preparedGrant: { progression: [] },
+      bonusSkills: [],
+      bonusSkillsPick: 0,
+      bonusSkillsChosen: [],
+      bonusSkillsMode: "",
+      attributeGrant: { mode: "", exclude: [], chosen: "" },
+      companions: [],
+    },
+  };
+}
+
 export function migrateArtToPower(item) {
   const s = item.system ?? {};
   const commitment = legacyArtCommitmentState(s.time, s.effort);
@@ -456,7 +552,7 @@ export function migrateArtToPower(item) {
       subType: "art",
       description: s.description ?? "",
       source: s.source ?? "",
-      resourceName: "Effort",
+      resourceName: migratedArtResourceName(s.source),
       commitmentOptions: [commitment.option],
       poolCommitted: commitment.poolCommitted,
       internalResource: { value: 0, max: 0 },
@@ -574,6 +670,22 @@ export function migrateFocus(item) {
 
   const name = item.name.toLowerCase();
   const ownedLevel = Number(s.ownedLevel) || 1;
+  if (name === "wild psychic talent") {
+    const max = ownedLevel >= 2 ? 2 : 1;
+    out.system.resourceGrant = {
+      targetName: PSYCHIC_EFFORT,
+      targetSource: "",
+      bonusMax: max,
+    };
+    out.system.internalResource = { value: 0, max: 0 };
+    out.system.resourceLength = "none";
+  } else if (name === "psychic training") {
+    out.system.resourceGrant = {
+      targetName: PSYCHIC_EFFORT,
+      targetSource: "",
+      bonusMax: 1,
+    };
+  }
   const hasSeeded = (predicate) => out.effects.some(predicate);
   const seed = (changes, { effectName, focusLevel, skipFocusLevelSync = false, disabled } = {}) => {
     if (
@@ -1115,9 +1227,16 @@ export function migrateWwnArmorTrauma(item) {
  */
 export function repairWwnPowerSystem(system) {
   if (!system) return null;
+  const patch = {};
   const len = system.internalResourceLength;
-  if (len === undefined || len === "scene" || len === "day") return null;
-  return { internalResourceLength: normalizeInternalResourceLength(len) };
+  if (len !== undefined && len !== "scene" && len !== "day") {
+    patch.internalResourceLength = normalizeInternalResourceLength(len);
+  }
+  const migratedResourceName = migratedArtResourceName(system.source);
+  if (system.resourceName === "Effort" && migratedResourceName !== "Effort") {
+    patch.resourceName = migratedResourceName;
+  }
+  return Object.keys(patch).length ? patch : null;
 }
 
 export function migrateItemData(item) {
@@ -1251,6 +1370,109 @@ export function isBarePlaceholderActorData(raw, itemSources) {
   return true;
 }
 
+function normalizedItemName(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+/** Highest stored maximum for direct or effort-slot legacy class entries. */
+function legacyNamedPoolMax(classes, aliases) {
+  const wanted = new Set(aliases.map(normalizedItemName));
+  let max = 0;
+  for (const [key, entry] of Object.entries(classes ?? {})) {
+    const names = [key, entry?.name].map(normalizedItemName);
+    if (!names.some((name) => wanted.has(name))) continue;
+    max = Math.max(max, Math.floor(Number(entry?.max) || 0));
+  }
+  return max;
+}
+
+function hasLegacyPowerSource(items, aliases) {
+  const wanted = new Set(aliases.map(normalizedItemName));
+  return (items ?? []).some((item) => {
+    if (!["art", "power"].includes(item?.type)) return false;
+    return wanted.has(normalizedItemName(item.system?.source));
+  });
+}
+
+/**
+ * Reconstruct native grant Items for Dark Sun side resources that were stored
+ * only in the v13 actor-level `classes` object. Also makes retries safe when a
+ * failed first pass already persisted the canonical Actor system.
+ * @param {object} actor
+ * @param {object[]} migratedItems
+ * @returns {object[]}
+ */
+export function addLegacySideResourceItems(actor, migratedItems) {
+  const items = [...(migratedItems ?? [])];
+  const s = actor.system ?? {};
+  const classField = s.details?.class ?? "";
+  const selectedClasses = precheckClassEdgesFromClassField(classField);
+  const darkSunClasses = darkSunClassEdgesFromClassField(classField);
+  const hasPrimaryPsychicClass = selectedClasses.some(
+    (name) => name === "Full Psychic" || name === "Partial Psychic",
+  );
+  const hasPsychicClassGrant = items.some(
+    (item) =>
+      item.type === "classEdge"
+      && item.system?.edgeType !== "edge"
+      && item.system?.poolGrant?.name === PSYCHIC_EFFORT,
+  );
+  const existingWildFocus = items.some(
+    (item) => item.type === "focus" && normalizedItemName(item.name) === "wild psychic talent",
+  );
+  const psychicMax = legacyNamedPoolMax(s.classes, ["Psychic", "Wild Talent", WILD_PSYCHIC_TALENT]);
+  const hasPsychicSideEvidence =
+    psychicMax > 0
+    && hasLegacyPowerSource(actor.items, ["Psychic", "Wild Talent", WILD_PSYCHIC_TALENT]);
+  const darkSunNonPsychic = !!darkSunClasses && !hasPrimaryPsychicClass;
+
+  // Dark Sun v1.10 gives every non-Psychic class this bonus Focus. For other
+  // worlds, require the legacy named pool plus a matching Art before inferring it.
+  if (
+    !existingWildFocus
+    && !hasPrimaryPsychicClass
+    && !hasPsychicClassGrant
+    && (darkSunNonPsychic || hasPsychicSideEvidence)
+  ) {
+    items.push(migratedWildPsychicTalentFocus(psychicMax || 1));
+  }
+
+  const storedLegateMax = legacyNamedPoolMax(s.classes, ["Legate"]);
+  const hasLegatePower = hasLegacyPowerSource(actor.items, ["Legate"]);
+  // A failed prior pass can persist the canonical Actor system before its
+  // embedded Items are recreated, discarding the legacy classes.Legate max.
+  // Legate starts with two Effort, so its surviving source-tagged Power is
+  // sufficient to reconstruct the missing grant on retry.
+  const legateMax = storedLegateMax || (hasLegatePower ? 2 : 0);
+  const existingLegate = items.find(
+    (item) =>
+      item.type === "classEdge"
+      && (
+        item.system?.poolGrant?.name === LEGATE_EFFORT
+        || normalizedItemName(item.name) === "legate"
+        || item.flags?.wwn?.migrationGenerated === "legacyLegateEffort"
+      ),
+  );
+  if (legateMax > 0 && hasLegatePower) {
+    if (existingLegate) {
+      existingLegate.system ??= {};
+      existingLegate.system.edgeType = "edge";
+      const existingGrant = existingLegate.system.poolGrant ?? {};
+      const hasExistingMax = !!String(existingGrant.formula ?? "").trim()
+        || (existingGrant.progression?.length ?? 0) > 0;
+      existingLegate.system.poolGrant = {
+        ...existingGrant,
+        name: LEGATE_EFFORT,
+        ...(hasExistingMax ? {} : { formula: String(legateMax), progression: [] }),
+      };
+    } else {
+      items.push(migratedPoolGrantEdge("Legate", LEGATE_EFFORT, legateMax, "legacyLegateEffort"));
+    }
+  }
+
+  return items;
+}
+
 /**
  * Transform a WWN character/monster actor (plain data) into WWN pc/npc data.
  * Returns null when the actor is not a WWN type needing migration.
@@ -1278,6 +1500,7 @@ function migrateCharacter(actor) {
       .map((item) => item._id),
   );
   let items = migrateActorItems(actor.items ?? []);
+  items = addLegacySideResourceItems(actor, items);
   if (isWwn) {
     items = applyLegacyUnleveledSpellSpend(items, s.spells, legacySpellIds);
   }

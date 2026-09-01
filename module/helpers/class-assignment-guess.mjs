@@ -50,6 +50,31 @@ const DARK_SUN_CLASS_EDGES = new Map([
   ["thief", ["Partial Warrior", "Partial Expert"]],
 ]);
 
+/**
+ * Whether an Item is an actual Class rather than an Edge stored in the shared
+ * `classEdge` document type. Missing edgeType is treated as a legacy Class.
+ * @param {object} item
+ * @returns {boolean}
+ */
+export function isClassItem(item) {
+  return item?.type === "classEdge" && item.system?.edgeType !== "edge";
+}
+
+/**
+ * Exact Dark Sun display-class mapping, or null for ordinary free text.
+ * @param {string} classField
+ * @returns {string[]|null}
+ */
+export function darkSunClassEdgesFromClassField(classField) {
+  const displayLabel = String(classField ?? "")
+    .trim()
+    .match(/^([^()]+?)(?:\s*\([^()]*\))?\s*$/)?.[1]
+    ?.trim()
+    .toLowerCase();
+  const edges = DARK_SUN_CLASS_EDGES.get(displayLabel);
+  return edges ? [...edges] : null;
+}
+
 const PARTIAL_ONLY = new Set([
   "Accursed",
   "Bard",
@@ -179,12 +204,7 @@ function resolveCore(core, flags, multiToken) {
  * @returns {string[]} classEdge names to pre-check
  */
 export function precheckClassEdgesFromClassField(classField) {
-  const displayLabel = String(classField ?? "")
-    .trim()
-    .match(/^([^()]+?)(?:\s*\([^()]*\))?\s*$/)?.[1]
-    ?.trim()
-    .toLowerCase();
-  const darkSunEdges = DARK_SUN_CLASS_EDGES.get(displayLabel);
+  const darkSunEdges = darkSunClassEdgesFromClassField(classField);
   if (darkSunEdges) return [...darkSunEdges];
 
   const tokens = tokenizeClassField(classField);

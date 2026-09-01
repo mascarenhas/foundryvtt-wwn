@@ -196,6 +196,44 @@ describe("migrateFocus", () => {
     assert.equal(out.system.resourceLength, "day");
   });
 
+  it("moves Wild Psychic Talent onto the shared Psychic Effort pool", () => {
+    const out = migrateFocus({
+      _id: "WildTalent000001",
+      name: "Wild Psychic Talent",
+      type: "focus",
+      system: {
+        ownedLevel: 2,
+        internalResource: { value: 1, max: 2 },
+        resourceLength: "none",
+      },
+      effects: [],
+    });
+    assert.deepEqual(out.system.resourceGrant, {
+      targetName: "Psychic Effort",
+      targetSource: "",
+      bonusMax: 2,
+    });
+    assert.deepEqual(out.system.internalResource, { value: 0, max: 0 });
+  });
+
+  it("moves Psychic Training's bonus onto the shared Psychic Effort pool", () => {
+    const out = migrateFocus({
+      _id: "PsychicTrain0001",
+      name: "Psychic Training",
+      type: "focus",
+      system: {
+        ownedLevel: 2,
+        resourceGrant: { targetName: "Effort", targetSource: "", bonusMax: 1 },
+      },
+      effects: [],
+    });
+    assert.deepEqual(out.system.resourceGrant, {
+      targetName: "Psychic Effort",
+      targetSource: "",
+      bonusMax: 1,
+    });
+  });
+
   it("patches an existing Die Hard L1 AE that lacks autoStabilize", () => {
     const out = migrateFocus({
       _id: "DieHardParent0002",

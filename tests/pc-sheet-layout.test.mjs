@@ -99,4 +99,12 @@ describe("class assignment prompt retry", () => {
       "the in-flight guard must reset whether the dialog is skipped, shown, or fails"
     );
   });
+
+  it("keeps native Edges out of the class-name header", () => {
+    const sheet = read("module/sheets/actor/pc-sheet.mjs");
+    const header = read("templates/actor/pc/header.hbs");
+    assert.match(sheet, /context\.headerClassEdges = context\.classEdges\.filter\(isClassItem\)/);
+    assert.match(header, /#if headerClassEdges\.length/);
+    assert.match(header, /#each headerClassEdges as \|edge\|/);
+  });
 });

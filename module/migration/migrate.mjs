@@ -23,7 +23,7 @@ const NS = "wwn";
 const LEGACY_ITEM_TYPES = new Set(["art", "spell", "ability"]);
 
 /** Versions below this trigger migration. Bump when adding steps. */
-const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.5";
+const NEEDS_MIGRATION_BELOW = "2.0.0-alpha2.6";
 
 /** Marks the one Actor-level effect synthesized while loading legacy tweak fields. */
 const LEGACY_TWEAK_EFFECT_MIGRATION = "legacyTweaks";

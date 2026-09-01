@@ -51,6 +51,32 @@ describe("SWN classEdge packs", () => {
   });
 });
 
+describe("SWN psychic Focus pools", () => {
+  const foci = collect(path.join(ROOT, "abilities-swn"), "focus");
+  const byName = Object.fromEntries(foci.map(({ data }) => [data.name, data]));
+
+  it("Wild Psychic Talent grants shared Psychic Effort, not a private counter", () => {
+    const focus = byName["Wild Psychic Talent"];
+    assert.ok(focus);
+    assert.deepEqual(focus.system.resourceGrant, {
+      targetName: "Psychic Effort",
+      targetSource: "",
+      bonusMax: 1,
+    });
+    assert.deepEqual(focus.system.internalResource, { value: 0, max: 0 });
+  });
+
+  it("Psychic Training adds one to the shared Psychic Effort pool", () => {
+    const focus = byName["Psychic Training"];
+    assert.ok(focus);
+    assert.deepEqual(focus.system.resourceGrant, {
+      targetName: "Psychic Effort",
+      targetSource: "",
+      bonusMax: 1,
+    });
+  });
+});
+
 describe("AWN classEdge packs", () => {
   const items = collect(path.join(ROOT, "abilities-awn"));
   const byName = Object.fromEntries(items.map(({ data }) => [data.name, data]));

@@ -3,7 +3,9 @@
  *
  * Pack arts use generic `resourceName: "Effort"` while classEdges grant
  * distinct names ("Vowed Effort", "High Mage Effort", …). Match by exact
- * name first, then `{source} Effort`, then a unique Effort-suffixed grant.
+ * name first, then `{source} Effort`. A unique Effort-suffixed grant is used
+ * only when the Power has no source; a mismatched source must never spend from
+ * an unrelated pool merely because that pool is currently the only one shown.
  *
  * @param {Actor} actor
  * @param {{ resourceName?: string, source?: string }} opts
@@ -31,7 +33,7 @@ export function findPoolGrantEdge(actor, { resourceName = "", source = "" } = {}
     if (bySource) return bySource;
   }
 
-  if (name === "Effort") {
+  if (name === "Effort" && !src) {
     const effortEdges = edges.filter((ce) => {
       const gn = String(ce.system.poolGrant.name).trim();
       return gn === "Effort" || gn.endsWith(" Effort");

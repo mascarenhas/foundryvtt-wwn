@@ -5,6 +5,7 @@
 
 import { archiveAndDeleteOwnedItem } from "./pc-compendium-sync.mjs";
 import { isPc } from "../helpers/actor-types.mjs";
+import { isClassItem } from "../helpers/class-assignment-guess.mjs";
 import { safeDeleteActorActiveEffects } from "../helpers/safe-delete-active-effects.mjs";
 
 const NS = "wwn";
@@ -55,7 +56,7 @@ export function isLikelyPlayablePc(actor) {
  * @returns {boolean}
  */
 export function shouldFlagPackPcClassAssignment(actor, archived = 0) {
-  if ([...(actor?.items ?? [])].some((i) => i?.type === "classEdge")) return false;
+  if ([...(actor?.items ?? [])].some(isClassItem)) return false;
   if (archived > 0) return true;
   return isLikelyPlayablePc(actor);
 }
@@ -105,7 +106,7 @@ async function cleanupActorClassAbilities(actor, { flagMode = "always" } = {}) {
   }
 
   // Flag before AE deletes so a failure cannot skip the prompt.
-  const hasClassEdge = actor.items.some((i) => i.type === "classEdge");
+  const hasClassEdge = actor.items.some(isClassItem);
   const shouldFlag =
     !hasClassEdge
     && (
@@ -150,7 +151,7 @@ async function repairMissingClassAssignmentFlags() {
   console.info("WWN | Class assignment: repairing missing needsClassAssignment flags…");
 
   for (const actor of iterWorldPcs()) {
-    if (actor.items.some((i) => i.type === "classEdge")) continue;
+    if (actor.items.some(isClassItem)) continue;
     if (actor.getFlag(NS, "classAssignmentDismissed")) continue;
     if (actor.getFlag(NS, "needsClassAssignment")) continue;
     await actor.setFlag(NS, "needsClassAssignment", true);
@@ -160,7 +161,7 @@ async function repairMissingClassAssignmentFlags() {
   const packPcs = await loadWorldPackPcs();
   for (const actor of packPcs) {
     if (!isLikelyPlayablePc(actor)) continue;
-    if (actor.items.some((i) => i.type === "classEdge")) continue;
+    if (actor.items.some(isClassItem)) continue;
     if (actor.getFlag(NS, "classAssignmentDismissed")) continue;
     if (actor.getFlag(NS, "needsClassAssignment")) continue;
     await actor.setFlag(NS, "needsClassAssignment", true);

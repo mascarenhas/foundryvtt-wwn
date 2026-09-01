@@ -35,7 +35,12 @@ function legacySpell(id, { prepared = true, cast = 0, memorized = 0, level = 1 }
   };
 }
 
-function legacyPc({ items = [], perDay = { value: 0, max: 0 } } = {}) {
+function legacyPc({
+  items = [],
+  perDay = { value: 0, max: 0 },
+  className = "Sorcerer (High Mage)",
+  classes = {},
+} = {}) {
   return {
     type: "character",
     name: "Legacy PC",
@@ -44,7 +49,8 @@ function legacyPc({ items = [], perDay = { value: 0, max: 0 } } = {}) {
         ["str", "dex", "con", "int", "wis", "cha"].map((key) => [key, { value: 10 }]),
       ),
       hp: { value: 10, max: 10, hd: "1d6" },
-      details: { class: "Sorcerer (High Mage)", level: 10 },
+      details: { class: className, level: 10 },
+      classes,
       spells: {
         leveledSlots: false,
         perDay,
@@ -152,6 +158,24 @@ describe("legacy committed Effort migration", () => {
     ]);
   });
 
+  it("maps Psychic, Wild Talent, and Legate Arts to their native shared pools", () => {
+    assert.equal(
+      migrateArtToPower(legacyArt("Psychic", { source: "Psychic", time: "Scene", effort: 0 }))
+        .system.resourceName,
+      "Psychic Effort",
+    );
+    assert.equal(
+      migrateArtToPower(legacyArt("Wild", { source: "Wild Talent", time: "Scene", effort: 0 }))
+        .system.resourceName,
+      "Psychic Effort",
+    );
+    assert.equal(
+      migrateArtToPower(legacyArt("Legate", { source: "Legate", time: "Scene", effort: 0 }))
+        .system.resourceName,
+      "Legate Effort",
+    );
+  });
+
   it("preserves all 13 committed points present on the pristine Dark Sun PCs", () => {
     const actors = [
       [
@@ -208,6 +232,175 @@ describe("legacy committed Effort migration", () => {
       total += Object.values(buckets).reduce((sum, value) => sum + value, 0);
     }
     assert.equal(total, 13);
+  });
+});
+
+describe("legacy Dark Sun side-resource grants", () => {
+  it("restores Wild Psychic Talent and Legate as native grant Items", () => {
+    const migrated = migrateActorData(legacyPc({
+      className: "Sorcerer (High Mage)",
+      classes: { Psychic: { max: 1 }, Legate: { max: 2 } },
+      items: [
+        legacyArt("Sense the Need", { source: "Psychic", time: "Day", effort: 0 }),
+        legacyArt("Legate's Wrath", { source: "Legate", time: "Scene", effort: 2 }),
+        legacyArt("Ward Allies", { source: "High Mage", time: "Day", effort: 1 }),
+      ],
+    }));
+
+    const focus = migrated.items.find((item) => item.type === "focus" && item.name === "Wild Psychic Talent");
+    assert.ok(focus);
+    assert.equal(focus.system.ownedLevel, 1);
+    assert.deepEqual(focus.system.resourceGrant, {
+      targetName: "Psychic Effort",
+      targetSource: "",
+      bonusMax: 1,
+    });
+    assert.deepEqual(focus.system.internalResource, { value: 0, max: 0 });
+
+    const legate = migrated.items.find((item) => item.type === "classEdge" && item.name === "Legate");
+    assert.ok(legate);
+    assert.equal(legate.system.edgeType, "edge");
+    assert.equal(legate.system.poolGrant.name, "Legate Effort");
+    assert.equal(legate.system.poolGrant.formula, "2");
+    assert.deepEqual(legate.system.poolGrant.progression, []);
+
+    const runtimeItems = migrated.items.map((item) => item.type === "power" ? runtimePower(item) : item);
+    const runtime = runtimeActor(runtimeItems);
+    deriveResourcePools(runtime);
+    const psychic = runtime.system.resourcePools.find((pool) => pool.name === "Psychic Effort");
+    const legatePool = runtime.system.resourcePools.find((pool) => pool.name === "Legate Effort");
+    assert.deepEqual({ value: psychic?.value, max: psychic?.max }, { value: 0, max: 1 });
+    assert.deepEqual({ value: legatePool?.value, max: legatePool?.max }, { value: 2, max: 2 });
+
+    const second = migrateActorData({
+      type: "character",
+      system: migrated.system,
+      items: migrated.items,
+      effects: migrated.effects,
+    });
+    assert.equal(second.items.filter((item) => item.name === "Wild Psychic Talent").length, 1);
+    assert.equal(second.items.filter((item) => item.name === "Legate").length, 1);
+
+    const editedLegate = second.items.find((item) => item.name === "Legate");
+    editedLegate.system.poolGrant.formula = "3";
+    const third = migrateActorData({
+      type: "character",
+      system: migrated.system,
+      items: second.items,
+      effects: migrated.effects,
+    });
+    assert.equal(
+      third.items.find((item) => item.name === "Legate").system.poolGrant.formula,
+      "3",
+      "a retry must preserve an edited native Edge maximum",
+    );
+  });
+
+  it("reconstructs grants when a failed v13 pass already persisted the canonical Actor system", () => {
+    const canonical = migrateActorData(legacyPc({ className: "Sorcerer (High Mage)" })).system;
+    assert.equal(canonical.scores, undefined);
+    assert.equal(canonical.classes, undefined);
+
+    const retried = migrateActorData({
+      type: "character",
+      system: canonical,
+      items: [
+        legacyArt("Sense the Need", { source: "Psychic", time: "Day", effort: 0 }),
+        legacyArt("Legate's Wrath", { source: "Legate", time: "Scene", effort: 2 }),
+      ],
+      effects: [],
+    });
+    assert.equal(retried.items.filter((item) => item.name === "Wild Psychic Talent").length, 1);
+    assert.equal(retried.items.filter((item) => item.name === "Legate").length, 1);
+    assert.equal(
+      retried.items.find((item) => item.name === "Legate").system.poolGrant.formula,
+      "2",
+    );
+  });
+
+  it("repairs already-converted side Powers if a retry starts from alpha2.5-shaped Items", () => {
+    const canonical = migrateActorData(legacyPc({ className: "Sorcerer (High Mage)" })).system;
+    const psychic = migrateArtToPower(
+      legacyArt("Sense the Need", { source: "Psychic", time: "Day", effort: 0 }),
+    );
+    const legate = migrateArtToPower(
+      legacyArt("Legate's Wrath", { source: "Legate", time: "Scene", effort: 2 }),
+    );
+    psychic.system.resourceName = "Effort";
+    legate.system.resourceName = "Effort";
+
+    const retried = migrateActorData({
+      type: "character",
+      system: canonical,
+      items: [psychic, legate],
+      effects: [],
+    });
+    assert.equal(
+      retried.items.find((item) => item.name === "Sense the Need").system.resourceName,
+      "Psychic Effort",
+    );
+    assert.equal(
+      retried.items.find((item) => item.name === "Legate's Wrath").system.resourceName,
+      "Legate Effort",
+    );
+    assert.equal(retried.items.filter((item) => item.name === "Wild Psychic Talent").length, 1);
+    assert.equal(retried.items.filter((item) => item.name === "Legate").length, 1);
+  });
+
+  it("coalesces Davi's Psychic and Wild Talent aliases into one Focus pool", () => {
+    const migrated = migrateActorData(legacyPc({
+      className: "Gladiator",
+      classes: { Psychic: { max: 1 }, "Wild Talent": { max: 1 } },
+      items: [legacyArt("Personal Apportation", {
+        source: "Wild Talent",
+        time: "Scene",
+        effort: 0,
+      })],
+    }));
+    assert.equal(migrated.items.filter((item) => item.name === "Wild Psychic Talent").length, 1);
+    assert.equal(
+      migrated.items.find((item) => item.type === "power").system.resourceName,
+      "Psychic Effort",
+    );
+  });
+
+  it("grants the house-rule Focus to every mapped non-Psychic Dark Sun class", () => {
+    const classNames = [
+      "Ranger (Warrior/Beastmaster)",
+      "Gladiator",
+      "Fighter (Warrior)",
+      "Sorcerer (High Mage)",
+      "Elemental Cleric",
+      "Elemental Monk",
+      "Thief",
+    ];
+    for (const className of classNames) {
+      const migrated = migrateActorData(legacyPc({ className }));
+      assert.equal(
+        migrated.items.filter((item) => item.name === "Wild Psychic Talent").length,
+        1,
+        className,
+      );
+    }
+  });
+
+  it("does not give Wild Psychic Talent to primary Psychic classes", () => {
+    for (const className of ["Psychic Warrior", "Psionicist (Psychic)"]) {
+      const migrated = migrateActorData(legacyPc({
+        className,
+        classes: { Psychic: { max: 7 } },
+        items: [legacyArt("Spatial Awareness", {
+          source: "Psychic",
+          time: "Committed",
+          effort: 1,
+        })],
+      }));
+      assert.equal(
+        migrated.items.some((item) => item.name === "Wild Psychic Talent"),
+        false,
+        className,
+      );
+    }
   });
 });
 
