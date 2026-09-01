@@ -2,11 +2,15 @@ import WwnItemBase from "./base.mjs";
 import { PhysicalDataMixin } from "../mixins/physical.mjs";
 import { mergeFormulaMod } from "../../derivations/item-formulas.mjs";
 import { AMMO_MODES, mapWeaponAmmoMigration, resolveLinkedAmmo } from "../../helpers/ammo.mjs";
+import {
+  normalizeWeaponArtFallback,
+  resolveLinkedArt,
+} from "../../helpers/weapon-art.mjs";
 
 const fields = foundry.data.fields;
 
 /**
- * Weapon. Skill and ammo are linked by item ID with name fallback.
+ * Weapon. Skill, Art, and ammo are linked by item ID with name fallback.
  */
 export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
   /** @override */
@@ -30,6 +34,17 @@ export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
       delete source.skill;
     }
     delete source.skillDamage;
+
+    // The Dark Sun fork linked attacks to Arts by name in `system.art`.
+    // Preserve that value before the strict v2 schema discards unknown fields.
+    if (Object.hasOwn(source, "art")) {
+      if (!source.artFallback) {
+        source.artFallback = normalizeWeaponArtFallback(source.art);
+      }
+      delete source.art;
+    }
+    source.artId ??= "";
+    source.artFallback = normalizeWeaponArtFallback(source.artFallback);
 
     const needs =
       source.ammoMode === undefined ||
@@ -67,6 +82,8 @@ export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
     // Linked skill item id; name fallback retained for migration edge cases.
     schema.skillId = new fields.StringField({ required: true, blank: true });
     schema.skillFallback = new fields.StringField({ required: true, blank: true });
+    schema.artId = new fields.StringField({ required: true, blank: true });
+    schema.artFallback = new fields.StringField({ required: true, blank: true });
     schema.score = new fields.StringField({ required: true, initial: "str" });
 
     schema.melee = new fields.BooleanField({ initial: true });
@@ -131,6 +148,16 @@ export default class WwnWeapon extends PhysicalDataMixin(WwnItemBase) {
     return resolveLinkedAmmo(actor.items, {
       ammoId: this.ammoId,
       ammoFallback: this.ammoFallback,
+    });
+  }
+
+  /** Resolve the linked Art power on the owning actor. */
+  get linkedArt() {
+    const actor = this.parent?.actor;
+    if (!actor) return null;
+    return resolveLinkedArt(actor.items, {
+      artId: this.artId,
+      artFallback: this.artFallback,
     });
   }
 

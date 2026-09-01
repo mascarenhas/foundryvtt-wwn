@@ -36,6 +36,19 @@
                 data-dtype="String" />
             </div>
           </div>
+          <div class="form-group wwn-form-span">
+            <label title="{{localize 'WWN.Weapon.LinkedArtHint'}}">{{localize "WWN.Weapon.LinkedArt"}}</label>
+            <div class="form-fields">
+              {{#if artChoices}}
+              <select name="system.artId">
+                {{selectOptions artChoices selected=selectedArtId}}
+              </select>
+              {{else}}
+              <input type="hidden" name="system.artId" value="{{system.artId}}" />
+              {{/if}}
+              <input type="hidden" name="system.artFallback" value="{{system.artFallback}}" />
+            </div>
+          </div>
           <div class="form-group">
             <label>{{localize "WWN.items.AtkBonus"}}</label>
             <div class="form-fields">

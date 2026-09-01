@@ -74,6 +74,51 @@
     opacity: 0.9;
   }
 
+  .wwn-chat-natural-outcome {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    margin: 8px 0 6px;
+    padding: 7px 10px;
+    border: 2px solid;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 255, 255, 0.45);
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: uppercase;
+
+    &::before,
+    &::after {
+      font-size: 0.9em;
+    }
+
+    &--critical {
+      color: #2f2300;
+      background: linear-gradient(135deg, #fff1a6, #f0bd2c);
+      border-color: #9a6b00;
+
+      &::before,
+      &::after {
+        content: "\2605";
+      }
+    }
+
+    &--fumble {
+      color: #fff;
+      background: linear-gradient(135deg, #c53838, #781515);
+      border-color: #5d0f0f;
+
+      &::before,
+      &::after {
+        content: "!";
+      }
+    }
+  }
+
   .wwn-chat-outcome {
     margin: 6px 0 4px;
     font-size: 16px;
@@ -433,6 +478,16 @@
 
   &--miss {
     background: #8b2a2a;
+    color: #fff;
+  }
+
+  &--critical {
+    background: #f0bd2c;
+    color: #2f2300;
+  }
+
+  &--fumble {
+    background: #8b1e1e;
     color: #fff;
   }
 

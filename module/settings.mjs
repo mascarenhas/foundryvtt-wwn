@@ -222,8 +222,9 @@ export function registerSettings() {
     hint: "WWN.Setting.DefaultCurrencySetHint",
     scope: "world",
     type: String,
-    default: "silver",
+    default: "darkSun",
     choices: {
+      darkSun: "WWN.Setting.CurrencyDarkSun",
       silver: "WWN.Setting.CurrencySilver",
       gold: "WWN.Setting.CurrencyGold",
       credits: "WWN.Setting.CurrencyCredits",

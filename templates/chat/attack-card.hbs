@@ -1,6 +1,12 @@
 {{!-- Sectioned attack/damage card. Card-local UI state (heal toggle, multiplier)
      lives in data- attributes managed by the ChatListener. --}}
 
+{{#if naturalOutcome}}
+<div class="wwn-chat-natural-outcome wwn-chat-natural-outcome--{{naturalOutcome.type}}" role="status">
+  {{naturalOutcome.label}}
+</div>
+{{/if}}
+
 {{#if outcome}}
 <div class="wwn-chat-outcome wwn-chat-outcome--{{outcome.type}}">{{outcome.label}}</div>
 {{/if}}

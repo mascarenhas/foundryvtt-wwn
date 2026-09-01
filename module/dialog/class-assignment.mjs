@@ -5,6 +5,7 @@
 import { showWwnDialog, confirmButton, cancelButton } from "../applications/wwn-dialog.mjs";
 import {
   CLASS_EDGE_CATALOG,
+  isClassItem,
   precheckClassEdgesFromClassField,
 } from "../helpers/class-assignment-guess.mjs";
 import { findSystemPackItemByName } from "../helpers/class-edge-grants.mjs";
@@ -22,9 +23,9 @@ export async function loadClassEdgeOptions() {
     if (pack.metadata?.packageType !== "system") continue;
     if (pack.documentName !== "Item") continue;
     if (!String(pack.collection).startsWith(`${NS}.`)) continue;
-    const index = await pack.getIndex({ fields: ["name", "type"] });
+    const index = await pack.getIndex({ fields: ["name", "type", "system.edgeType"] });
     for (const entry of index) {
-      if (entry.type !== "classEdge") continue;
+      if (!isClassItem(entry)) continue;
       const name = String(entry.name ?? "").trim();
       if (!name || byName.has(name)) continue;
       const group = name.startsWith("Full ") ? "full" : "partial";
@@ -49,7 +50,7 @@ export async function loadClassEdgeOptions() {
 export async function maybeShowClassAssignmentDialog(actor) {
   if (!actor || !isPc(actor)) return false;
   if (!actor.isOwner) return false;
-  if (actor.items.some((i) => i.type === "classEdge")) {
+  if (actor.items.some(isClassItem)) {
     await actor.unsetFlag(NS, "needsClassAssignment");
     return false;
   }
@@ -99,9 +100,6 @@ export async function maybeShowClassAssignmentDialog(actor) {
     return true;
   }
 
-  await actor.unsetFlag(NS, "needsClassAssignment");
-  await actor.unsetFlag(NS, "classAssignmentDismissed");
-
   const toCreate = [];
   for (const name of result.names ?? []) {
     const doc = await findSystemPackItemByName(name);
@@ -129,5 +127,10 @@ export async function maybeShowClassAssignmentDialog(actor) {
   if (toCreate.length) {
     await actor.createEmbeddedDocuments("Item", toCreate);
   }
+  // Clear the retry marker only after the class Items exist. If a pack lookup
+  // or embedded create fails, the next sheet render can offer the assignment
+  // again instead of leaving the actor permanently unclassed.
+  await actor.unsetFlag(NS, "needsClassAssignment");
+  await actor.unsetFlag(NS, "classAssignmentDismissed");
   return true;
 }

@@ -22,6 +22,11 @@ import {
   coerceCommitmentOptionsArray,
 } from "../../config/power-subtypes.mjs";
 import { formatCommitmentSummary } from "../../helpers/commitment.mjs";
+import {
+  isArtPower,
+  weaponArtFallbackForSelection,
+  weaponArtSelectionChanged,
+} from "../../helpers/weapon-art.mjs";
 
 const ROLL_TYPE_CHOICES = {
   result: "WWN.Power.RollTypeResult",
@@ -224,16 +229,21 @@ export class WwnItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   /** Linked ammo dropdown from the owning actor's gear (legacy `#prepareWeaponContext`). */
   #prepareWeaponContext(context) {
     const actor = this.item.actor;
+    context.selectedArtId = this.item.system.artId;
     if (!actor) {
       context.ammoChoices = null;
+      context.artChoices = null;
       return;
     }
     const choices = { "": "" };
+    const artChoices = { "": game.i18n.localize("WWN.None") };
     for (const gear of actor.items) {
-      if (gear.type !== "ammo") continue;
-      choices[gear.id] = gear.name;
+      if (gear.type === "ammo") choices[gear.id] = gear.name;
+      if (isArtPower(gear)) artChoices[gear.id] = gear.name;
     }
     context.ammoChoices = choices;
+    context.artChoices = artChoices;
+    context.selectedArtId = this.item.system.linkedArt?.id ?? this.item.system.artId;
   }
 
   /** Primary skill names from the configured skill pack. */
@@ -244,6 +254,29 @@ export class WwnItemSheet extends HandlebarsApplicationMixin(ItemSheetV2) {
   /** @override */
   _processFormData(event, form, formData) {
     const submitData = super._processFormData(event, form, formData);
+
+    if (this.item.type === "weapon") {
+      const flat = foundry.utils.flattenObject(submitData);
+      if (Object.hasOwn(flat, "system.artId")) {
+        const artId = String(flat["system.artId"] ?? "");
+        const selectionChanged = weaponArtSelectionChanged({
+          submittedArtId: artId,
+          storedArtId: this.item.system.artId,
+          resolvedArtId: this.item.system.linkedArt?.id,
+          controlChanged: event?.target?.name === "system.artId",
+        });
+        foundry.utils.setProperty(
+          submitData,
+          "system.artFallback",
+          weaponArtFallbackForSelection({
+            items: this.item.actor?.items,
+            artId,
+            currentFallback: this.item.system.artFallback,
+            selectionChanged,
+          })
+        );
+      }
+    }
 
     if (this.item.type === "power") {
       const flat = foundry.utils.flattenObject(submitData);

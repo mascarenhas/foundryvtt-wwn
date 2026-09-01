@@ -17,6 +17,7 @@ import {
 import { AssetItemActions } from "../item/asset-actions.mjs";
 import { migrateItemData } from "../migration/transforms.mjs";
 import { rollShipWeapon } from "../helpers/starship-rolls.mjs";
+import { useLinkedArtAfterAttack } from "../helpers/weapon-art.mjs";
 
 /**
  * WWN Item document: roll dispatch and power usage flow.
@@ -141,8 +142,10 @@ export class WwnItem extends Item {
     const actor = this.actor;
     if (!actor) return;
     switch (this.type) {
-      case "weapon":
-        return WwnDice.rollAttack(actor, this, { skipDialog });
+      case "weapon": {
+        const message = await WwnDice.rollAttack(actor, this, { skipDialog });
+        return useLinkedArtAfterAttack(this, message);
+      }
       case "power":
         return this.usePower({ skipDialog });
       case "skill":

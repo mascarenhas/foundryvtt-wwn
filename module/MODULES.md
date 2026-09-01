@@ -27,7 +27,7 @@ Actor/item sheets live under [`sheets/`](sheets/) (`ActorSheetV2` / `ItemSheetV2
 - **Derived math:** import from `derivations/*.mjs`, not from sheets.
 - **AE targets:** import registries from `config/ae-targets.mjs` / `config/ae-item-targets.mjs`.
 - **Migration:** import transforms from `migration/`; do not add runtime `migrateData` hacks on TypeDataModels for iterative schema fixes (one-shot field aliases are fine).
-- **Powers / pools:** power use and pool refresh live in `documents/item.mjs` and `helpers/power-*.mjs`; pool maxes come from `classEdge` via `derivations/resource-pools.mjs`. PCs are grant-driven only. NPCs also create orphan pools for shared-pool powers without a matching grant, and persist maxes in `system.poolMaxOverrides` (editable on the sheet).
+- **Powers / pools:** power use and pool refresh live in `documents/item.mjs` and `helpers/power-*.mjs`; pool maxes come from `classEdge` and Focus grants via `derivations/resource-pools.mjs`. PCs are grant-driven only; a Focus may establish a named pool (for example Wild Psychic Talent → Psychic Effort). NPCs also create orphan pools for shared-pool powers without a matching grant, and persist maxes in `system.poolMaxOverrides` (editable on the sheet).
 - **Ammo / charges:** use `helpers/ammo.mjs` for attack spend, magazine reload, and gear expend-on-use.
 - **PCs vs NPCs:** PC bonuses go through Active Effects. NPC combat numbers are edited on the monster sheet Config tab (direct schema fields); AE remains optional. Use `isPc` / `isNpc` from `helpers/actor-types.mjs` — never compare only to `"pc"` / `"npc"`.
 - **Styles:** author sheet/theme CSS in `scss/` only; never edit compiled `styles/main.css` by hand.

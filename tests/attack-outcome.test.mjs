@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   resolveAttackHit,
+  resolveAttackPresentation,
   applyShockFloor,
   buildAttackApplyRows,
   buildAttackNotices,
@@ -33,9 +34,95 @@ describe("resolveAttackHit", () => {
     assert.equal(resolveAttackHit({ attackTotal: 5, naturalDie: 20, targetAc: 20, blockedByTl: false }).reason, "nat20");
   });
 
+  it("resolves untargeted nat 1 and nat 20 instead of treating both as ordinary rolls", () => {
+    assert.deepEqual(
+      resolveAttackHit({ attackTotal: 30, naturalDie: 1, targetAc: null, blockedByTl: false }),
+      { hit: false, reason: "nat1" },
+    );
+    assert.deepEqual(
+      resolveAttackHit({ attackTotal: 1, naturalDie: 20, targetAc: null, blockedByTl: false }),
+      { hit: true, reason: "nat20" },
+    );
+  });
+
   it("compares total to AC otherwise", () => {
     assert.equal(resolveAttackHit({ attackTotal: 15, naturalDie: 10, targetAc: 15, blockedByTl: false }).hit, true);
     assert.equal(resolveAttackHit({ attackTotal: 14, naturalDie: 10, targetAc: 15, blockedByTl: false }).hit, false);
+  });
+});
+
+describe("resolveAttackPresentation", () => {
+  it("does not present a TL-blocked natural 20 as a critical", () => {
+    const hitResult = resolveAttackHit({
+      attackTotal: 30,
+      naturalDie: 20,
+      targetAc: 10,
+      blockedByTl: true,
+    });
+    const presentation = resolveAttackPresentation({
+      hit: hitResult.hit,
+      hitReason: hitResult.reason,
+      untargeted: false,
+    });
+    assert.equal(presentation.naturalOutcome, null);
+    assert.deepEqual(presentation.badge, { type: "miss", labelKey: "WWN.Roll.Miss" });
+  });
+
+  it("still presents a TL-blocked natural 1 as a fumble", () => {
+    const hitResult = resolveAttackHit({
+      attackTotal: 1,
+      naturalDie: 1,
+      targetAc: 10,
+      blockedByTl: true,
+    });
+    const presentation = resolveAttackPresentation({
+      hit: hitResult.hit,
+      hitReason: hitResult.reason,
+      naturalDie: 1,
+      untargeted: false,
+    });
+    assert.equal(hitResult.reason, "tl");
+    assert.deepEqual(presentation.naturalOutcome, {
+      type: "fumble",
+      labelKey: "WWN.Roll.FumbleHeader",
+    });
+    assert.deepEqual(presentation.outcome, {
+      type: "miss",
+      labelKey: "WWN.Roll.MissHeader",
+    });
+  });
+
+  it("keeps a critical callout and traumatic outcome at the same time", () => {
+    const presentation = resolveAttackPresentation({
+      hit: true,
+      hitReason: "nat20",
+      traumatic: true,
+      untargeted: false,
+    });
+    assert.deepEqual(presentation.naturalOutcome, {
+      type: "critical",
+      labelKey: "WWN.Roll.CriticalHitHeader",
+    });
+    assert.deepEqual(presentation.outcome, {
+      type: "trauma",
+      labelKey: "WWN.Roll.TraumaticHitHeader",
+    });
+    assert.deepEqual(presentation.badge, {
+      type: "critical",
+      labelKey: "WWN.Roll.Critical",
+    });
+  });
+
+  it("shows untargeted criticals and fumbles without inventing a target outcome", () => {
+    for (const [hit, hitReason, type] of [
+      [true, "nat20", "critical"],
+      [false, "nat1", "fumble"],
+    ]) {
+      const presentation = resolveAttackPresentation({ hit, hitReason, untargeted: true });
+      assert.equal(presentation.naturalOutcome.type, type);
+      assert.equal(presentation.badge.type, type);
+      assert.equal(presentation.outcome, null);
+    }
   });
 });
 
@@ -283,6 +370,16 @@ describe("buildAttackNotices", () => {
     }, L);
     assert.ok(notices.some((n) => n.includes("NoticeTlBlocked")));
     assert.ok(!notices.some((n) => n.includes("NoticeIgnoreFirearm")));
+  });
+
+  it("reports a raw natural 1 even when TL blocking owns the hit reason", () => {
+    const notices = buildAttackNotices({
+      blockedByTl: true,
+      hitReason: "tl",
+      naturalDie: 1,
+    }, L);
+    assert.ok(notices.includes("WWN.Roll.NoticeTlBlocked"));
+    assert.ok(notices.includes("WWN.Roll.NoticeNat1"));
   });
 
   it("keeps ignore notices and does not print target AC above the table", () => {

@@ -1,5 +1,58 @@
 # Changelog
 
+## New in 2.0.0-alpha2.7
+
+### Fixes
+
+- Fixed the alpha2.6 migration regression that left character and monster sheets without their skills, powers, inventory, attacks, or other embedded Items after duplicate-ID failures.
+- Reworked Actor Item persistence to delete explicit database IDs before clearing pre-ready generated currency and resource Items from the client, so Forge's stored rows are actually replaced instead of colliding during recreation.
+- Made Actor migration transactional and retry-safe: Item failures retain the legacy Actor system, Actor-update failures restore the persisted Item snapshot, and generated currency, Wild Psychic Talent, and Legate Items are marked once they are stored.
+
+## New in 2.0.0-alpha2.6
+
+### Fixes
+
+- Restored Dark Sun side resources with native v2 grant Items: Wild Psychic Talent now establishes the shared Psychic Effort pool, Psychic Training augments that same pool, and Legate is a real Edge that grants Legate Effort.
+- Unified legacy Psychic and Wild Talent Arts onto Psychic Effort and retained their committed Effort, including M'uamba's and Vax's existing spend.
+- Added the campaign's bonus Wild Psychic Talent Focus to migrated non-Psychic Dark Sun characters, while leaving Psionicists and Psychic Warriors on their class-derived Psychic Effort.
+- Distinguished Classes from Edges in the assignment prompt and character header, so owning Legate can no longer hide or suppress the required base-class selection.
+- Kept unresolved class commitments out of unrelated side pools while the class chooser is still pending, and made a partially completed v13 migration safe to retry.
+
+## New in 2.0.0-alpha2.5
+
+### Fixes
+
+- Fixed the remaining ten Dark Sun PC migrations failing on temporary currency Item IDs by clearing those pre-ready Documents locally before deleting persisted inventory rows.
+- Restored carried coin denominations to the compact Currency panel at the top of the inventory while retaining the detailed Currency section below.
+- Mapped every Dark Sun v1.10 class to its WWN/SWN Class/Edge choices, including Psychic classes, so restored characters open the chooser with the correct full class or two partial classes preselected.
+- Deferred class choosers until migration has finished and made sheets retry the prompt on later renders; confirming the class choices restores class-derived Effort pools and spell slots.
+- Preserved legacy Art Effort commitments and used spell slots in the new shared-pool counters, including M'uamba's two spent High Mage slots.
+
+## New in 2.0.0-alpha2.4
+
+### Fixes
+
+- Fixed pre-ready Dark Sun currency Items causing real-Actor inventory deletion to fail with missing Item IDs; migrated denominations now persist and appear on character sheets.
+- Fixed unlinked-token legacy Abilities failing with `Unexpected Error Class` when their ActorDelta Items change to Powers.
+- Skipped unchanged token-delta rewrites and post-item synchronization during the forced release pass, substantially reducing migration work.
+- Prevented compendium/class cleanup and ready-time synchronization from modifying a world after structural migration failures.
+- Limited automatic migration to Foundry's active GM, shared concurrent same-client calls, and removed per-Actor/Token console spam.
+
+## New in 2.0.0-alpha2.3
+
+### Fixes
+
+- Fixed Foundry v14 migration of Actor inventories by deleting persisted embedded Item rows before recreating their canonical forms.
+- Fixed unlinked-token migration to update only each Token's base-relative ActorDelta items, preserving tombstones without copying the full synthetic inventory.
+- Fixed legacy Tweaks Active Effects being mistaken for already-persisted rows during the pre-ready migration pass.
+
+## New in 2.0.0-alpha2.2
+
+### Fixes
+
+- Fixed the Foundry v14 world migration failing on actor inventories and unlinked token actors when exact replacements were combined with non-recursive updates.
+- Fixed partial world-item migration patches replacing the rest of an item's system data.
+
 ## New in 2.0.0
 
 ### Before you update

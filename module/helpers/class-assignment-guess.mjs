@@ -8,6 +8,8 @@ export const CLASS_EDGE_CATALOG = [
   "Partial Warrior",
   "Full Expert",
   "Partial Expert",
+  "Full Psychic",
+  "Partial Psychic",
   "Full High Mage",
   "Partial High Mage",
   "Full Elementalist",
@@ -28,6 +30,50 @@ export const CLASS_EDGE_CATALOG = [
   "Vowed",
   "Wise",
 ];
+
+/**
+ * Dark Sun v1.10 display classes and their WWN/SWN Class/Edge equivalents.
+ * Match these labels exactly (apart from case and an optional parenthetical)
+ * before applying the generic free-text heuristics below.
+ */
+const DARK_SUN_CLASS_EDGES = new Map([
+  ["barbarian", ["Partial Warrior", "Skinshifter"]],
+  ["bard", ["Partial Warrior", "Bard"]],
+  ["fighter", ["Full Warrior"]],
+  ["gladiator", ["Partial Warrior", "Duelist"]],
+  ["ranger", ["Partial Warrior", "Beastmaster"]],
+  ["elemental cleric", ["Full Elementalist"]],
+  ["elemental monk", ["Partial Elementalist", "Vowed"]],
+  ["sorcerer", ["Full High Mage"]],
+  ["psionicist", ["Full Psychic"]],
+  ["psychic warrior", ["Partial Warrior", "Partial Psychic"]],
+  ["thief", ["Partial Warrior", "Partial Expert"]],
+]);
+
+/**
+ * Whether an Item is an actual Class rather than an Edge stored in the shared
+ * `classEdge` document type. Missing edgeType is treated as a legacy Class.
+ * @param {object} item
+ * @returns {boolean}
+ */
+export function isClassItem(item) {
+  return item?.type === "classEdge" && item.system?.edgeType !== "edge";
+}
+
+/**
+ * Exact Dark Sun display-class mapping, or null for ordinary free text.
+ * @param {string} classField
+ * @returns {string[]|null}
+ */
+export function darkSunClassEdgesFromClassField(classField) {
+  const displayLabel = String(classField ?? "")
+    .trim()
+    .match(/^([^()]+?)(?:\s*\([^()]*\))?\s*$/)?.[1]
+    ?.trim()
+    .toLowerCase();
+  const edges = DARK_SUN_CLASS_EDGES.get(displayLabel);
+  return edges ? [...edges] : null;
+}
 
 const PARTIAL_ONLY = new Set([
   "Accursed",
@@ -158,6 +204,9 @@ function resolveCore(core, flags, multiToken) {
  * @returns {string[]} classEdge names to pre-check
  */
 export function precheckClassEdgesFromClassField(classField) {
+  const darkSunEdges = darkSunClassEdgesFromClassField(classField);
+  if (darkSunEdges) return [...darkSunEdges];
+
   const tokens = tokenizeClassField(classField);
   if (!tokens.length) return [];
   const multi = tokens.length >= 2;

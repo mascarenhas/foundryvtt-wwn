@@ -12,7 +12,7 @@ import {
  *
  * Pools are derived-only (never persisted): spend lives on each Power's
  * poolCommitted buckets. Maxes come from matching ClassEdge grants plus Focus
- * resourceGrant bonuses. NPCs also get orphan pools for shared-pool powers
+ * resourceGrants (which may establish a pool). NPCs also get orphan pools for shared-pool powers
  * without a matching grant, and may override maxes via system.poolMaxOverrides.
  */
 
@@ -156,13 +156,13 @@ export function deriveResourcePools(actor) {
     const grantName = String(edge.system.poolGrant?.name ?? "").trim();
     if (!grantName) continue;
 
-    const members = namedPowers.filter(
-      (p) =>
-        findPoolGrantEdge(actor, {
-          resourceName: p.system.resourceName,
-          source: p.system.source,
-        })?.id === edge.id
-    );
+    const members = namedPowers.filter((p) => {
+      const matchingEdge = findPoolGrantEdge(actor, {
+        resourceName: p.system.resourceName,
+        source: p.system.source,
+      });
+      return matchingEdge === edge;
+    });
     const value = members.reduce((sum, p) => sum + (p.system.poolCommittedSum ?? 0), 0);
     const result = poolGrantMax(edge, rollData);
     pools.push({
@@ -173,7 +173,7 @@ export function deriveResourcePools(actor) {
       max: result.max,
       warning: result.valid ? null : "WWN.Pools.WarnInvalidFormula",
     });
-    consumed.pool.add(edge.id);
+    consumed.pool.add(edge);
   }
 
   /* ---- Leveled Spell Slots (all tiers with max > 0, not only levels with spells) ---- */
@@ -186,7 +186,7 @@ export function deriveResourcePools(actor) {
       (p) => p.system.level ?? 1
     );
     if (slotEdge) {
-      consumed.slot.add(slotEdge.id);
+      consumed.slot.add(slotEdge);
       pushLeveledSlotPools(slotEdge, rollData, spellsByLevel, pools, spellSlotsName);
       // Empty leveledProgression: do not push a placeholder Spell Slots row.
     } else {
@@ -223,12 +223,12 @@ export function deriveResourcePools(actor) {
     const slotEdge = classEdges.find(
       (ce) => !ce.system.slotGrant?.enabled && (ce.system.slotGrant?.progression?.length ?? 0) > 0
     );
-    if (slotEdge) consumed.slot.add(slotEdge.id);
+    if (slotEdge) consumed.slot.add(slotEdge);
     // Mark all unleveled cast edges consumed when dual table overrides.
     if (castProgression) {
       for (const ce of classEdges) {
         if (!ce.system.slotGrant?.enabled && (ce.system.slotGrant?.progression?.length ?? 0) > 0) {
-          consumed.slot.add(ce.id);
+          consumed.slot.add(ce);
         }
       }
     }
@@ -256,7 +256,7 @@ export function deriveResourcePools(actor) {
 
   /* ---- Standalone grants (no matching powers yet) ---- */
   for (const edge of classEdges) {
-    if (!consumed.pool.has(edge.id) && poolGrantActive(edge)) {
+    if (!consumed.pool.has(edge) && poolGrantActive(edge)) {
       const grant = edge.system.poolGrant;
       const name = grant.name?.trim() || "";
       const result = poolGrantMax(edge, rollData);
@@ -268,10 +268,10 @@ export function deriveResourcePools(actor) {
         max: result.max,
         warning: result.valid ? null : "WWN.Pools.WarnInvalidFormula",
       });
-      consumed.pool.add(edge.id);
+      consumed.pool.add(edge);
     }
 
-    if (!consumed.slot.has(edge.id) && slotGrantActive(edge)) {
+    if (!consumed.slot.has(edge) && slotGrantActive(edge)) {
       const slot = edge.system.slotGrant;
       if (slot.enabled) {
         pushLeveledSlotPools(edge, rollData, {}, pools, spellSlotsName);
@@ -286,7 +286,7 @@ export function deriveResourcePools(actor) {
           warning: result.valid ? null : "WWN.Pools.WarnInvalidFormula",
         });
       }
-      consumed.slot.add(edge.id);
+      consumed.slot.add(edge);
     }
   }
 

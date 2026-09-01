@@ -89,6 +89,12 @@ describe("findPoolGrantEdge", () => {
     assert.equal(edge?.id, "vowed");
   });
 
+  it("does not route a mismatched source into the only visible Effort grant", () => {
+    const actor = makeActor({ classEdges: [vowedEdge] });
+    const edge = findPoolGrantEdge(actor, { resourceName: "Effort", source: "High Mage" });
+    assert.equal(edge, null);
+  });
+
   it("returns null when Effort is ambiguous across two grants", () => {
     const actor = makeActor({ classEdges: [vowedEdge, highMageEdge] });
     const edge = findPoolGrantEdge(actor, { resourceName: "Effort", source: "" });
@@ -130,6 +136,25 @@ describe("deriveResourcePools Effort resolution", () => {
     assert.ok(vowed);
     assert.equal(vowed.max, 4);
     assert.equal(vowed.value, 0);
+  });
+
+  it("does not count another class's commitment in a sole temporary grant", () => {
+    const highMageArt = {
+      id: "high-mage-art",
+      type: "power",
+      system: {
+        subType: "art",
+        resourceName: "Effort",
+        source: "High Mage",
+        usesSharedPool: true,
+        effectiveCommitmentOptions: [{ cost: 1, length: "day" }],
+        poolCommittedSum: 1,
+      },
+    };
+    const actor = makeActor({ classEdges: [vowedEdge], powers: [highMageArt] });
+    deriveResourcePools(actor);
+    const vowed = actor.system.resourcePools.find((pool) => pool.name === "Vowed Effort");
+    assert.deepEqual({ value: vowed?.value, max: vowed?.max }, { value: 0, max: 4 });
   });
 });
 

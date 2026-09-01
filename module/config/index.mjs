@@ -207,6 +207,12 @@ WWN.defaultIcons = {
 
 /** Built-in currency sets used to seed new PCs (wwn.defaultCurrencySet). */
 WWN.currencySets = {
+  darkSun: [
+    { name: "WWN.Currency.Bits", multiplier: 1, perSlot: 100 },
+    { name: "WWN.Currency.CeramicPieces", multiplier: 10, perSlot: 100 },
+    { name: "WWN.Currency.SilverPieces", multiplier: 100, perSlot: 100 },
+    { name: "WWN.Currency.GoldPieces", multiplier: 1000, perSlot: 100 },
+  ],
   silver: [
     { name: "WWN.Currency.Copper", multiplier: 0.1, perSlot: 100 },
     { name: "WWN.Currency.Silver", multiplier: 1, perSlot: 100 },

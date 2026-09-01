@@ -126,6 +126,9 @@ describe("chat card theme", () => {
     assert.match(css, /display:\s*table-row-group/);
     assert.match(css, /\.wwn-chat-desc-drawer/);
     assert.match(css, /\.wwn-chat-outcome/);
+    assert.match(css, /\.wwn-chat-natural-outcome/);
+    assert.match(css, /&--critical/);
+    assert.match(css, /&--fumble/);
     assert.match(css, /&\.collapsed/);
     assert.match(css, /rotate\(-90deg\)/);
     assert.match(css, /\.wwn-chat-title/);
@@ -162,6 +165,8 @@ describe("attack card rollMeta", () => {
     assert.match(body, /this\.suffix/);
     assert.match(body, /wwn-chat-outcome/);
     assert.match(body, /outcome\.label/);
+    assert.match(body, /wwn-chat-natural-outcome/);
+    assert.match(body, /naturalOutcome\.label/);
     assert.doesNotMatch(body, /trauma\.result/);
     const outcomeIdx = body.indexOf("wwn-chat-outcome");
     const applyIdx = body.indexOf("applyRows");
@@ -172,6 +177,7 @@ describe("attack card rollMeta", () => {
 
   it("personal attacks pass rollMeta including Shock AC", () => {
     const src = fs.readFileSync(path.join(root, "module/dice/dice.mjs"), "utf8");
+    const outcome = fs.readFileSync(path.join(root, "module/helpers/attack-outcome.mjs"), "utf8");
     assert.match(src, /rollMeta/);
     assert.match(src, /formatShockAcDetail/);
     assert.match(src, /WWN\.Roll\.ShockBase/);
@@ -186,10 +192,22 @@ describe("attack card rollMeta", () => {
     assert.doesNotMatch(src, /WWN\.Roll\.NoShock/);
     assert.doesNotMatch(src, /WWN\.Roll\.ShockTargetAc/);
     assert.match(src, /resolveChatAttackTarget/);
-    assert.match(src, /WWN\.Roll\.HitHeader|WWN\.Roll\.MissHeader/);
+    assert.match(outcome, /WWN\.Roll\.HitHeader|WWN\.Roll\.MissHeader/);
     assert.match(src, /formatAttackAcDetail/);
     assert.match(src, /formatTraumaDetail/);
-    assert.match(src, /WWN\.Roll\.TraumaticHitHeader/);
+    assert.match(outcome, /WWN\.Roll\.TraumaticHitHeader/);
+    assert.match(src, /resolveAttackPresentation/);
+    assert.match(src, /naturalOutcome/);
+  });
+
+  it("returns from a cancelled attack before spending ammo or rolling", () => {
+    const src = fs.readFileSync(path.join(root, "module/dice/dice.mjs"), "utf8");
+    const attack = src.slice(src.indexOf("static async rollAttack"), src.indexOf("static async rollDamage"));
+    const cancelIdx = attack.indexOf('if (!result || result === "cancel") return;');
+    const spendIdx = attack.indexOf("spendAttackAmmo");
+    const evaluateIdx = attack.indexOf("new WwnAttackRoll");
+    assert.ok(cancelIdx !== -1 && spendIdx !== -1 && evaluateIdx !== -1);
+    assert.ok(cancelIdx < spendIdx && spendIdx < evaluateIdx);
   });
 
   it("power-armor attacks reuse the same exceeded-AC Shock row", () => {

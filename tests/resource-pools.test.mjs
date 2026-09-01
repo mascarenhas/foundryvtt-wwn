@@ -14,11 +14,12 @@ import {
 function makeActor({
   type = "character",
   classEdges = [],
+  foci = [],
   powers = [],
   level = 1,
   poolMaxOverrides = {},
 } = {}) {
-  const items = [...classEdges, ...powers];
+  const items = [...classEdges, ...foci, ...powers];
   return {
     type,
     items: {
@@ -203,5 +204,64 @@ describe("NPC pool max overrides and orphan pools", () => {
     const pools = actor.system.resourcePools ?? [];
     assert.equal(pools.length, 0);
     assert.equal(pools.some((p) => p.editableMax), false);
+  });
+});
+
+describe("Focus-established shared pools", () => {
+  const wildPsychicTalent = (bonusMax = 1) => ({
+    id: "wild-psychic-talent",
+    name: "Wild Psychic Talent",
+    type: "focus",
+    system: {
+      resourceGrant: { targetName: "Psychic Effort", targetSource: "", bonusMax },
+    },
+  });
+
+  it("creates regular Psychic Effort for Wild Psychic Talent", () => {
+    const actor = makeActor({
+      foci: [wildPsychicTalent(1)],
+      powers: [sharedArt({ source: "Psychic", poolCommittedSum: 1 })],
+    });
+    deriveResourcePools(actor);
+    const psychic = actor.system.resourcePools.find((pool) => pool.name === "Psychic Effort");
+    assert.deepEqual(
+      { value: psychic?.value, max: psychic?.max, warning: psychic?.warning },
+      { value: 1, max: 1, warning: null },
+    );
+  });
+
+  it("scales the same pool to two at Focus level 2", () => {
+    const actor = makeActor({ foci: [wildPsychicTalent(2)] });
+    deriveResourcePools(actor);
+    const psychic = actor.system.resourcePools.find((pool) => pool.name === "Psychic Effort");
+    assert.deepEqual({ value: psychic?.value, max: psychic?.max }, { value: 0, max: 2 });
+  });
+
+  it("adds Psychic Training to a class-granted Psychic Effort pool without creating Effort", () => {
+    const actor = makeActor({
+      classEdges: [{
+        id: "full-psychic",
+        name: "Full Psychic",
+        type: "classEdge",
+        system: {
+          poolGrant: { name: "Psychic Effort", formula: "", progression: [3] },
+          slotGrant: { enabled: false, progression: [], leveledProgression: [] },
+          preparedGrant: { progression: [] },
+        },
+      }],
+      foci: [{
+        id: "psychic-training",
+        name: "Psychic Training",
+        type: "focus",
+        system: {
+          resourceGrant: { targetName: "Psychic Effort", targetSource: "", bonusMax: 1 },
+        },
+      }],
+      powers: [sharedArt({ resourceName: "Psychic Effort", source: "Psychic", poolCommittedSum: 1 })],
+    });
+    deriveResourcePools(actor);
+    const psychic = actor.system.resourcePools.find((pool) => pool.name === "Psychic Effort");
+    assert.deepEqual({ value: psychic?.value, max: psychic?.max }, { value: 1, max: 4 });
+    assert.equal(actor.system.resourcePools.some((pool) => pool.name === "Effort"), false);
   });
 });

@@ -20,9 +20,9 @@
           value="{{system.details.alignment}}" placeholder="{{localize 'WWN.Profile.Alignment'}}"
           title="{{localize 'WWN.Profile.Alignment'}}" />
         {{/if}}
-        {{#if classEdges.length}}
+        {{#if headerClassEdges.length}}
         <div class="wwn-header-class wwn-header-class-list" title="{{classEdgesTooltip}}">
-          {{#each classEdges as |edge|}}
+          {{#each headerClassEdges as |edge|}}
           {{#unless @first}}<span class="wwn-header-class-sep" aria-hidden="true">·</span>{{/unless}}
           <a class="wwn-header-class-link" data-item-id="{{edge.id}}" data-action="editItem"
             title="{{localize 'WWN.Edit'}}">{{edge.name}}</a>

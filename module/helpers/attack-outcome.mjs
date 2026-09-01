@@ -78,6 +78,66 @@ export function resolveAttackHit({ attackTotal, naturalDie, targetAc, blockedByT
 }
 
 /**
+ * Resolve the independent pieces of attack-result presentation.
+ *
+ * Natural results deliberately get their own callout so a critical hit and a
+ * traumatic hit can both be shown. The ordinary outcome remains target-only;
+ * untargeted natural rolls still receive a badge and natural-result callout.
+ *
+ * @param {{
+ *   hit: boolean,
+ *   hitReason: "tl"|"nat1"|"nat20"|"hit"|"miss"|"noTarget",
+ *   naturalDie?: number|null,
+ *   traumatic?: boolean,
+ *   untargeted?: boolean,
+ * }} input
+ * @returns {{
+ *   badge: {type: string, labelKey: string}|null,
+ *   naturalOutcome: {type: string, labelKey: string}|null,
+ *   outcome: {type: string, labelKey: string}|null,
+ * }}
+ */
+export function resolveAttackPresentation({
+  hit,
+  hitReason,
+  naturalDie = null,
+  traumatic = false,
+  untargeted = false,
+}) {
+  let naturalOutcome = null;
+  if (hitReason === "nat20") {
+    naturalOutcome = { type: "critical", labelKey: "WWN.Roll.CriticalHitHeader" };
+  } else if (hitReason === "nat1" || naturalDie === 1) {
+    naturalOutcome = { type: "fumble", labelKey: "WWN.Roll.FumbleHeader" };
+  }
+
+  let badge = null;
+  if (naturalOutcome) {
+    badge = {
+      type: naturalOutcome.type,
+      labelKey: hitReason === "nat20" ? "WWN.Roll.Critical" : "WWN.Roll.Fumble",
+    };
+  } else if (!untargeted) {
+    badge = {
+      type: hit ? "hit" : "miss",
+      labelKey: hit ? "WWN.Roll.Hit" : "WWN.Roll.Miss",
+    };
+  }
+
+  let outcome = null;
+  if (!untargeted) {
+    outcome = traumatic
+      ? { type: "trauma", labelKey: "WWN.Roll.TraumaticHitHeader" }
+      : {
+          type: hit ? "hit" : "miss",
+          labelKey: hit ? "WWN.Roll.HitHeader" : "WWN.Roll.MissHeader",
+        };
+  }
+
+  return { badge, naturalOutcome, outcome };
+}
+
+/**
  * Hit damage after Shock floor (book: damage never below Shock on a hit).
  * @param {number} damage
  * @param {number|null} shock
@@ -172,7 +232,7 @@ export function buildAttackNotices(ctx, localize) {
   if (ctx.blockedByTl) {
     notices.push(L("WWN.Roll.NoticeTlBlocked"));
   }
-  if (ctx.hitReason === "nat1") notices.push(L("WWN.Roll.NoticeNat1"));
+  if (ctx.hitReason === "nat1" || ctx.naturalDie === 1) notices.push(L("WWN.Roll.NoticeNat1"));
   if (ctx.hitReason === "nat20") notices.push(L("WWN.Roll.NoticeNat20"));
 
   // Armor-ignore / target-AC notices are irrelevant when the attack never resolved vs AC.

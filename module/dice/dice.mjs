@@ -21,6 +21,7 @@ import { resolveTargetAcForAttack } from "../helpers/attack-ac.mjs";
 import {
   naturalAttackDie,
   resolveAttackHit,
+  resolveAttackPresentation,
   buildAttackNotices,
   buildAttackApplyRows,
   applyShockFloor,
@@ -468,11 +469,17 @@ export class WwnDice {
     ];
 
     const { target, untargeted } = resolveChatAttackTarget(game.user.targets);
-    let badge = null;
+    const naturalDie = naturalAttackDie(attackRoll);
+    const initialHitResult = resolveAttackHit({
+      attackTotal: attackRoll.total,
+      naturalDie,
+      targetAc: null,
+      blockedByTl: false,
+    });
     let targetName = null;
-    let hit = true;
+    let hit = initialHitResult.hit;
     let blockedByTl = false;
-    let hitReason = "noTarget";
+    let hitReason = initialHitResult.reason;
     let ignored = [];
     let targetAc = null;
     let acKind = "melee";
@@ -493,7 +500,6 @@ export class WwnDice {
       targetAc = acResult.ac;
       acKind = acResult.acKind;
 
-      const naturalDie = naturalAttackDie(attackRoll);
       const hitResult = resolveAttackHit({
         attackTotal: attackRoll.total,
         naturalDie,
@@ -520,10 +526,6 @@ export class WwnDice {
         }
       }
 
-      badge = {
-        label: game.i18n.localize(hit ? "WWN.Roll.Hit" : "WWN.Roll.Miss"),
-        type: hit ? "hit" : "miss",
-      };
       rollMeta[0].detail = formatAttackAcDetail(targetAc, { separateRanged, acKind });
     }
 
@@ -669,6 +671,7 @@ export class WwnDice {
     const notices = buildAttackNotices({
       blockedByTl,
       hitReason,
+      naturalDie,
       ignored,
       shockSuppressedReason: (!hit && shockTotal == null) ? shockSuppressedReason : (shockSuppressedReason === "tl" ? "tl" : null),
       shockFloored: hit && floorInfo.floored,
@@ -693,6 +696,18 @@ export class WwnDice {
       }
     }
 
+    const presentation = resolveAttackPresentation({
+      hit,
+      hitReason,
+      naturalDie,
+      traumatic: !!trauma?.traumatic,
+      untargeted,
+    });
+    const localizePresentation = (entry) => entry
+      ? { type: entry.type, label: game.i18n.localize(entry.labelKey) }
+      : null;
+    const badge = localizePresentation(presentation.badge);
+
     return createRollMessage({
       rolls,
       rollMeta,
@@ -710,14 +725,8 @@ export class WwnDice {
         notices,
         save: weapon.system.save || null,
         hit,
-        outcome: untargeted ? null : {
-          type: trauma?.traumatic ? "trauma" : (hit ? "hit" : "miss"),
-          label: game.i18n.localize(
-            trauma?.traumatic ? "WWN.Roll.TraumaticHitHeader"
-              : hit ? "WWN.Roll.HitHeader"
-                : "WWN.Roll.MissHeader",
-          ),
-        },
+        naturalOutcome: localizePresentation(presentation.naturalOutcome),
+        outcome: localizePresentation(presentation.outcome),
       },
       flags: { applyRows, save: weapon.system.save || null },
     });
